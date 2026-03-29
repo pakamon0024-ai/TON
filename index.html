@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Auto Post</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #1c1e21; }
+        .container { max-width: 960px; margin: auto; }
+        h1 { text-align: center; color: #1877f2; margin-bottom: 5px; }
+        .subtitle { text-align: center; color: #606770; font-size: 14px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card.full { grid-column: 1 / -1; }
+        .card h2 { font-size: 16px; color: #1877f2; margin-top: 0; border-bottom: 2px solid #e9ebee; padding-bottom: 10px; }
+        label { font-weight: 600; font-size: 13px; display: block; margin: 12px 0 4px; color: #444; }
+        input[type="text"], input[type="password"], input[type="datetime-local"], select, textarea {
+            width: 100%; padding: 9px 12px; border: 1px solid #ddd; border-radius: 6px;
+            font-size: 14px; font-family: inherit; transition: border 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: #1877f2; }
+        textarea { height: 140px; resize: vertical; }
+        .btn { width: 100%; padding: 11px; border: none; border-radius: 6px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.2s; margin-top: 14px; }
+        .btn-primary { background: #1877f2; color: white; }
+        .btn-primary:hover { background: #166fe5; }
+        .btn-green { background: #42b72a; color: white; }
+        .btn-green:hover { background: #36a420; }
+        .btn-orange { background: #f7b731; color: #333; }
+        .btn-orange:hover { background: #f0a500; }
+        .btn-purple { background: #7c4dff; color: white; }
+        .btn-purple:hover { background: #651fff; }
+        .btn:disabled { background: #ccc; color: #888; cursor: not-allowed; }
+        .img-preview { width: 100%; height: 200px; background: #e9ebee; border-radius: 8px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-top: 12px; }
+        .img-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .img-preview span { color: #90949c; font-size: 13px; }
+        .status { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 14px; font-weight: 500; display: none; }
+        .status.info { background: #e7f3ff; color: #1877f2; display: block; }
+        .status.success { background: #e6f4ea; color: #1a7f37; display: block; }
+        .status.error { background: #fdecea; color: #c0392b; display: block; }
+        .queue-list { list-style: none; padding: 0; margin: 0; }
+        .queue-list li { background: #f7f8fa; border: 1px solid #e9ebee; border-radius: 6px; padding: 10px 14px; margin-bottom: 8px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+        .queue-list li .topic { font-weight: 600; color: #1c1e21; }
+        .queue-list li .time { color: #90949c; font-size: 12px; }
+        .queue-list li .remove { background: #fdecea; border: none; color: #c0392b; font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer; }
+        .tag { display: inline-block; background: #e7f3ff; color: #1877f2; font-size: 11px; padding: 2px 8px; border-radius: 10px; margin: 2px; }
+        .input-row { display: flex; gap: 8px; }
+        .input-row input { flex: 1; }
+        .toggle-key { background: none; border: none; cursor: pointer; color: #1877f2; font-size: 12px; padding: 0; margin-left: 6px; }
+        .char-count { font-size: 11px; color: #90949c; text-align: right; margin-top: 3px; }
+        .env-badge { display: inline-flex; align-items: center; gap: 4px; background: #e6f4ea; color: #1a7f37; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px; margin: 3px 4px 3px 0; }
+        .env-badges { margin-bottom: 8px; min-height: 24px; }
+        .render-note { font-size: 12px; color: #1877f2; background: #e7f3ff; border-radius: 6px; padding: 8px 12px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Facebook Auto Post</h1>
+    <p class="subtitle">สร้างและกำหนดเวลาโพสต์ Facebook ด้วย AI — Deploy บน Render.com</p>
+
+    <div class="grid">
+
+        <!-- API Keys -->
+        <div class="card full">
+            <h2>🔑 API Keys</h2>
+
+            <div class="env-badges" id="envBadges"></div>
+            <div class="render-note">🔒 Keys ที่ตั้งค่าใน Render env จะถูกใช้อัตโนมัติ ไม่ต้องกรอกซ้ำ</div>
+
+            <div class="grid" style="gap: 12px;">
+                <div>
+                    <label>Gemini API Key
+                        <button class="toggle-key" onclick="toggleVisibility('geminiKey')">แสดง/ซ่อน</button>
+                    </label>
+                    <input type="password" id="geminiKey" placeholder="(ไม่บังคับ ถ้าตั้งค่าใน Render แล้ว) AIza...">
+                </div>
+                <div>
+                    <label>Facebook Page ID</label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="fbPageId" placeholder="(ไม่บังคับ ถ้าตั้งค่าใน Render แล้ว) 1234567890" style="flex:1;">
+                        <button class="btn btn-orange" style="margin-top:0; width:auto; padding:9px 14px; white-space:nowrap; font-size:13px;" onclick="fetchPages()">🔍 ดึง Page ID</button>
+                    </div>
+                    <div id="pageList" style="margin-top:8px; display:none;"></div>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label>Facebook Page Access Token
+                        <button class="toggle-key" onclick="toggleVisibility('fbToken')">แสดง/ซ่อน</button>
+                    </label>
+                    <input type="password" id="fbToken" placeholder="(ไม่บังคับ ถ้าตั้งค่าใน Render แล้ว) EAABs...">
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label>🤖 Gemini GEM ID <span style="font-weight:400; color:#90949c;">(GEM ที่ใช้สร้างรูปภาพ)</span></label>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <input type="text" id="gemGemId" placeholder="(ไม่บังคับ ถ้าตั้งค่าใน Render แล้ว) เช่น abc123xyz" style="flex:1;">
+                        <button class="btn btn-primary" style="margin-top:0; width:auto; padding:9px 14px; white-space:nowrap; font-size:13px;" onclick="openGemHelp()">❓ วิธีหา ID</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+                <button class="btn btn-primary" style="margin-top:0; flex:1;" onclick="saveKeys()">💾 บันทึกใน Browser</button>
+                <button class="btn btn-purple" style="margin-top:0; flex:1;" onclick="saveToServer()">🔄 บันทึกไปยัง Server</button>
+                <button class="btn btn-orange" style="margin-top:0; width:auto; padding: 11px 20px;" onclick="clearKeys()">🗑️ ล้างข้อมูล</button>
+            </div>
+            <div id="saveStatus" class="status"></div>
+        </div>
+
+        <!-- Content Input -->
+        <div class="card">
+            <h2>✍️ สร้างคอนเทนต์</h2>
+
+            <label>หัวข้อโพสต์</label>
+            <input type="text" id="topic" value="เทคนิคการจัดการเวลาสำหรับคนทำงาน" placeholder="เช่น โปรโมชั่นสินค้าใหม่...">
+
+            <label>โทนของภาษา</label>
+            <select id="tone">
+                <option value="เป็นทางการและน่าเชื่อถือ เขียนแบบมืออาชีพ">Professional</option>
+                <option value="เป็นกันเอง สนุกสนาน อ่านง่าย" selected>Friendly & Fun</option>
+                <option value="มีความคิดสร้างสรรค์ แปลกใหม่ น่าสนใจ">Creative</option>
+                <option value="เชิงวิชาการ อ้างอิงข้อมูล มีความน่าเชื่อถือสูง">Academic</option>
+                <option value="สร้างแรงบันดาลใจ กระตุ้นพลังงาน">Inspirational</option>
+            </select>
+
+            <label>แฮชแท็กเพิ่มเติม (ถ้ามี)</label>
+            <input type="text" id="extraHashtags" placeholder="#แบรนด์ #สินค้า (คั่นด้วยเว้นวรรค)">
+
+            <button class="btn btn-primary" id="generateBtn" onclick="generateContent()">✨ AI สร้างคอนเทนต์</button>
+            <div id="genStatus" class="status"></div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card">
+            <h2>👁️ ตัวอย่างโพสต์</h2>
+
+            <div class="img-preview" id="imgBox">
+                <span id="imgPlaceholder">รูปภาพจะแสดงที่นี่</span>
+                <img id="finalImg" style="display:none;" src="" alt="preview">
+            </div>
+            <input type="file" id="imgUploadInput" accept="image/*" style="display:none;" onchange="handleImageUpload(event)">
+
+            <!-- เมนูจัดการรูปภาพ -->
+            <div style="margin-top:10px; background:#f7f8fa; border:1px solid #e9ebee; border-radius:8px; padding:12px;">
+                <div style="font-size:13px; font-weight:700; color:#444; margin-bottom:8px;">🖼️ จัดการรูปภาพ</div>
+
+                <!-- แถว 1: อัปโหลด + ล้างรูป -->
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <button class="btn btn-orange" style="margin-top:0; font-size:13px;" onclick="document.getElementById('imgUploadInput').click()">📁 อัปโหลดรูปเอง</button>
+                    <button class="btn" style="margin-top:0; font-size:13px; background:#6c757d; color:white;" onclick="clearImage()">🗑️ ล้างรูป</button>
+                </div>
+
+                <!-- แถว 2: workflow สร้างรูปด้วย GEM -->
+                <div style="border-top:1px solid #e9ebee; padding-top:10px;">
+                    <div style="font-size:12px; color:#606770; margin-bottom:8px;">
+                        🔁 <strong>สร้างรูปด้วย Gemini GEM:</strong> คัดลอก Prompt → เปิด GEM → สร้างรูป → ดาวน์โหลด → อัปโหลดกลับ
+                    </div>
+                    <div style="background:#fff; border:1px solid #ddd; border-radius:6px; padding:8px; font-size:12px; color:#444; min-height:40px; margin-bottom:8px; line-height:1.6;" id="imgPromptDisplay">
+                        <span style="color:#90949c;">— Prompt จะแสดงหลังกด AI สร้างคอนเทนต์ —</span>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-primary" style="margin-top:0; font-size:13px;" onclick="copyImagePrompt()">📋 คัดลอก Prompt</button>
+                        <button class="btn btn-green" style="margin-top:0; font-size:13px;" onclick="openGemini()">🤖 เปิด GEM สร้างรูป</button>
+                    </div>
+                    <div id="gemStatus" class="status"></div>
+                </div>
+            </div>
+
+            <label>แคปชั่น / ข้อความโพสต์</label>
+            <textarea id="caption" placeholder="AI จะสร้างข้อความโพสต์ที่นี่..." oninput="updateCharCount()"></textarea>
+            <div class="char-count" id="charCount">0 / 63,206 ตัวอักษร</div>
+
+            <button class="btn btn-green" id="postNowBtn" onclick="publishToFacebook()">🚀 โพสต์เดี๋ยวนี้</button>
+            <div id="postStatus" class="status"></div>
+        </div>
+
+        <!-- Scheduler -->
+        <div class="card full">
+            <h2>⏰ ตั้งเวลาโพสต์อัตโนมัติ (Queue)</h2>
+            <div class="grid" style="gap: 12px;">
+                <div>
+                    <label>หัวข้อที่ต้องการตั้งเวลา</label>
+                    <select id="schedTopic" style="width:100%; padding:9px 12px; border:1px solid #ddd; border-radius:6px; font-size:14px; font-family:inherit;">
+                        <option value="">— เลือกหัวข้อจากด้านบน หรือพิมพ์ใหม่ —</option>
+                    </select>
+                    <input type="text" id="schedTopicCustom" placeholder="หรือพิมพ์หัวข้อใหม่..." style="margin-top:6px;">
+                    <label>โทนภาษา</label>
+                    <select id="schedTone">
+                        <option value="เป็นทางการและน่าเชื่อถือ เขียนแบบมืออาชีพ">Professional</option>
+                        <option value="เป็นกันเอง สนุกสนาน อ่านง่าย" selected>Friendly & Fun</option>
+                        <option value="มีความคิดสร้างสรรค์ แปลกใหม่ น่าสนใจ">Creative</option>
+                        <option value="เชิงวิชาการ อ้างอิงข้อมูล มีความน่าเชื่อถือสูง">Academic</option>
+                    </select>
+                </div>
+                <div>
+                    <label>วันและเวลาที่ต้องการโพสต์</label>
+                    <input type="datetime-local" id="schedTime">
+                    <button class="btn btn-orange" onclick="addToQueue()" style="margin-top: 32px;">📅 เพิ่มเข้าคิว</button>
+                </div>
+            </div>
+
+            <label style="margin-top: 16px;">คิวโพสต์ที่รอการเผยแพร่</label>
+            <ul class="queue-list" id="queueList">
+                <li style="justify-content: center; color: #90949c;">ยังไม่มีรายการในคิว</li>
+            </ul>
+            <div id="schedStatus" class="status"></div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    // ========== Utilities ==========
+
+    function toggleVisibility(id) {
+        const el = document.getElementById(id);
+        el.type = el.type === 'password' ? 'text' : 'password';
+    }
+
+    function showStatus(id, msg, type) {
+        const el = document.getElementById(id);
+        el.textContent = msg;
+        el.className = `status ${type}`;
+    }
+
+    function updateCharCount() {
+        const len = document.getElementById('caption').value.length;
+        document.getElementById('charCount').textContent = `${len.toLocaleString()} / 63,206 ตัวอักษร`;
+    }
+
+    // ========== Check env vars on server ==========
+
+    async function checkServerConfig() {
+        try {
+            const res  = await fetch('/api/config');
+            const data = await res.json();
+            const badgesEl = document.getElementById('envBadges');
+            let html = '';
+            if (data.hasGeminiKey) html += '<span class="env-badge">✅ Gemini Key พร้อม</span>';
+            if (data.hasFbConfig)  html += '<span class="env-badge">✅ Facebook พร้อม</span>';
+            badgesEl.innerHTML = html || '';
+        } catch (e) {
+            console.warn('checkServerConfig error:', e.message);
+        }
+    }
+
+    // ========== Save / Load / Clear Keys (localStorage) ==========
+
+    function saveKeys() {
+        const geminiKey = document.getElementById('geminiKey').value.trim();
+        const fbPageId  = document.getElementById('fbPageId').value.trim();
+        const fbToken   = document.getElementById('fbToken').value.trim();
+        const gemGemId  = document.getElementById('gemGemId').value.trim();
+
+        if (!geminiKey && !fbPageId && !fbToken && !gemGemId) {
+            showStatus('saveStatus', '⚠️ กรุณากรอกข้อมูลก่อนบันทึก', 'error');
+            return;
+        }
+
+        if (geminiKey) localStorage.setItem('fb_geminiKey', geminiKey);
+        if (fbPageId)  localStorage.setItem('fb_pageId',    fbPageId);
+        if (fbToken)   localStorage.setItem('fb_token',     fbToken);
+        if (gemGemId)  localStorage.setItem('fb_gemGemId',  gemGemId);
+        showStatus('saveStatus', '✅ บันทึกข้อมูลลงเบราว์เซอร์แล้ว — ครั้งหน้าเปิดมาจะโหลดให้อัตโนมัติ', 'success');
+    }
+
+    async function saveToServer() {
+        const geminiKey = document.getElementById('geminiKey').value.trim();
+        const fbPageId  = document.getElementById('fbPageId').value.trim();
+        const fbToken   = document.getElementById('fbToken').value.trim();
+        const gemGemId  = document.getElementById('gemGemId').value.trim();
+
+        if (!geminiKey && !fbPageId && !fbToken && !gemGemId) {
+            showStatus('saveStatus', '⚠️ กรุณากรอกข้อมูลก่อนบันทึกไปยัง Server', 'error');
+            return;
+        }
+
+        try {
+            const res  = await fetch('/api/config', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ geminiKey, fbPageId, fbToken, gemGemId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showStatus('saveStatus', '✅ บันทึกไปยัง Server แล้ว! Server จะใช้ค่าเหล่านี้สำหรับ scheduled queue', 'success');
+                checkServerConfig();
+            } else {
+                throw new Error(data.error || 'ไม่สำเร็จ');
+            }
+        } catch (err) {
+            showStatus('saveStatus', `❌ บันทึกไปยัง Server ไม่สำเร็จ: ${err.message}`, 'error');
+        }
+    }
+
+    function loadKeys() {
+        const geminiKey = localStorage.getItem('fb_geminiKey');
+        const fbPageId  = localStorage.getItem('fb_pageId');
+        const fbToken   = localStorage.getItem('fb_token');
+        const gemGemId  = localStorage.getItem('fb_gemGemId');
+
+        if (geminiKey) document.getElementById('geminiKey').value = geminiKey;
+        if (fbPageId)  document.getElementById('fbPageId').value  = fbPageId;
+        if (fbToken)   document.getElementById('fbToken').value   = fbToken;
+        if (gemGemId)  document.getElementById('gemGemId').value  = gemGemId;
+
+        if (geminiKey || fbPageId || fbToken || gemGemId) {
+            showStatus('saveStatus', '📂 โหลดข้อมูลที่บันทึกไว้แล้ว', 'info');
+        }
+    }
+
+    function clearKeys() {
+        if (!confirm('ต้องการล้างข้อมูลที่บันทึกไว้ทั้งหมดไหมครับ?')) return;
+        localStorage.removeItem('fb_geminiKey');
+        localStorage.removeItem('fb_pageId');
+        localStorage.removeItem('fb_token');
+        localStorage.removeItem('fb_gemGemId');
+        document.getElementById('geminiKey').value = '';
+        document.getElementById('fbPageId').value  = '';
+        document.getElementById('fbToken').value   = '';
+        document.getElementById('gemGemId').value  = '';
+        showStatus('saveStatus', '🗑️ ล้างข้อมูลเรียบร้อยแล้ว', 'info');
+    }
+
+    // ========== Gemini GEM Workflow ==========
+
+    let currentImagePrompt = '';
+
+    function copyImagePrompt() {
+        if (!currentImagePrompt) return showStatus('gemStatus', '⚠️ กรุณาสร้างคอนเทนต์ก่อนครับ', 'error');
+        navigator.clipboard.writeText(currentImagePrompt).then(() => {
+            showStatus('gemStatus', '✅ คัดลอก Prompt แล้ว! ไปวางใน GEM ได้เลย', 'success');
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = currentImagePrompt;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showStatus('gemStatus', '✅ คัดลอก Prompt แล้ว! ไปวางใน GEM ได้เลย', 'success');
+        });
+    }
+
+    function openGemini() {
+        const gemId = document.getElementById('gemGemId').value.trim();
+
+        if (!gemId) {
+            showStatus('gemStatus', '❌ กรุณาใส่ Gemini GEM ID ในช่องตั้งค่าก่อนครับ', 'error');
+            return;
+        }
+        if (!currentImagePrompt) {
+            showStatus('gemStatus', '⚠️ กรุณากด AI สร้างคอนเทนต์ก่อนเพื่อให้มี Prompt', 'error');
+            return;
+        }
+
+        const doCopy = (text) => {
+            try { navigator.clipboard.writeText(text); }
+            catch {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+            }
+        };
+        doCopy(currentImagePrompt);
+        window.open(`https://gemini.google.com/gem/${gemId}`, '_blank');
+        showStatus('gemStatus', '✅ คัดลอก Prompt แล้ว + เปิด GEM แล้ว — วาง (Ctrl+V) ใน GEM แล้วกด Enter ได้เลยครับ', 'success');
+    }
+
+    function openGemHelp() {
+        alert('วิธีหา GEM ID:\n\n1. ไปที่ gemini.google.com\n2. เปิด GEM ที่ต้องการใช้สร้างรูป\n3. ดู URL บนเบราว์เซอร์: gemini.google.com/gem/[GEM_ID]\n4. คัดลอก GEM_ID มาใส่ในช่องนี้\n\nตัวอย่าง: ถ้า URL คือ gemini.google.com/gem/abc123xyz\nGEM ID คือ abc123xyz');
+    }
+
+    // ========== Image Upload & Clear ==========
+
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img         = document.getElementById('finalImg');
+            const placeholder = document.getElementById('imgPlaceholder');
+            img.src           = e.target.result;
+            img.style.display = 'block';
+            placeholder.style.display = 'none';
+        };
+        reader.readAsDataURL(file);
+        event.target.value = '';
+    }
+
+    function clearImage() {
+        const img         = document.getElementById('finalImg');
+        const placeholder = document.getElementById('imgPlaceholder');
+        img.src           = '';
+        img.style.display = 'none';
+        placeholder.style.display = 'flex';
+        placeholder.innerText = 'รูปภาพจะแสดงที่นี่';
+    }
+
+    // ========== Sync หัวข้อจาก topic input → schedTopic dropdown ==========
+
+    function syncTopicDropdown() {
+        const topic = document.getElementById('topic').value.trim();
+        const sel   = document.getElementById('schedTopic');
+        while (sel.options.length > 1) sel.remove(1);
+        if (topic) {
+            const opt       = document.createElement('option');
+            opt.value       = topic;
+            opt.textContent = topic;
+            sel.appendChild(opt);
+            sel.value = topic;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('topic').addEventListener('input', syncTopicDropdown);
+    });
+
+    function getSchedTopic() {
+        const sel    = document.getElementById('schedTopic').value.trim();
+        const custom = document.getElementById('schedTopicCustom').value.trim();
+        return custom || sel;
+    }
+
+    // ========== Fetch Pages from Facebook ==========
+
+    async function fetchPages() {
+        const fbToken = document.getElementById('fbToken').value.trim();
+        if (!fbToken) return alert('กรุณาใส่ Facebook Access Token ก่อนครับ');
+
+        const pageListEl    = document.getElementById('pageList');
+        pageListEl.style.display = 'block';
+        pageListEl.innerHTML     = '<span style="color:#1877f2; font-size:13px;">⏳ กำลังดึงรายการ Page...</span>';
+
+        try {
+            const res  = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${fbToken}`);
+            const data = await res.json();
+
+            if (data.error) throw new Error(data.error.message);
+            if (!data.data || data.data.length === 0) {
+                pageListEl.innerHTML = '<span style="color:#c0392b; font-size:13px;">❌ ไม่พบ Page ที่จัดการด้วย Token นี้</span>';
+                return;
+            }
+
+            let html = '<div style="font-size:13px; font-weight:600; margin-bottom:6px; color:#444;">เลือก Page ที่ต้องการโพสต์:</div>';
+            data.data.forEach(page => {
+                html += `<div style="display:flex; align-items:center; justify-content:space-between; background:#f7f8fa; border:1px solid #e9ebee; border-radius:6px; padding:8px 12px; margin-bottom:6px;">
+                    <div>
+                        <div style="font-weight:600; color:#1c1e21;">${page.name}</div>
+                        <div style="font-size:11px; color:#90949c;">ID: ${page.id}</div>
+                    </div>
+                    <button onclick="selectPage('${page.id}','${page.access_token}')"
+                        style="background:#1877f2; color:white; border:none; border-radius:5px; padding:6px 12px; font-size:12px; cursor:pointer; font-weight:600;">
+                        ✅ เลือก
+                    </button>
+                </div>`;
+            });
+            pageListEl.innerHTML = html;
+        } catch (err) {
+            pageListEl.innerHTML = `<span style="color:#c0392b; font-size:13px;">❌ ${err.message}</span>`;
+        }
+    }
+
+    function selectPage(pageId, pageToken) {
+        document.getElementById('fbPageId').value = pageId;
+        document.getElementById('fbToken').value  = pageToken;
+        document.getElementById('pageList').style.display = 'none';
+        showStatus('saveStatus', `✅ เลือก Page ID: ${pageId} แล้ว — กด "บันทึก" เพื่อเก็บไว้ใช้ครั้งต่อไป`, 'success');
+    }
+
+    // ========== Generate Content (via backend) ==========
+
+    async function generateContent() {
+        const topic         = document.getElementById('topic').value.trim();
+        const tone          = document.getElementById('tone').value;
+        const extraHashtags = document.getElementById('extraHashtags').value.trim();
+        const geminiKey     = document.getElementById('geminiKey').value.trim();
+
+        if (!topic) return showStatus('genStatus', '❌ กรุณากรอกหัวข้อโพสต์', 'error');
+
+        const btn      = document.getElementById('generateBtn');
+        btn.disabled   = true;
+        showStatus('genStatus', '⏳ กำลังให้ AI สร้างคอนเทนต์...', 'info');
+
+        try {
+            // 1) Generate caption + imagePrompt
+            const genRes = await fetch('/api/generate', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ topic, tone, extraHashtags, geminiKey })
+            });
+            const genData = await genRes.json();
+            if (genData.error) throw new Error(genData.error);
+
+            document.getElementById('caption').value = genData.caption;
+            updateCharCount();
+
+            currentImagePrompt = genData.imagePrompt || topic;
+            document.getElementById('imgPromptDisplay').innerText = currentImagePrompt;
+
+            // 2) Generate image (only if user hasn't uploaded one)
+            const img         = document.getElementById('finalImg');
+            const placeholder = document.getElementById('imgPlaceholder');
+
+            if (img.style.display !== 'block') {
+                img.style.display         = 'none';
+                placeholder.style.display = 'flex';
+                placeholder.innerText     = '🎨 กำลังสร้างรูปภาพ AI...';
+
+                const imgRes = await fetch('/api/generate-image', {
+                    method : 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body   : JSON.stringify({ imagePrompt: currentImagePrompt, geminiKey })
+                });
+                const imgData = await imgRes.json();
+
+                if (imgData.imageBase64) {
+                    img.src           = `data:${imgData.mimeType || 'image/jpeg'};base64,${imgData.imageBase64}`;
+                    img.style.display = 'block';
+                    placeholder.style.display = 'none';
+                } else {
+                    // Fallback → Pollinations.ai
+                    placeholder.innerText = '🔄 Gemini ล้มเหลว — ลอง Pollinations...';
+                    const seed        = Math.floor(Math.random() * 999999);
+                    const promptShort = currentImagePrompt.slice(0, 200);
+                    const fallbackUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptShort)}?width=800&height=600&model=flux&seed=${seed}&nologo=true`;
+                    img.onload  = () => { img.style.display = 'block'; placeholder.style.display = 'none'; };
+                    img.onerror = () => { placeholder.innerText = '⚠️ สร้างรูปอัตโนมัติไม่สำเร็จ — กด "📁 อัปโหลดรูปเอง" ได้เลย'; };
+                    img.src     = fallbackUrl;
+                }
+            }
+
+            showStatus('genStatus', '✅ สร้างคอนเทนต์สำเร็จ! ตรวจสอบและแก้ไขได้ก่อนโพสต์', 'success');
+        } catch (err) {
+            showStatus('genStatus', `❌ เกิดข้อผิดพลาด: ${err.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ========== Publish to Facebook (via backend) ==========
+
+    async function publishToFacebook() {
+        const caption  = document.getElementById('caption').value.trim();
+        const fbPageId = document.getElementById('fbPageId').value.trim();
+        const fbToken  = document.getElementById('fbToken').value.trim();
+        const imgEl    = document.getElementById('finalImg');
+        const btn      = document.getElementById('postNowBtn');
+
+        if (!caption) return showStatus('postStatus', '❌ กรุณาสร้างคอนเทนต์ก่อน', 'error');
+        if (!confirm('ยืนยันโพสต์ขึ้นเพจทันทีใช่ไหมครับ?')) return;
+
+        btn.disabled = true;
+        showStatus('postStatus', '⏳ กำลังโพสต์ไปยัง Facebook...', 'info');
+
+        try {
+            const hasImage = imgEl.style.display !== 'none' && imgEl.src && imgEl.src.startsWith('data:');
+
+            let imageBase64 = null;
+            let imageMime   = null;
+            if (hasImage) {
+                imageMime   = imgEl.src.split(';')[0].split(':')[1];
+                imageBase64 = imgEl.src.split(',')[1];
+            }
+
+            const res  = await fetch('/api/post', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ caption, imageBase64, imageMime, fbPageId, fbToken })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showStatus('postStatus', `✅ โพสต์สำเร็จ! Post ID: ${data.postId}`, 'success');
+                setTimeout(() => {
+                    clearImage();
+                    document.getElementById('caption').value = '';
+                    updateCharCount();
+                    document.getElementById('imgPromptDisplay').innerHTML = '<span style="color:#90949c;">— Prompt จะแสดงหลังกด AI สร้างคอนเทนต์ —</span>';
+                    currentImagePrompt = '';
+                }, 1500);
+            } else {
+                throw new Error(data.error || 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ');
+            }
+        } catch (err) {
+            showStatus('postStatus', `❌ เกิดข้อผิดพลาด: ${err.message}`, 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    // ========== Queue (via backend) ==========
+
+    async function loadQueue() {
+        try {
+            const res   = await fetch('/api/queue');
+            const queue = await res.json();
+            renderQueue(queue);
+        } catch (e) {
+            console.warn('loadQueue error:', e.message);
+        }
+    }
+
+    function renderQueue(queue) {
+        const list = document.getElementById('queueList');
+        if (!queue || queue.length === 0) {
+            list.innerHTML = '<li style="justify-content: center; color: #90949c;">ยังไม่มีรายการในคิว</li>';
+            return;
+        }
+        list.innerHTML = queue.map(item => `
+            <li>
+                <div>
+                    <div class="topic">${item.topic}</div>
+                    <div class="time">📅 ${new Date(item.schedTime).toLocaleString('th-TH')} · <span class="tag">${item.status}</span></div>
+                </div>
+                <button class="remove" onclick="removeFromQueue(${item.id})">ลบ</button>
+            </li>
+        `).join('');
+    }
+
+    async function addToQueue() {
+        const topic     = getSchedTopic();
+        const tone      = document.getElementById('schedTone').value;
+        const schedTime = document.getElementById('schedTime').value;
+
+        if (!topic)     return showStatus('schedStatus', '❌ กรุณาเลือกหัวข้อหรือพิมพ์หัวข้อใหม่', 'error');
+        if (!schedTime) return showStatus('schedStatus', '❌ กรุณาเลือกวันและเวลา', 'error');
+        if (new Date(schedTime) <= new Date()) return showStatus('schedStatus', '❌ กรุณาเลือกเวลาในอนาคต', 'error');
+
+        try {
+            const res  = await fetch('/api/queue', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ topic, tone, schedTime })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('schedTopic').value      = '';
+                document.getElementById('schedTopicCustom').value = '';
+                document.getElementById('schedTime').value       = '';
+                showStatus('schedStatus', `✅ เพิ่ม "${topic}" เข้าคิวเรียบร้อย — Server จะโพสต์อัตโนมัติเมื่อถึงเวลา`, 'success');
+                loadQueue();
+            } else {
+                throw new Error(data.error || 'ไม่สำเร็จ');
+            }
+        } catch (err) {
+            showStatus('schedStatus', `❌ เกิดข้อผิดพลาด: ${err.message}`, 'error');
+        }
+    }
+
+    async function removeFromQueue(id) {
+        try {
+            await fetch(`/api/queue/${id}`, { method: 'DELETE' });
+            loadQueue();
+        } catch (e) {
+            console.warn('removeFromQueue error:', e.message);
+        }
+    }
+
+    // ========== Init ==========
+
+    window.addEventListener('DOMContentLoaded', () => {
+        loadKeys();
+        checkServerConfig();
+        loadQueue();
+
+        // Refresh queue every 30 seconds
+        setInterval(loadQueue, 30000);
+
+        // Set schedTime default = now + 1 hour
+        const defaultTime = new Date(Date.now() + 3600000);
+        defaultTime.setSeconds(0, 0);
+        document.getElementById('schedTime').value = defaultTime.toISOString().slice(0, 16);
+    });
+</script>
+</body>
+</html>

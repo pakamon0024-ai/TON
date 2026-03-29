@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: facebook-auto-post
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FB_PAGE_ID
+        sync: false
+      - key: FB_TOKEN
+        sync: false
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
