@@ -1,9 +1,11 @@
+require('dotenv').config();
 const express  = require('express');
 const cron     = require('node-cron');
 const fetch    = require('node-fetch');
 const FormData = require('form-data');
 const fs       = require('fs');
 const path     = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -13,34 +15,136 @@ const PORT = process.env.PORT || 3000;
 const DATA_DIR    = fs.existsSync('/data') ? '/data' : __dirname;
 const QUEUE_FILE  = path.join(DATA_DIR, 'queue.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabase = SUPABASE_URL && SUPABASE_KEY
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
+  : null;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function loadQueue() {
+function normalizeQueueRow(row) {
+  return {
+    id       : Number(row.id),
+    topic    : row.topic,
+    tone     : row.tone,
+    schedTime: row.sched_time,
+    status   : row.status,
+    createdAt: row.created_at
+  };
+}
+
+function toQueueRow(item) {
+  return {
+    id        : item.id,
+    topic     : item.topic,
+    tone      : item.tone,
+    sched_time: item.schedTime,
+    status    : item.status,
+    created_at: item.createdAt
+  };
+}
+
+function loadQueueFile() {
   try {
     if (!fs.existsSync(QUEUE_FILE)) return [];
     return JSON.parse(fs.readFileSync(QUEUE_FILE, 'utf8'));
   } catch { return []; }
 }
 
-function saveQueue(queue) {
+function saveQueueFile(queue) {
   fs.writeFileSync(QUEUE_FILE, JSON.stringify(queue, null, 2), 'utf8');
 }
 
-function loadConfig() {
+function loadConfigFile() {
   try {
     if (!fs.existsSync(CONFIG_FILE)) return {};
     return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
   } catch { return {}; }
 }
 
-function saveConfig(cfg) {
+function saveConfigFile(cfg) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
 }
 
+async function loadQueue() {
+  if (!supabase) return loadQueueFile();
+
+  const { data, error } = await supabase
+    .from('post_queue')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.warn('[Supabase] loadQueue failed, using file fallback:', error.message);
+    return loadQueueFile();
+  }
+
+  return (data || []).map(normalizeQueueRow);
+}
+
+async function saveQueue(queue) {
+  if (!supabase) return saveQueueFile(queue);
+  if (!queue.length) return;
+
+  const { error } = await supabase
+    .from('post_queue')
+    .upsert(queue.map(toQueueRow), { onConflict: 'id' });
+
+  if (error) {
+    console.warn('[Supabase] saveQueue failed, using file fallback:', error.message);
+    saveQueueFile(queue);
+  }
+}
+
+async function deleteQueueItem(id) {
+  if (!supabase) {
+    const queue = loadQueueFile().filter(item => item.id !== id);
+    saveQueueFile(queue);
+    return;
+  }
+
+  const { error } = await supabase
+    .from('post_queue')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+async function loadConfig() {
+  if (!supabase) return loadConfigFile();
+
+  const { data, error } = await supabase
+    .from('app_config')
+    .select('value')
+    .eq('key', 'default')
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[Supabase] loadConfig failed, using file fallback:', error.message);
+    return loadConfigFile();
+  }
+
+  return data?.value || {};
+}
+
+async function saveConfig(cfg) {
+  if (!supabase) return saveConfigFile(cfg);
+
+  const { error } = await supabase
+    .from('app_config')
+    .upsert({ key: 'default', value: cfg, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+
+  if (error) {
+    console.warn('[Supabase] saveConfig failed, using file fallback:', error.message);
+    saveConfigFile(cfg);
+  }
+}
+
 // Merge env vars with saved config — env vars take priority
-function getKeys() {
-  const cfg = loadConfig();
+async function getKeys() {
+  const cfg = await loadConfig();
   return {
     geminiKey : process.env.GEMINI_API_KEY || cfg.geminiKey || '',
     fbPageId  : process.env.FB_PAGE_ID     || cfg.fbPageId  || '',
@@ -56,24 +160,25 @@ app.use(express.static(path.join(__dirname, 'public')));
 // ─── Routes ───────────────────────────────────────────────────────────────────
 
 // GET /api/config — tell frontend which env vars are set
-app.get('/api/config', (req, res) => {
-  const keys = getKeys();
+app.get('/api/config', async (req, res) => {
+  const keys = await getKeys();
   res.json({
     hasGeminiKey : !!keys.geminiKey,
-    hasFbConfig  : !!(keys.fbPageId && keys.fbToken)
+    hasFbConfig  : !!(keys.fbPageId && keys.fbToken),
+    hasSupabase  : !!supabase
   });
 });
 
 // POST /api/config — save keys to config.json (easy token refresh)
-app.post('/api/config', (req, res) => {
+app.post('/api/config', async (req, res) => {
   try {
     const { fbToken, fbPageId, gemGemId, geminiKey } = req.body || {};
-    const cfg = loadConfig();
+    const cfg = await loadConfig();
     if (fbToken   !== undefined) cfg.fbToken   = fbToken;
     if (fbPageId  !== undefined) cfg.fbPageId  = fbPageId;
     if (gemGemId  !== undefined) cfg.gemGemId  = gemGemId;
     if (geminiKey !== undefined) cfg.geminiKey = geminiKey;
-    saveConfig(cfg);
+    await saveConfig(cfg);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -84,7 +189,8 @@ app.post('/api/config', (req, res) => {
 app.post('/api/generate', async (req, res) => {
   try {
     const { topic, tone, extraHashtags, geminiKey: bodyKey } = req.body || {};
-    const geminiKey = process.env.GEMINI_API_KEY || bodyKey || loadConfig().geminiKey || '';
+    const cfg = await loadConfig();
+    const geminiKey = process.env.GEMINI_API_KEY || bodyKey || cfg.geminiKey || '';
 
     if (!geminiKey) return res.status(400).json({ error: 'ไม่พบ Gemini API Key — ตั้งค่าใน Render env หรือส่งมาใน body.geminiKey' });
     if (!topic)     return res.status(400).json({ error: 'กรุณาระบุ topic' });
@@ -139,7 +245,8 @@ app.post('/api/generate', async (req, res) => {
 app.post('/api/generate-image', async (req, res) => {
   try {
     const { imagePrompt, geminiKey: bodyKey } = req.body || {};
-    const geminiKey = process.env.GEMINI_API_KEY || bodyKey || loadConfig().geminiKey || '';
+    const cfg = await loadConfig();
+    const geminiKey = process.env.GEMINI_API_KEY || bodyKey || cfg.geminiKey || '';
 
     if (!geminiKey)   return res.status(400).json({ error: 'ไม่พบ Gemini API Key' });
     if (!imagePrompt) return res.status(400).json({ error: 'กรุณาระบุ imagePrompt' });
@@ -190,8 +297,9 @@ app.post('/api/generate-image', async (req, res) => {
 app.post('/api/post', async (req, res) => {
   try {
     const { caption, imageBase64, imageMime } = req.body || {};
-    const fbPageId = req.body.fbPageId || process.env.FB_PAGE_ID || loadConfig().fbPageId || '';
-    const fbToken  = req.body.fbToken  || process.env.FB_TOKEN   || loadConfig().fbToken  || '';
+    const cfg = await loadConfig();
+    const fbPageId = req.body.fbPageId || process.env.FB_PAGE_ID || cfg.fbPageId || '';
+    const fbToken  = req.body.fbToken  || process.env.FB_TOKEN   || cfg.fbToken  || '';
 
     if (!fbPageId || !fbToken) return res.status(400).json({ error: 'ไม่พบ FB_PAGE_ID หรือ FB_TOKEN' });
     if (!caption)              return res.status(400).json({ error: 'กรุณาระบุ caption' });
@@ -241,17 +349,17 @@ app.post('/api/post', async (req, res) => {
 });
 
 // GET /api/queue — return queue array
-app.get('/api/queue', (req, res) => {
-  res.json(loadQueue());
+app.get('/api/queue', async (req, res) => {
+  res.json(await loadQueue());
 });
 
 // POST /api/queue — add item to queue
-app.post('/api/queue', (req, res) => {
+app.post('/api/queue', async (req, res) => {
   try {
     const { topic, tone, schedTime } = req.body || {};
     if (!topic || !schedTime) return res.status(400).json({ error: 'กรุณาระบุ topic และ schedTime' });
 
-    const queue = loadQueue();
+    const queue = await loadQueue();
     const item  = {
       id       : Date.now(),
       topic,
@@ -261,7 +369,7 @@ app.post('/api/queue', (req, res) => {
       createdAt: new Date().toISOString()
     };
     queue.push(item);
-    saveQueue(queue);
+    await saveQueue(queue);
     res.json({ success: true, item });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -269,11 +377,10 @@ app.post('/api/queue', (req, res) => {
 });
 
 // DELETE /api/queue/:id — remove item from queue by id
-app.delete('/api/queue/:id', (req, res) => {
+app.delete('/api/queue/:id', async (req, res) => {
   try {
-    const id    = parseInt(req.params.id, 10);
-    const queue = loadQueue().filter(item => item.id !== id);
-    saveQueue(queue);
+    const id = parseInt(req.params.id, 10);
+    await deleteQueueItem(id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -282,7 +389,7 @@ app.delete('/api/queue/:id', (req, res) => {
 
 // ─── Cron: process scheduled queue every minute ───────────────────────────────
 cron.schedule('* * * * *', async () => {
-  const queue = loadQueue();
+  const queue = await loadQueue();
   const now   = new Date();
   let changed  = false;
 
@@ -293,7 +400,7 @@ cron.schedule('* * * * *', async () => {
     item.status = 'กำลังโพสต์...';
     changed     = true;
 
-    const keys = getKeys();
+    const keys = await getKeys();
     if (!keys.geminiKey || !keys.fbPageId || !keys.fbToken) {
       item.status = 'ผิดพลาด: ขาด API Key';
       continue;
@@ -337,7 +444,7 @@ cron.schedule('* * * * *', async () => {
     }
   }
 
-  if (changed) saveQueue(queue);
+  if (changed) await saveQueue(queue);
 });
 
 // ─── Cron: self-ping every 14 min to prevent Render free tier sleep ───────────
