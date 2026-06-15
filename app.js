@@ -626,12 +626,17 @@ function renderReports() {
 
 async function loadReports() {
   if (!firebaseReady) return;
-  const q = query(collection(db, ...REPORTS_COLLECTION), orderBy("updatedAt", "desc"), limit(24));
-  const snap = await getDocs(q);
-  state.reports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderReports();
-  renderDashboard();
-  summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]);
+  try {
+    const q = query(collection(db, ...REPORTS_COLLECTION), orderBy("updatedAt", "desc"), limit(24));
+    const snap = await getDocs(q);
+    state.reports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderReports();
+    renderDashboard();
+    summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]);
+  } catch (error) {
+    console.error("loadReports failed", error);
+    setSaveStatus(`โหลดข้อมูลไม่สำเร็จ: ${error?.message || error}`);
+  }
 }
 
 async function saveReport() {
@@ -642,15 +647,23 @@ async function saveReport() {
     return;
   }
   setSaveStatus("กำลังบันทึก...");
-  await addDoc(collection(db, ...REPORTS_COLLECTION), {
-    ...currentPayload(),
-    createdBy: "Guest",
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp()
-  });
-  state.currentReportId = null;
-  setSaveStatus("บันทึกเรียบร้อย");
-  await loadReports();
+  try {
+    const docRef = await addDoc(collection(db, ...REPORTS_COLLECTION), {
+      ...currentPayload(),
+      createdBy: "Guest",
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    state.currentReportId = docRef.id;
+    setSaveStatus("บันทึกเรียบร้อย");
+    await loadReports();
+  } catch (error) {
+    console.error("saveReport failed", error);
+    const message = error?.code === "permission-denied"
+      ? "Firestore rules ยังไม่อนุญาตให้เขียนข้อมูล"
+      : error?.message || String(error);
+    setSaveStatus(`บันทึกไม่สำเร็จ: ${message}`);
+  }
 }
 
 btnReset.addEventListener("click", () => fillForm(null));
