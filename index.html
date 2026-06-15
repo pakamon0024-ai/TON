@@ -35,10 +35,6 @@
           กรอกข้อมูล KPI รายวันหรือรายเดือน เก็บลง Firestore และสรุปผลบนแดชบอร์ดเดียว
         </p>
       </div>
-      <div class="hero-actions">
-        <button id="btn-login" class="btn btn-primary">Sign in with Google</button>
-        <button id="btn-logout" class="btn btn-secondary hidden">Sign out</button>
-      </div>
     </section>
 
     <nav class="main-tabs card">
@@ -111,6 +107,7 @@
           </select>
         </div>
       </div>
+      <div id="dashboard-executive" class="dashboard-executive"></div>
       <div class="dashboard-panels">
         <div id="dashboard-daily" class="dashboard-grid"></div>
         <div id="dashboard-monthly" class="dashboard-grid"></div>
@@ -153,6 +150,9 @@
           </button>
         </div>
         <nav id="kpi-sidebar" class="sidebar-nav"></nav>
+        <div class="sidebar-note">
+          เลือกหัวข้อทางซ้ายเพื่อกระโดดไปยังฟอร์มกรอก KPI ของแต่ละหมวด
+        </div>
       </aside>
 
       <section class="layout">

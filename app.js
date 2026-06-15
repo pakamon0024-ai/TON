@@ -105,6 +105,7 @@ const projectBannerPeriod = document.getElementById("project-banner-period");
 const projectBadge = document.getElementById("project-badge");
 const dashboardDaily = document.getElementById("dashboard-daily");
 const dashboardMonthly = document.getElementById("dashboard-monthly");
+const dashboardExecutive = document.getElementById("dashboard-executive");
 const dashboardProjectFilter = document.getElementById("dashboard-project-filter");
 const dashboardPeriodFilter = document.getElementById("dashboard-period-filter");
 const dashboardModeFilter = document.getElementById("dashboard-mode-filter");
@@ -250,7 +251,7 @@ function applyProjectTemplate(project) {
 function buildSidebar() {
   const sidebar = document.getElementById("kpi-sidebar");
   sidebar.innerHTML = KPI_SECTIONS.map(section => `
-    <a class="side-link" href="#${section.id}">
+    <a class="side-link" href="#${section.id}" data-section="${section.id}">
       <span class="side-link-left">
         <span class="side-link-icon" aria-hidden="true">${section.icon}</span>
         <span class="side-link-label">${section.menuLabel}</span>
@@ -261,6 +262,12 @@ function buildSidebar() {
       </span>
     </a>
   `).join("");
+}
+
+function setActiveSidebarSection(sectionId) {
+  document.querySelectorAll(".side-link").forEach(link => {
+    link.classList.toggle("active", link.dataset.section === sectionId);
+  });
 }
 
 function setupSidebarToggle() {
@@ -405,6 +412,25 @@ function setView(view) {
   mainTabs.forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
 }
 
+function setupSidebarActiveState() {
+  const sections = KPI_SECTIONS.map(section => document.getElementById(section.id)).filter(Boolean);
+  if (!sections.length) return;
+  const observer = new IntersectionObserver(entries => {
+    const visible = entries
+      .filter(entry => entry.isIntersecting)
+      .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (visible?.target?.id) setActiveSidebarSection(visible.target.id);
+  }, { root: null, threshold: [0.25, 0.45, 0.6] });
+  sections.forEach(section => observer.observe(section));
+  setActiveSidebarSection(sections[0].id);
+  document.querySelectorAll(".side-link").forEach(link => {
+    link.addEventListener("click", () => {
+      const sectionId = link.dataset.section;
+      if (sectionId) setActiveSidebarSection(sectionId);
+    });
+  });
+}
+
 function renderDashboard() {
   if (!dashboardDaily || !dashboardMonthly) return;
   const filtered = getFilteredReports();
@@ -415,6 +441,37 @@ function renderDashboard() {
   const all = summarizeReports(filtered);
   const dailySum = summarizeReports(daily);
   const monthlySum = summarizeReports(monthly);
+  const totalVehicleCheckRate = filtered.length
+    ? (filtered.reduce((sum, r) => sum + Number(r.vehicle_check_percent || 0), 0) / filtered.length).toFixed(2)
+    : "0.00";
+  const totalStaffIssues = filtered.reduce((sum, r) => sum + Number(r.alcohol_fail || 0) + Number(r.staff_leave || 0) + Number(r.staff_resigned || 0), 0);
+  const totalVehicleIssues = filtered.reduce((sum, r) => sum + Number(r.truck_breakdown || 0) + Number(r.part_damage || 0) + Number(r.accidents || 0), 0);
+  const totalCompliance = filtered.reduce((sum, r) => sum + Number(r.fuel_noncompliant || 0), 0);
+
+  if (dashboardExecutive) {
+    dashboardExecutive.innerHTML = `
+      <div class="exec-card highlight">
+        <span>Reports</span>
+        <strong>${all.total}</strong>
+        <small>รายการที่อยู่ในชุดข้อมูลที่กรอง</small>
+      </div>
+      <div class="exec-card">
+        <span>Job Order</span>
+        <strong>${all.jobOrder}</strong>
+        <small>รวมคำสั่งงานทั้งหมด</small>
+      </div>
+      <div class="exec-card">
+        <span>Vehicle Check %</span>
+        <strong>${totalVehicleCheckRate}%</strong>
+        <small>ค่าเฉลี่ยจากรายงานที่แสดง</small>
+      </div>
+      <div class="exec-card">
+        <span>Risk Items</span>
+        <strong>${totalStaffIssues + totalVehicleIssues + totalCompliance}</strong>
+        <small>สรุปเหตุการณ์และข้อยกเว้น</small>
+      </div>
+    `;
+  }
 
   dashboardDaily.innerHTML = `
     <div class="dash-card">
@@ -441,6 +498,17 @@ function renderDashboard() {
       <small>จากรายงานที่ถูกกรองแล้ว</small>
     </div>
   `;
+
+  const overview = [
+    ["Reports", all.total],
+    ["Job Order", all.jobOrder],
+    ["Complete", all.jobComplete],
+    ["Staff", all.staffTotal]
+  ];
+  const overviewWrap = document.getElementById("dashboard-daily");
+  if (overviewWrap) {
+    overviewWrap.setAttribute("data-overview", overview.map(([k, v]) => `${k}:${v}`).join("|"));
+  }
 
   const projectGroups = PROJECT_OPTIONS.map(project => {
     const items = filtered.filter(r => r.project === project);
@@ -596,11 +664,11 @@ async function saveReport() {
   await loadReports();
 }
 
-btnLogin.addEventListener("click", async () => {
+btnLogin?.addEventListener("click", async () => {
   if (!firebaseReady) return setSaveStatus("กรุณาตั้งค่า Firebase config ก่อน");
   await signInWithPopup(auth, new GoogleAuthProvider());
 });
-btnLogout.addEventListener("click", async () => { if (firebaseReady) await signOut(auth); });
+btnLogout?.addEventListener("click", async () => { if (firebaseReady) await signOut(auth); });
 btnReset.addEventListener("click", () => fillForm(null));
 btnNewReport.addEventListener("click", () => { state.currentReportId = null; fillForm(null); setSaveStatus("พร้อมสร้างรายงานใหม่"); });
 btnRecalculate?.addEventListener("click", () => { recalcDerivedFields(); setSaveStatus("คำนวณค่าอัตโนมัติใหม่แล้ว"); });
@@ -618,8 +686,8 @@ if (firebaseReady) {
   onAuthStateChanged(auth, async user => {
     state.user = user;
     const signedIn = !!user;
-    btnLogin.classList.toggle("hidden", signedIn);
-    btnLogout.classList.toggle("hidden", !signedIn);
+    btnLogin?.classList.toggle("hidden", signedIn);
+    btnLogout?.classList.toggle("hidden", !signedIn);
     authStatus.textContent = signedIn ? `${user.displayName || user.email} เข้าสู่ระบบแล้ว` : "ยังไม่ได้เข้าสู่ระบบ";
     if (signedIn) {
       if (!periodInput.value) periodInput.value = new Date().toISOString().slice(0, 7);
@@ -651,3 +719,4 @@ fillForm(null);
 summaryCards(null);
 syncProjectBanner();
 renderDashboard();
+setupSidebarActiveState();
