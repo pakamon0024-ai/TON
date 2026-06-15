@@ -6,15 +6,7 @@ const firebaseReady = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain
 const app = firebaseReady ? initializeApp(firebaseConfig) : null;
 const db = firebaseReady ? getFirestore(app) : null;
 
-const PROJECT_OPTIONS = ["INOAC อีโนแอค", "Extra ABC", "Extra ARC", "SBG Bangna", "EDC", "FOT"];
-const PROJECT_TEMPLATES = {
-  "INOAC อีโนแอค": { site: "ลานจอด ABC", ownerPrefix: "INOAC" },
-  "Extra ABC": { site: "Extra ABC", ownerPrefix: "Extra ABC" },
-  "Extra ARC": { site: "Extra ARC", ownerPrefix: "Extra ARC" },
-  "SBG Bangna": { site: "SBG Bangna", ownerPrefix: "SBG" },
-  "EDC": { site: "EDC", ownerPrefix: "EDC" },
-  "FOT": { site: "FOT", ownerPrefix: "FOT" }
-};
+const PROJECT_OPTIONS = ["FOT", "Extra ABC", "Extra ARC", "Inoac", "EDC", "SBG Bangna"];
 
 const KPI_SECTIONS = [
   {
@@ -91,8 +83,6 @@ const authStatus = document.getElementById("auth-status");
 const saveStatus = document.getElementById("save-status");
 const periodInput = document.getElementById("report-period");
 const projectSelect = document.getElementById("report-project");
-const siteInput = document.getElementById("report-site");
-const ownerInput = document.getElementById("report-owner");
 const btnReset = document.getElementById("btn-reset");
 const btnNewReport = document.getElementById("btn-new-report");
 const btnRecalculate = document.getElementById("btn-recalculate");
@@ -121,12 +111,12 @@ const projectBanner = document.getElementById("project-banner");
 const state = { reports: [], currentReportId: null, selectedProject: PROJECT_OPTIONS[0] };
 const REPORTS_COLLECTION = ["kpi_reports", "public", "reports"];
 const PROJECT_BADGES = {
-  "INOAC อีโนแอค": { label: "INOAC", hue: "linear-gradient(135deg, #4cc9f0, #2563eb)" },
+  "FOT": { label: "FOT", hue: "linear-gradient(135deg, #14b8a6, #06b6d4)" },
   "Extra ABC": { label: "ABC", hue: "linear-gradient(135deg, #f59e0b, #f97316)" },
   "Extra ARC": { label: "ARC", hue: "linear-gradient(135deg, #f72585, #db2777)" },
-  "SBG Bangna": { label: "SBG", hue: "linear-gradient(135deg, #22c55e, #16a34a)" },
+  "Inoac": { label: "INOAC", hue: "linear-gradient(135deg, #4cc9f0, #2563eb)" },
   "EDC": { label: "EDC", hue: "linear-gradient(135deg, #8b5cf6, #6366f1)" },
-  "FOT": { label: "FOT", hue: "linear-gradient(135deg, #14b8a6, #06b6d4)" }
+  "SBG Bangna": { label: "SBG", hue: "linear-gradient(135deg, #22c55e, #16a34a)" }
 };
 
 function fmtNumber(value) {
@@ -134,10 +124,14 @@ function fmtNumber(value) {
   return Number.isFinite(n) ? new Intl.NumberFormat("en-US").format(n) : "-";
 }
 
+function todayISODate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 function setSaveStatus(text) { saveStatus.textContent = text; }
 function syncProjectBanner() {
   if (projectBannerTitle) projectBannerTitle.textContent = `Project: ${state.selectedProject}`;
-  if (projectBannerPeriod) projectBannerPeriod.textContent = `รอบรายงาน: ${periodInput.value || "-"}`;
+  if (projectBannerPeriod) projectBannerPeriod.textContent = `วันที่บันทึก: ${periodInput.value || "-"}`;
   const badge = PROJECT_BADGES[state.selectedProject];
   if (projectBadge && badge) {
     projectBadge.textContent = badge.label;
@@ -173,8 +167,6 @@ function currentPayload() {
   const payload = {
     period: periodInput.value,
     project: projectSelect.value,
-    site: siteInput.value.trim(),
-    owner: ownerInput.value.trim(),
     updatedAt: new Date().toISOString()
   };
   KPI_SECTIONS.forEach(section => section.fields.forEach(field => {
@@ -196,12 +188,9 @@ function validateRequiredFields() {
 }
 
 function fillForm(report) {
-  periodInput.value = report?.period || new Date().toISOString().slice(0, 7);
+  periodInput.value = report?.period || todayISODate();
   projectSelect.value = report?.project || PROJECT_OPTIONS[0];
   state.selectedProject = projectSelect.value;
-  const template = PROJECT_TEMPLATES[state.selectedProject] || {};
-  siteInput.value = report?.site || template.site || "ลานจอด ABC";
-  ownerInput.value = report?.owner || `${template.ownerPrefix || state.selectedProject} - Guest`.trim();
   KPI_SECTIONS.forEach(section => section.fields.forEach(field => {
     const el = document.getElementById(field.key);
     if (!el) return;
@@ -237,12 +226,10 @@ function buildProjectOptions() {
   const options = PROJECT_OPTIONS.map(p => `<option value="${p}">${p}</option>`).join("");
   projectSelect.innerHTML = options;
   if (dashboardProjectFilter) dashboardProjectFilter.innerHTML = `<option value="">ทุก Project</option>${options}`;
+  if (dashboardProjectFilter && !dashboardProjectFilter.value) dashboardProjectFilter.value = "";
 }
 
 function applyProjectTemplate(project) {
-  const template = PROJECT_TEMPLATES[project] || {};
-  if (!siteInput.value || siteInput.value === "ลานจอด ABC") siteInput.value = template.site || siteInput.value;
-  if (!ownerInput.value) ownerInput.value = `${template.ownerPrefix || project} - Guest`.trim();
 }
 
 function buildSidebar() {
@@ -291,7 +278,7 @@ function summaryCards(report) {
 }
 
 function getFilteredReports() {
-  const project = dashboardProjectFilter?.value || state.selectedProject;
+  const project = dashboardProjectFilter?.value || "";
   const period = dashboardPeriodFilter?.value || "";
   const mode = dashboardModeFilter?.value || "all";
 
@@ -657,7 +644,6 @@ async function saveReport() {
   setSaveStatus("กำลังบันทึก...");
   await addDoc(collection(db, ...REPORTS_COLLECTION), {
     ...currentPayload(),
-    owner: ownerInput.value.trim() || "Guest",
     createdBy: "Guest",
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp()
@@ -671,7 +657,7 @@ btnReset.addEventListener("click", () => fillForm(null));
 btnNewReport.addEventListener("click", () => { state.currentReportId = null; fillForm(null); setSaveStatus("พร้อมสร้างรายงานใหม่"); });
 btnRecalculate?.addEventListener("click", () => { recalcDerivedFields(); setSaveStatus("คำนวณค่าอัตโนมัติใหม่แล้ว"); });
 btnExportCsv?.addEventListener("click", exportDashboardCsv);
-projectSelect.addEventListener("change", e => { state.selectedProject = e.target.value; if (dashboardProjectFilter) dashboardProjectFilter.value = e.target.value; syncProjectBanner(); renderReports(); renderDashboard(); summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]); setSaveStatus(`เลือก Project: ${e.target.value}`); });
+projectSelect.addEventListener("change", e => { state.selectedProject = e.target.value; syncProjectBanner(); renderReports(); renderDashboard(); summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]); setSaveStatus(`เลือก Project: ${e.target.value}`); });
 periodInput.addEventListener("change", syncProjectBanner);
 form.addEventListener("input", () => recalcDerivedFields());
 form.addEventListener("submit", async e => { e.preventDefault(); await saveReport(); });
@@ -682,9 +668,10 @@ mainTabs.forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.
 
 if (firebaseReady) {
   authStatus.textContent = "โหมดบันทึกข้อมูลแบบไม่ต้องล็อกอิน";
-  if (!periodInput.value) periodInput.value = new Date().toISOString().slice(0, 7);
+  if (!periodInput.value) periodInput.value = todayISODate();
   state.selectedProject = projectSelect.value || PROJECT_OPTIONS[0];
   applyProjectTemplate(state.selectedProject);
+  if (dashboardProjectFilter) dashboardProjectFilter.value = "";
   syncProjectBanner();
   recalcDerivedFields();
   loadReports().then(() => setSaveStatus("พร้อมใช้งาน")).catch(() => setSaveStatus("โหลดข้อมูลไม่สำเร็จ"));

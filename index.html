@@ -37,149 +37,144 @@
       </div>
     </section>
 
-    <nav class="main-tabs card">
-      <button class="main-tab active" data-view="dashboard" type="button">Dashboard</button>
-      <button class="main-tab" data-view="entry" type="button">Data Entry</button>
-      <button class="main-tab" data-view="history" type="button">History</button>
-    </nav>
-
-    <section class="toolbar card" id="toolbar-section">
-      <div class="toolbar-group">
-        <label for="report-project">Project</label>
-        <select id="report-project"></select>
-      </div>
-      <div class="toolbar-group">
-        <label for="report-period">รอบรายงาน</label>
-        <input id="report-period" type="month">
-      </div>
-      <div class="toolbar-group">
-        <label for="report-site">สถานที่</label>
-        <input id="report-site" type="text" value="ลานจอด ABC">
-      </div>
-      <div class="toolbar-group">
-        <label for="report-owner">ผู้จัดทำ</label>
-        <input id="report-owner" type="text" placeholder="ชื่อผู้บันทึก">
-      </div>
-      <div class="toolbar-group">
-        <label>&nbsp;</label>
-        <button id="btn-recalculate" type="button" class="btn btn-secondary full-width">คำนวณใหม่</button>
-      </div>
-      <div class="toolbar-group toolbar-summary">
-        <span id="auth-status">ยังไม่ได้เข้าสู่ระบบ</span>
-        <span id="save-status">ยังไม่บันทึก</span>
-      </div>
-    </section>
-
-    <div class="project-banner" id="project-banner">
-      <div>
-        <strong id="project-banner-title">
-          <span id="project-badge" class="project-badge">INOAC</span>
-          <span>Project: INOAC อีโนแอค</span>
-        </strong>
-        <small id="project-banner-subtitle">ระบบจะบันทึกข้อมูลผูกกับ Project ที่เลือก</small>
-      </div>
-      <div id="project-banner-period">รอบรายงาน: -</div>
-    </div>
-
-    <section class="card dashboard-card" id="dashboard-section">
-      <div class="section-head compact">
-        <div>
-          <p class="section-kicker">Dashboard</p>
-          <h2>สรุปรายวัน / รายเดือน</h2>
-        </div>
-        <button id="btn-export-csv" class="btn btn-ghost" type="button">Export Excel</button>
-      </div>
-      <div class="dashboard-filters">
-        <div class="toolbar-group">
-          <label for="dashboard-project-filter">Project</label>
-          <select id="dashboard-project-filter"></select>
-        </div>
-        <div class="toolbar-group">
-          <label for="dashboard-period-filter">ช่วงวันที่ / เดือน</label>
-          <input id="dashboard-period-filter" type="month">
-        </div>
-        <div class="toolbar-group">
-          <label for="dashboard-mode-filter">มุมมอง</label>
-          <select id="dashboard-mode-filter">
-            <option value="all">ทั้งหมด</option>
-            <option value="daily">รายวัน</option>
-            <option value="monthly">รายเดือน</option>
-          </select>
-        </div>
-      </div>
-      <div id="dashboard-executive" class="dashboard-executive"></div>
-      <div class="dashboard-panels">
-        <div id="dashboard-daily" class="dashboard-grid"></div>
-        <div id="dashboard-monthly" class="dashboard-grid"></div>
-      </div>
-      <div class="dashboard-charts">
-        <div class="chart-card">
-          <h3>Job Order vs Complete</h3>
-          <div class="chart-legend"><span class="legend-dot blue"></span>Job Order <span class="legend-dot pink"></span>Complete</div>
-          <canvas id="chart-job" width="600" height="260"></canvas>
-        </div>
-        <div class="chart-card">
-          <h3>Project Summary</h3>
-          <div class="chart-legend"><span class="legend-dot teal"></span>Job Order by Project</div>
-          <canvas id="chart-project" width="600" height="260"></canvas>
-        </div>
-      </div>
-      <div class="dashboard-table-wrap">
-        <h3>Project Summary Table</h3>
-        <div class="dashboard-rank-group">
-          <h4>Ranking รายวัน</h4>
-          <div class="dashboard-rank" id="dashboard-rank-daily"></div>
-        </div>
-        <div class="dashboard-rank-group">
-          <h4>Ranking รายเดือน</h4>
-          <div class="dashboard-rank" id="dashboard-rank-monthly"></div>
-        </div>
-        <div id="dashboard-table" class="dashboard-table"></div>
-      </div>
-    </section>
-
-    <section class="workspace" id="entry-section">
-      <aside class="card sidebar-card">
+    <section class="workbench">
+      <aside class="card nav-rail">
         <div class="section-head compact">
           <div>
-            <p class="section-kicker">Menu</p>
-            <h2>หมวด KPI</h2>
+            <p class="section-kicker">Navigation</p>
+            <h2>เมนูซ้าย</h2>
           </div>
           <button id="sidebar-toggle" class="sidebar-toggle" aria-expanded="true" type="button">
             <span class="toggle-label">ซ่อนเมนู</span>
           </button>
         </div>
+        <nav class="main-tabs main-tabs-rail">
+          <button class="main-tab active" data-view="dashboard" type="button">Dashboard</button>
+          <button class="main-tab" data-view="entry" type="button">Data Entry</button>
+          <button class="main-tab" data-view="history" type="button">History</button>
+        </nav>
+        <div class="nav-rail-divider"></div>
+        <p class="section-kicker">หมวด KPI</p>
         <nav id="kpi-sidebar" class="sidebar-nav"></nav>
         <div class="sidebar-note">
-          เลือกหัวข้อทางซ้ายเพื่อกระโดดไปยังฟอร์มกรอก KPI ของแต่ละหมวด
+          เลือกเมนูด้านซ้ายเพื่อสลับ Dashboard หรือกระโดดไปยังหมวด KPI
         </div>
       </aside>
 
-      <section class="layout">
-        <section class="card form-card">
-          <div class="section-head">
-            <div>
-              <p class="section-kicker">Data Entry</p>
-              <h2>กรอก KPI รายวัน</h2>
-            </div>
-            <button id="btn-new-report" class="btn btn-ghost">สร้างชุดข้อมูลใหม่</button>
+      <section class="content-rail">
+        <section class="toolbar card" id="toolbar-section">
+          <div class="toolbar-group">
+            <label for="report-project">Project</label>
+            <select id="report-project"></select>
           </div>
-          <form id="kpi-form" class="kpi-form"></form>
-          <div class="form-actions">
-            <button type="button" id="btn-reset" class="btn btn-secondary">ล้างค่าในฟอร์ม</button>
-            <button type="submit" form="kpi-form" class="btn btn-primary">บันทึกรายงาน</button>
+          <div class="toolbar-group">
+            <label for="report-period">วันที่บันทึก</label>
+            <input id="report-period" type="date">
+          </div>
+          <div class="toolbar-group">
+            <label>&nbsp;</label>
+            <button id="btn-recalculate" type="button" class="btn btn-secondary full-width">คำนวณใหม่</button>
+          </div>
+          <div class="toolbar-group toolbar-summary">
+            <span id="auth-status">โหมดบันทึกข้อมูลแบบไม่ต้องล็อกอิน</span>
+            <span id="save-status">ยังไม่บันทึก</span>
           </div>
         </section>
 
-        <section class="stack">
-          <section class="card">
-            <div class="section-head compact">
-              <div>
-                <p class="section-kicker">Summary</p>
-                <h2>สรุปภาพรวม</h2>
-              </div>
+        <div class="project-banner" id="project-banner">
+          <div>
+            <strong id="project-banner-title">
+              <span id="project-badge" class="project-badge">INOAC</span>
+              <span>Project: Inoac</span>
+            </strong>
+            <small id="project-banner-subtitle">ระบบจะบันทึกข้อมูลผูกกับ Project ที่เลือก</small>
+          </div>
+          <div id="project-banner-period">รอบรายงาน: -</div>
+        </div>
+
+        <section class="card dashboard-card" id="dashboard-section">
+          <div class="section-head compact">
+            <div>
+              <p class="section-kicker">Dashboard</p>
+              <h2>สรุปรายวัน / รายเดือน</h2>
             </div>
-            <div id="summary-grid" class="summary-grid"></div>
+            <button id="btn-export-csv" class="btn btn-ghost" type="button">Export Excel</button>
+          </div>
+          <div class="dashboard-filters">
+            <div class="toolbar-group">
+              <label for="dashboard-project-filter">Project</label>
+              <select id="dashboard-project-filter"></select>
+            </div>
+            <div class="toolbar-group">
+              <label for="dashboard-period-filter">ช่วงวันที่ / เดือน</label>
+              <input id="dashboard-period-filter" type="date">
+            </div>
+            <div class="toolbar-group">
+              <label for="dashboard-mode-filter">มุมมอง</label>
+              <select id="dashboard-mode-filter">
+                <option value="all">ทั้งหมด</option>
+                <option value="daily">รายวัน</option>
+                <option value="monthly">รายเดือน</option>
+              </select>
+            </div>
+          </div>
+          <div id="dashboard-executive" class="dashboard-executive"></div>
+          <div class="dashboard-panels">
+            <div id="dashboard-daily" class="dashboard-grid"></div>
+            <div id="dashboard-monthly" class="dashboard-grid"></div>
+          </div>
+          <div class="dashboard-charts">
+            <div class="chart-card">
+              <h3>Job Order vs Complete</h3>
+              <div class="chart-legend"><span class="legend-dot blue"></span>Job Order <span class="legend-dot pink"></span>Complete</div>
+              <canvas id="chart-job" width="600" height="260"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>Project Summary</h3>
+              <div class="chart-legend"><span class="legend-dot teal"></span>Job Order by Project</div>
+              <canvas id="chart-project" width="600" height="260"></canvas>
+            </div>
+          </div>
+          <div class="dashboard-table-wrap">
+            <h3>Project Summary Table</h3>
+            <div class="dashboard-rank-group">
+              <h4>Ranking รายวัน</h4>
+              <div class="dashboard-rank" id="dashboard-rank-daily"></div>
+            </div>
+            <div class="dashboard-rank-group">
+              <h4>Ranking รายเดือน</h4>
+              <div class="dashboard-rank" id="dashboard-rank-monthly"></div>
+            </div>
+            <div id="dashboard-table" class="dashboard-table"></div>
+          </div>
+        </section>
+
+        <section class="layout" id="entry-section">
+          <section class="card form-card">
+            <div class="section-head">
+              <div>
+                <p class="section-kicker">Data Entry</p>
+                <h2>กรอก KPI รายวัน</h2>
+              </div>
+              <button id="btn-new-report" class="btn btn-ghost">สร้างชุดข้อมูลใหม่</button>
+            </div>
+            <form id="kpi-form" class="kpi-form"></form>
+            <div class="form-actions">
+              <button type="button" id="btn-reset" class="btn btn-secondary">ล้างค่าในฟอร์ม</button>
+              <button type="submit" form="kpi-form" class="btn btn-primary">บันทึกรายงาน</button>
+            </div>
+          </section>
+
+          <section class="stack">
+            <section class="card">
+              <div class="section-head compact">
+                <div>
+                  <p class="section-kicker">Summary</p>
+                  <h2>สรุปภาพรวม</h2>
+                </div>
+              </div>
+              <div id="summary-grid" class="summary-grid"></div>
+            </section>
           </section>
         </section>
       </section>

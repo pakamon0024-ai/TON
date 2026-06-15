@@ -81,6 +81,15 @@ h1 { font-size: clamp(34px, 4vw, 54px); }
   padding: 12px;
   border-radius: 18px;
 }
+.main-tabs-rail {
+  margin-top: 0;
+  flex-direction: column;
+  padding: 0;
+  gap: 8px;
+  background: transparent;
+  box-shadow: none;
+  border: 0;
+}
 .main-tab {
   flex: 1;
   border: 1px solid var(--line);
@@ -398,6 +407,29 @@ h1 { font-size: clamp(34px, 4vw, 54px); }
   background: radial-gradient(circle, rgba(159, 176, 202, 0.14), transparent 68%);
 }
 
+.workbench {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+  align-items: start;
+}
+.nav-rail {
+  position: sticky;
+  top: 16px;
+  padding: 18px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(10, 18, 34, 0.94), rgba(8, 14, 26, 0.84));
+}
+.nav-rail-divider {
+  height: 1px;
+  margin: 14px 0;
+  background: var(--line);
+}
+.content-rail {
+  display: grid;
+  gap: 16px;
+}
 .workspace {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
@@ -520,8 +552,8 @@ h1 { font-size: clamp(34px, 4vw, 54px); }
   align-items: start;
 }
 .card {
-  border-radius: 24px;
-  padding: 22px;
+  border-radius: 22px;
+  padding: 18px;
 }
 .stack { display: grid; gap: 16px; }
 .section-head {
@@ -533,29 +565,35 @@ h1 { font-size: clamp(34px, 4vw, 54px); }
 }
 .section-head.compact { margin-bottom: 14px; }
 
-.kpi-form { display: grid; gap: 18px; }
-.group {
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: rgba(255,255,255,.03);
-  padding: 18px;
-}
-.group h3 { margin: 0 0 14px; font-size: 18px; }
-.fields {
+.kpi-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
-.field { display: flex; flex-direction: column; gap: 6px; }
+.group {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(255,255,255,.03);
+  padding: 14px;
+  min-width: 0;
+  break-inside: avoid;
+}
+.group h3 { margin: 0 0 12px; font-size: 16px; }
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.field { display: flex; flex-direction: column; gap: 4px; }
 .field.span-2 { grid-column: span 2; }
 .field label { color: var(--muted); font-size: 13px; }
 .field input, .field textarea, .field select {
   width: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--line);
   background: rgba(255,255,255,.04);
   color: var(--text);
-  padding: 12px 13px;
+  padding: 10px 11px;
   font: inherit;
 }
 .computed-field {
@@ -564,21 +602,21 @@ h1 { font-size: clamp(34px, 4vw, 54px); }
   color: #dff9ff !important;
   font-weight: 700;
 }
-.field textarea { min-height: 92px; resize: vertical; }
+.field textarea { min-height: 72px; resize: vertical; }
 .form-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 18px;
+  margin-top: 12px;
 }
 
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 10px;
 }
 .summary-item {
-  padding: 14px;
+  padding: 12px;
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(255,255,255,.03);
@@ -633,18 +671,26 @@ h1 { font-size: clamp(34px, 4vw, 54px); }
 }
 
 @media (max-width: 1100px) {
-  .workspace, .layout, .toolbar, .dashboard-filters, .dashboard-panels, .dashboard-charts, .dashboard-executive { grid-template-columns: 1fr; }
+  .workbench, .workspace, .layout, .toolbar, .dashboard-filters, .dashboard-panels, .dashboard-charts, .dashboard-executive { grid-template-columns: 1fr; }
   .hero { align-items: start; flex-direction: column; }
-  .sidebar-card { position: static; }
+  .nav-rail, .sidebar-card { position: static; }
+  .kpi-form { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
   .shell { width: calc(100% - 18px); padding-top: 12px; }
   .card, .hero, .toolbar { border-radius: 18px; }
   .fields, .summary-grid { grid-template-columns: 1fr; }
+  .kpi-form { grid-template-columns: 1fr; }
   .field.span-2 { grid-column: auto; }
   .form-actions, .hero-actions { flex-direction: column; }
-  .workspace { grid-template-columns: 1fr; }
-  .main-tabs { flex-direction: column; }
+  .workbench, .workspace { grid-template-columns: 1fr; }
+  .main-tabs, .main-tabs-rail { flex-direction: column; }
+  .main-tabs-rail {
+    width: 100%;
+  }
+  .main-tabs-rail .main-tab {
+    width: 100%;
+  }
   .sidebar-card .section-head {
     align-items: flex-start;
   }
