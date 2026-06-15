@@ -86,6 +86,7 @@ const projectSelect = document.getElementById("report-project");
 const btnReset = document.getElementById("btn-reset");
 const btnNewReport = document.getElementById("btn-new-report");
 const btnRecalculate = document.getElementById("btn-recalculate");
+const btnSaveReport = document.getElementById("btn-save-report");
 const projectBannerTitle = document.getElementById("project-banner-title");
 const projectBannerPeriod = document.getElementById("project-banner-period");
 const projectBadge = document.getElementById("project-badge");
@@ -253,7 +254,9 @@ function setActiveSidebarSection(sectionId) {
 
 function setupSidebarToggle() {
   const toggle = document.getElementById("sidebar-toggle");
-  const sidebar = document.querySelector(".sidebar-card");
+  const sidebar = document.querySelector(".nav-rail");
+  if (!toggle || !sidebar) return;
+
   toggle.addEventListener("click", () => {
     sidebar.classList.toggle("collapsed");
     const collapsed = sidebar.classList.contains("collapsed");
@@ -666,6 +669,7 @@ async function saveReport() {
 btnReset.addEventListener("click", () => fillForm(null));
 btnNewReport.addEventListener("click", () => { state.currentReportId = null; fillForm(null); setSaveStatus("พร้อมสร้างรายงานใหม่"); });
 btnRecalculate?.addEventListener("click", () => { recalcDerivedFields(); setSaveStatus("คำนวณค่าอัตโนมัติใหม่แล้ว"); });
+btnSaveReport?.addEventListener("click", async () => { await saveReport(); });
 btnExportCsv?.addEventListener("click", exportDashboardCsv);
 projectSelect.addEventListener("change", e => { state.selectedProject = e.target.value; syncProjectBanner(); renderReports(); renderDashboard(); summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]); setSaveStatus(`เลือก Project: ${e.target.value}`); });
 periodInput.addEventListener("change", syncProjectBanner);
@@ -694,9 +698,12 @@ buildForm();
 buildProjectOptions();
 buildSidebar();
 setupSidebarToggle();
-setView("dashboard");
+setView(window.location.hash.startsWith("#section-") ? "entry" : "dashboard");
 fillForm(null);
 summaryCards(null);
 syncProjectBanner();
 renderDashboard();
 setupSidebarActiveState();
+if (window.location.hash.startsWith("#section-")) {
+  requestAnimationFrame(() => document.querySelector(window.location.hash)?.scrollIntoView({ block: "start" }));
+}
