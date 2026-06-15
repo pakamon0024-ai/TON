@@ -178,12 +178,9 @@ function currentPayload() {
 }
 
 function validateRequiredFields() {
-  const requiredKeys = ["job_order", "job_complete", "company_staff", "partner_staff", "alcohol_pass", "vehicle_total", "vehicle_checked", "pickup_ontime", "delivery_ontime"];
-  const missing = requiredKeys.filter(key => {
-    const el = document.getElementById(key);
-    return !el || el.value === "";
-  });
-  if (!periodInput.value || !projectSelect.value) missing.unshift("period/project");
+  const missing = [];
+  if (!periodInput.value) missing.push("วันที่บันทึก");
+  if (!projectSelect.value) missing.push("Project");
   return missing;
 }
 
