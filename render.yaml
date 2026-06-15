@@ -11,6 +11,10 @@ services:
         sync: false
       - key: FB_TOKEN
         sync: false
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_CHANNEL_SECRET
+        sync: false
       - key: SUPABASE_URL
         value: https://erbfwmtdvdtwxrvnpeej.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
