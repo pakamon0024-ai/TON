@@ -1,100 +1,88 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import {
-  GoogleAuthProvider,
-  getAuth,
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  getFirestore,
-  limit,
-  orderBy,
-  query,
-  serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { addDoc, collection, getDocs, getFirestore, limit, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-const firebaseConfig = window.__FIREBASE_CONFIG__ || {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
-};
-
+const firebaseConfig = window.__FIREBASE_CONFIG__ || { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
 const firebaseReady = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId);
 const app = firebaseReady ? initializeApp(firebaseConfig) : null;
 const auth = firebaseReady ? getAuth(app) : null;
 const db = firebaseReady ? getFirestore(app) : null;
 
+const PROJECT_OPTIONS = ["INOAC อีโนแอค", "Extra ABC", "Extra ARC", "SBG Bangna", "EDC", "FOT"];
+const PROJECT_TEMPLATES = {
+  "INOAC อีโนแอค": { site: "ลานจอด ABC", ownerPrefix: "INOAC" },
+  "Extra ABC": { site: "Extra ABC", ownerPrefix: "Extra ABC" },
+  "Extra ARC": { site: "Extra ARC", ownerPrefix: "Extra ARC" },
+  "SBG Bangna": { site: "SBG Bangna", ownerPrefix: "SBG" },
+  "EDC": { site: "EDC", ownerPrefix: "EDC" },
+  "FOT": { site: "FOT", ownerPrefix: "FOT" }
+};
+
 const KPI_SECTIONS = [
   {
-    title: "Job Order & Productivity",
+    id: "job-order",
+    menuLabel: "Job Order",
+    icon: "📦",
+    title: "Job Order & Performance",
     fields: [
-      { key: "total_job_order", label: "Total Job Order", type: "number" },
-      { key: "pick_up_performance", label: "Pick Up Performance (%)", type: "number" },
-      { key: "delivery_performance", label: "Delivery Performance (%)", type: "number" },
-      { key: "completed_job", label: "Completed Job (TMS&BY)", type: "number" },
-      { key: "ddr", label: "DDR", type: "number" }
+      { key: "job_order", label: "จำนวน Job Order", type: "number" },
+      { key: "pickup_ontime", label: "Pick up Ontime (Fix %)", type: "number" },
+      { key: "delivery_ontime", label: "Delivery Ontime (Fix %)", type: "number" },
+      { key: "job_complete", label: "จำนวน Job Complete", type: "number" }
     ]
   },
   {
-    title: "คนและการทำงาน",
+    id: "people-work",
+    menuLabel: "คนและการทำงาน",
+    icon: "👥",
+    title: "People KPI",
     fields: [
-      { key: "employees_total", label: "จำนวนพนักงานทั้งหมด", type: "number" },
-      { key: "working_jobs", label: "วิ่งงาน", type: "number" },
-      { key: "waiting_jobs", label: "รอจ๊อบ / รอจนาน", type: "number" },
-      { key: "passed_absence", label: "ลา (ป่วย/กิจ/พักร้อน/ขาดงาน)", type: "number" },
-      { key: "resigned", label: "ลาออก", type: "number" },
-      { key: "turnover_percent", label: "% Turnover", type: "number" }
+      { key: "company_staff", label: "พนักงานรถบริษัท", type: "number" },
+      { key: "partner_staff", label: "พนักงานรถร่วม", type: "number" },
+      { key: "total_staff", label: "ระบบสรุปรวมทั้งหมด", type: "computed", readonly: true },
+      { key: "staff_running", label: "จำนวนคนวิ่งงาน", type: "number" },
+      { key: "staff_waiting", label: "จำนวนคนรองาน", type: "number" },
+      { key: "alcohol_pass", label: "จำนวนคนที่เป่าแอลกอฮอล์ผ่าน", type: "number" },
+      { key: "alcohol_fail", label: "ระบบคำนวณคนที่เป่าไม่ผ่าน", type: "computed", readonly: true },
+      { key: "staff_leave", label: "จำนวนคนลา", type: "number" },
+      { key: "staff_resigned", label: "จำนวนคนลาออก", type: "number" }
     ]
   },
   {
-    title: "รถและ Driver KPI",
+    id: "vehicle-driver",
+    menuLabel: "รถและ Driver KPI",
+    icon: "🚚",
+    title: "Vehicle KPI",
     fields: [
-      { key: "vehicle_total", label: "จำนวนรถที่มีอยู่", type: "number" },
-      { key: "vehicle_utilization", label: "อัตราการใช้รถวิ่งงาน (%)", type: "number" },
-      { key: "vehicle_running", label: "วิ่งงาน", type: "number" },
-      { key: "vehicle_checked", label: "ตรวจเช็ครถแล้ว", type: "number" },
-      { key: "vehicle_not_checked", label: "ยังไม่ได้ตรวจเช็ครถ", type: "number" },
-      { key: "vehicle_waiting", label: "จอดรอจ๊อบ", type: "number" },
-      { key: "vehicle_waiting_repair", label: "จอดซ่อม", type: "number" },
-      { key: "vehicle_waiting_doc", label: "จอดไม่มีคนขับ / ลา / ขาดงาน", type: "number" },
-      { key: "driver_safety_kpi", label: "KPI Driver", type: "number" }
+      { key: "vehicle_total", label: "จำนวนรถทั้งหมดใน Project", type: "number" },
+      { key: "vehicle_running", label: "จำนวนรถวิ่งงาน", type: "number" },
+      { key: "vehicle_parking_spare", label: "จำนวนรถจอดและรถสแปร์", type: "number" },
+      { key: "vehicle_repair", label: "จำนวนรถซ่อม", type: "number" },
+      { key: "vehicle_checked", label: "จำนวนรถที่ตรวจรถ", type: "number" },
+      { key: "vehicle_company_remaining", label: "ระบบคำนวณรถบริษัทที่ยังไม่ตรวจ", type: "computed", readonly: true },
+      { key: "vehicle_check_percent", label: "% การตรวจรถ", type: "computed", readonly: true }
     ]
   },
   {
-    title: "เอกสารและงานสนับสนุน",
+    id: "support",
+    menuLabel: "งานสนับสนุน",
+    icon: "🗂️",
+    title: "Support KPI",
     fields: [
-      { key: "docs_total", label: "เอกสาร", type: "number" },
-      { key: "docs_job_order", label: "เอกสารใบงานเที่ยววิ่ง Job Order", type: "number" },
-      { key: "docs_customer", label: "เอกสารของลูกค้า", type: "number" },
-      { key: "docs_claim", label: "เอกสารสำหรับการเคลียร์ค่าใช้จ่าย", type: "number" },
-      { key: "docs_container_return", label: "การคืนภาชนะเปล่า/การคืนตู้เปล่าและถังทำ", type: "number" },
-      { key: "total_trips", label: "จำนวนเที่ยวทั้งหมด", type: "number" }
+      { key: "feedback_count", label: "จำนวน Feedback", type: "number" },
+      { key: "accidents", label: "จำนวน Accident", type: "number" },
+      { key: "part_damage", label: "จำนวน Part damage", type: "number" },
+      { key: "truck_breakdown", label: "จำนวน Truck break down", type: "number" },
+      { key: "fuel_noncompliant", label: "จำนวนคนที่ไม่ได้เรทเชื้อเพลิง", type: "number" },
+      { key: "truck_breakdown_rate", label: "Truck break down (%)", type: "computed", readonly: true }
     ]
   },
   {
-    title: "คุณภาพและต้นทุน",
-    fields: [
-      { key: "customer_complaint", label: "Customer Compln & Feedback", type: "number" },
-      { key: "accidents", label: "Accident จำนวนครั้ง", type: "number" },
-      { key: "part_damaged_count", label: "Part damaged จำนวนครั้ง", type: "number" },
-      { key: "part_damaged_value", label: "Part damaged มูลค่าที่เสียหาย", type: "number" },
-      { key: "truck_breakdown_rate", label: "No Truck break down on the way 100%", type: "number" },
-      { key: "fuel_percent", label: "Fuel % ของการใช้รถเทียบกับที่กำหนด", type: "number" },
-      { key: "cost_penalty", label: "Cost penalty 0 บาท ค่าปรับที่เกี่ยวข้องกับขนส่ง", type: "number" }
-    ]
-  },
-  {
+    id: "remarks",
+    menuLabel: "หมายเหตุ",
+    icon: "📝",
     title: "หมายเหตุ",
-    fields: [
-      { key: "remarks", label: "หมายเหตุเพิ่มเติม", type: "textarea", span: 2 }
-    ]
+    fields: [{ key: "remarks", label: "หมายเหตุเพิ่มเติม", type: "textarea", span: 2 }]
   }
 ];
 
@@ -106,61 +94,128 @@ const btnLogout = document.getElementById("btn-logout");
 const authStatus = document.getElementById("auth-status");
 const saveStatus = document.getElementById("save-status");
 const periodInput = document.getElementById("report-period");
+const projectSelect = document.getElementById("report-project");
 const siteInput = document.getElementById("report-site");
 const ownerInput = document.getElementById("report-owner");
 const btnReset = document.getElementById("btn-reset");
 const btnNewReport = document.getElementById("btn-new-report");
+const btnRecalculate = document.getElementById("btn-recalculate");
+const projectBannerTitle = document.getElementById("project-banner-title");
+const projectBannerPeriod = document.getElementById("project-banner-period");
+const projectBadge = document.getElementById("project-badge");
+const dashboardDaily = document.getElementById("dashboard-daily");
+const dashboardMonthly = document.getElementById("dashboard-monthly");
+const dashboardProjectFilter = document.getElementById("dashboard-project-filter");
+const dashboardPeriodFilter = document.getElementById("dashboard-period-filter");
+const dashboardModeFilter = document.getElementById("dashboard-mode-filter");
+const chartJob = document.getElementById("chart-job");
+const chartProject = document.getElementById("chart-project");
+const dashboardTable = document.getElementById("dashboard-table");
+const dashboardRankDaily = document.getElementById("dashboard-rank-daily");
+const dashboardRankMonthly = document.getElementById("dashboard-rank-monthly");
+const btnExportCsv = document.getElementById("btn-export-csv");
+const mainTabs = document.querySelectorAll(".main-tab");
+const dashboardSection = document.getElementById("dashboard-section");
+const entrySection = document.getElementById("entry-section");
+const historySection = document.getElementById("history-section");
+const toolbarSection = document.getElementById("toolbar-section");
+const projectBanner = document.getElementById("project-banner");
 
-const state = { user: null, reports: [], currentReportId: null };
+const state = { user: null, reports: [], currentReportId: null, selectedProject: PROJECT_OPTIONS[0] };
+const PROJECT_BADGES = {
+  "INOAC อีโนแอค": { label: "INOAC", hue: "linear-gradient(135deg, #4cc9f0, #2563eb)" },
+  "Extra ABC": { label: "ABC", hue: "linear-gradient(135deg, #f59e0b, #f97316)" },
+  "Extra ARC": { label: "ARC", hue: "linear-gradient(135deg, #f72585, #db2777)" },
+  "SBG Bangna": { label: "SBG", hue: "linear-gradient(135deg, #22c55e, #16a34a)" },
+  "EDC": { label: "EDC", hue: "linear-gradient(135deg, #8b5cf6, #6366f1)" },
+  "FOT": { label: "FOT", hue: "linear-gradient(135deg, #14b8a6, #06b6d4)" }
+};
 
 function fmtNumber(value) {
   const n = Number(value);
-  if (Number.isNaN(n)) return "-";
-  return new Intl.NumberFormat("en-US").format(n);
+  return Number.isFinite(n) ? new Intl.NumberFormat("en-US").format(n) : "-";
 }
 
-function setSaveStatus(text) {
-  saveStatus.textContent = text;
+function setSaveStatus(text) { saveStatus.textContent = text; }
+function syncProjectBanner() {
+  if (projectBannerTitle) projectBannerTitle.textContent = `Project: ${state.selectedProject}`;
+  if (projectBannerPeriod) projectBannerPeriod.textContent = `รอบรายงาน: ${periodInput.value || "-"}`;
+  const badge = PROJECT_BADGES[state.selectedProject];
+  if (projectBadge && badge) {
+    projectBadge.textContent = badge.label;
+    projectBadge.style.background = badge.hue;
+  }
+}
+function readNumber(key) {
+  const el = document.getElementById(key);
+  const value = Number(el?.value);
+  return Number.isFinite(value) ? value : 0;
+}
+function setFieldValue(key, value) {
+  const el = document.getElementById(key);
+  if (el) el.value = value === null || value === undefined ? "" : value;
+}
+function recalcDerivedFields() {
+  const totalStaff = readNumber("company_staff") + readNumber("partner_staff");
+  const alcoholFail = Math.max(totalStaff - readNumber("alcohol_pass"), 0);
+  const vehicleTotal = readNumber("vehicle_total");
+  const vehicleChecked = readNumber("vehicle_checked");
+  const vehicleRemaining = Math.max(vehicleTotal - vehicleChecked, 0);
+  const vehicleCheckPercent = vehicleTotal > 0 ? ((vehicleChecked / vehicleTotal) * 100).toFixed(2) : "0.00";
+  const truckBreakdownRate = vehicleTotal > 0 ? ((readNumber("truck_breakdown") / vehicleTotal) * 100).toFixed(2) : "0.00";
+
+  setFieldValue("total_staff", totalStaff);
+  setFieldValue("alcohol_fail", alcoholFail);
+  setFieldValue("vehicle_company_remaining", vehicleRemaining);
+  setFieldValue("vehicle_check_percent", vehicleCheckPercent);
+  setFieldValue("truck_breakdown_rate", truckBreakdownRate);
 }
 
 function currentPayload() {
   const payload = {
     period: periodInput.value,
+    project: projectSelect.value,
     site: siteInput.value.trim(),
     owner: ownerInput.value.trim(),
     updatedAt: new Date().toISOString()
   };
-
-  KPI_SECTIONS.forEach(section => {
-    section.fields.forEach(field => {
-      const el = document.getElementById(field.key);
-      payload[field.key] = field.type === "number"
-        ? (el.value === "" ? null : Number(el.value))
-        : el.value.trim();
-    });
-  });
-
+  KPI_SECTIONS.forEach(section => section.fields.forEach(field => {
+    if (field.type === "computed") return;
+    const el = document.getElementById(field.key);
+    payload[field.key] = field.type === "number" ? (el.value === "" ? null : Number(el.value)) : el.value.trim();
+  }));
   return payload;
+}
+
+function validateRequiredFields() {
+  const requiredKeys = ["job_order", "job_complete", "company_staff", "partner_staff", "alcohol_pass", "vehicle_total", "vehicle_checked", "pickup_ontime", "delivery_ontime"];
+  const missing = requiredKeys.filter(key => {
+    const el = document.getElementById(key);
+    return !el || el.value === "";
+  });
+  if (!periodInput.value || !projectSelect.value) missing.unshift("period/project");
+  return missing;
 }
 
 function fillForm(report) {
   periodInput.value = report?.period || new Date().toISOString().slice(0, 7);
-  siteInput.value = report?.site || "ลานจอด ABC";
-  ownerInput.value = report?.owner || (state.user?.displayName || state.user?.email || "");
-
-  KPI_SECTIONS.forEach(section => {
-    section.fields.forEach(field => {
-      const el = document.getElementById(field.key);
-      if (!el) return;
-      const value = report?.[field.key];
-      el.value = value ?? "";
-    });
-  });
+  projectSelect.value = report?.project || PROJECT_OPTIONS[0];
+  state.selectedProject = projectSelect.value;
+  const template = PROJECT_TEMPLATES[state.selectedProject] || {};
+  siteInput.value = report?.site || template.site || "ลานจอด ABC";
+  ownerInput.value = report?.owner || `${template.ownerPrefix || state.selectedProject} - ${state.user?.displayName || state.user?.email || ""}`.trim();
+  KPI_SECTIONS.forEach(section => section.fields.forEach(field => {
+    const el = document.getElementById(field.key);
+    if (!el) return;
+    el.value = report?.[field.key] ?? "";
+  }));
+  recalcDerivedFields();
+  syncProjectBanner();
 }
 
 function buildForm() {
   form.innerHTML = KPI_SECTIONS.map(section => `
-    <section class="group">
+    <section class="group" id="${section.id}">
       <h3>${section.title}</h3>
       <div class="fields">
         ${section.fields.map(field => `
@@ -169,7 +224,9 @@ function buildForm() {
             ${
               field.type === "textarea"
                 ? `<textarea id="${field.key}" placeholder="กรอกข้อมูล"></textarea>`
-                : `<input id="${field.key}" type="${field.type}" inputmode="decimal" placeholder="0">`
+                : field.type === "computed"
+                  ? `<input id="${field.key}" class="computed-field" type="text" readonly value="">`
+                  : `<input id="${field.key}" type="number" inputmode="decimal" placeholder="0">`
             }
           </div>
         `).join("")}
@@ -178,112 +235,384 @@ function buildForm() {
   `).join("");
 }
 
+function buildProjectOptions() {
+  const options = PROJECT_OPTIONS.map(p => `<option value="${p}">${p}</option>`).join("");
+  projectSelect.innerHTML = options;
+  if (dashboardProjectFilter) dashboardProjectFilter.innerHTML = `<option value="">ทุก Project</option>${options}`;
+}
+
+function applyProjectTemplate(project) {
+  const template = PROJECT_TEMPLATES[project] || {};
+  if (!siteInput.value || siteInput.value === "ลานจอด ABC") siteInput.value = template.site || siteInput.value;
+  if (!ownerInput.value) ownerInput.value = `${template.ownerPrefix || project} - ${state.user?.displayName || state.user?.email || ""}`.trim();
+}
+
+function buildSidebar() {
+  const sidebar = document.getElementById("kpi-sidebar");
+  sidebar.innerHTML = KPI_SECTIONS.map(section => `
+    <a class="side-link" href="#${section.id}">
+      <span class="side-link-left">
+        <span class="side-link-icon" aria-hidden="true">${section.icon}</span>
+        <span class="side-link-label">${section.menuLabel}</span>
+      </span>
+      <span class="side-link-meta">
+        <span class="side-link-count">${section.fields.length}</span>
+        <span class="side-link-arrow">→</span>
+      </span>
+    </a>
+  `).join("");
+}
+
+function setupSidebarToggle() {
+  const toggle = document.getElementById("sidebar-toggle");
+  const sidebar = document.querySelector(".sidebar-card");
+  toggle.addEventListener("click", () => {
+    sidebar.classList.toggle("collapsed");
+    const collapsed = sidebar.classList.contains("collapsed");
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.querySelector(".toggle-label").textContent = collapsed ? "เปิดเมนู" : "ซ่อนเมนู";
+  });
+}
+
 function summaryCards(report) {
   const computed = report ? [
-    ["Completion", `${fmtNumber(report.completed_job)} jobs`],
-    ["Travel", `${fmtNumber(report.total_trips)} trips`],
-    ["Safety", `${fmtNumber(report.accidents)} accidents`],
-    ["Cost Penalty", `฿${fmtNumber(report.cost_penalty ?? 0)}`]
-  ] : [
-    ["Completion", "-"],
-    ["Travel", "-"],
-    ["Safety", "-"],
-    ["Cost Penalty", "-"]
-  ];
-
+    ["Job Order", fmtNumber(report.job_order)],
+    ["Job Complete", fmtNumber(report.job_complete)],
+    ["Staff Total", fmtNumber(report.total_staff)],
+    ["Vehicle Check %", `${fmtNumber(report.vehicle_check_percent)}%`]
+  ] : [["Job Order", "-"], ["Job Complete", "-"], ["Staff Total", "-"], ["Vehicle Check %", "-"]];
   summaryGrid.innerHTML = computed.map(([label, value]) => `
-    <div class="summary-item">
-      <span>${label}</span>
-      <strong>${value}</strong>
-    </div>
+    <div class="summary-item"><span>${label}</span><strong>${value}</strong></div>
   `).join("");
+}
+
+function getFilteredReports() {
+  const project = dashboardProjectFilter?.value || state.selectedProject;
+  const period = dashboardPeriodFilter?.value || "";
+  const mode = dashboardModeFilter?.value || "all";
+
+  return state.reports.filter(report => {
+    if (project && report.project !== project) return false;
+    if (!period) return true;
+    if (mode === "daily") return report.period === period;
+    if (mode === "monthly") return (report.period || "").startsWith(period);
+    return report.period === period || (report.period || "").startsWith(period);
+  });
+}
+
+function summarizeReports(reports) {
+  const total = reports.length;
+  const jobOrder = reports.reduce((sum, r) => sum + Number(r.job_order || 0), 0);
+  const jobComplete = reports.reduce((sum, r) => sum + Number(r.job_complete || 0), 0);
+  const staffTotal = reports.reduce((sum, r) => sum + Number(r.total_staff || 0), 0);
+  const vehicleCheckAvg = total ? (reports.reduce((sum, r) => sum + Number(r.vehicle_check_percent || 0), 0) / total).toFixed(2) : "0.00";
+  return { total, jobOrder, jobComplete, staffTotal, vehicleCheckAvg };
+}
+
+function toCsv(rows) {
+  return rows.map(row => row.map(cell => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n");
+}
+
+function toHtmlTable(rows) {
+  return `
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; padding: 16px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+          th { background: #eef6ff; }
+        </style>
+      </head>
+      <body>
+        <table>${rows.map((row, i) => `<tr>${row.map(cell => i === 0 ? `<th>${cell}</th>` : `<td>${cell}</td>`).join("")}</tr>`).join("")}</table>
+      </body>
+    </html>
+  `;
+}
+
+function drawBarChart(canvas, labels, values, colors) {
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  const width = canvas.clientWidth || canvas.width;
+  const height = canvas.clientHeight || canvas.height;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, width, height);
+
+  const pad = 28;
+  const max = Math.max(...values, 1);
+  const barW = Math.max((width - pad * 2) / values.length - 18, 22);
+  ctx.font = "12px IBM Plex Sans Thai, sans-serif";
+  ctx.textAlign = "center";
+
+  values.forEach((v, i) => {
+    const x = pad + i * ((width - pad * 2) / values.length) + 10;
+    const h = ((height - pad * 2) * v) / max;
+    const y = height - pad - h;
+    const gradient = ctx.createLinearGradient(0, y, 0, height - pad);
+    gradient.addColorStop(0, colors[i % colors.length][0]);
+    gradient.addColorStop(1, colors[i % colors.length][1]);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(x, y, barW, h);
+    ctx.fillStyle = "#cfe4ff";
+    ctx.fillText(labels[i], x + barW / 2, height - 10);
+    ctx.fillText(String(v), x + barW / 2, y - 8);
+  });
+}
+
+function attachChartTooltip(canvas, labels, values) {
+  if (!canvas) return;
+  const existing = canvas.parentElement.querySelector(".chart-tooltip");
+  if (existing) existing.remove();
+  const tooltip = document.createElement("div");
+  tooltip.className = "chart-tooltip";
+  tooltip.style.display = "none";
+  canvas.parentElement.style.position = "relative";
+  canvas.parentElement.appendChild(tooltip);
+
+  const showTooltip = (index, event) => {
+    tooltip.innerHTML = `<strong>${labels[index]}</strong><span>${values[index]}</span>`;
+    tooltip.style.display = "block";
+    const rect = canvas.getBoundingClientRect();
+    tooltip.style.left = `${Math.min(event.clientX - rect.left + 12, rect.width - 120)}px`;
+    tooltip.style.top = `${Math.max(event.clientY - rect.top - 36, 10)}px`;
+  };
+
+  canvas.onmousemove = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    const index = Math.min(labels.length - 1, Math.max(0, Math.floor(ratio * labels.length)));
+    showTooltip(index, e);
+  };
+  canvas.onmouseleave = () => { tooltip.style.display = "none"; };
+}
+
+function setView(view) {
+  const visible = {
+    dashboard: ["block", "none", "none"],
+    entry: ["none", "block", "none"],
+    history: ["none", "none", "block"]
+  }[view] || ["block", "block", "block"];
+  if (dashboardSection) dashboardSection.style.display = visible[0];
+  if (entrySection) entrySection.style.display = visible[1];
+  if (historySection) historySection.style.display = visible[2];
+  if (toolbarSection) toolbarSection.style.display = view === "dashboard" ? "grid" : "grid";
+  if (projectBanner) projectBanner.style.display = view === "history" ? "flex" : "flex";
+  mainTabs.forEach(btn => btn.classList.toggle("active", btn.dataset.view === view));
+}
+
+function renderDashboard() {
+  if (!dashboardDaily || !dashboardMonthly) return;
+  const filtered = getFilteredReports();
+  const today = new Date().toISOString().slice(0, 10);
+  const currentMonth = today.slice(0, 7);
+  const daily = filtered.filter(r => r.period === today);
+  const monthly = filtered.filter(r => (r.period || "").startsWith(currentMonth));
+  const all = summarizeReports(filtered);
+  const dailySum = summarizeReports(daily);
+  const monthlySum = summarizeReports(monthly);
+
+  dashboardDaily.innerHTML = `
+    <div class="dash-card">
+      <span>รายวัน</span>
+      <strong>${dailySum.total}</strong>
+      <small>Job Order ${dailySum.jobOrder} | Complete ${dailySum.jobComplete}</small>
+    </div>
+    <div class="dash-card">
+      <span>Project ที่เลือก</span>
+      <strong>${state.selectedProject}</strong>
+      <small>Staff รวม ${all.staffTotal}</small>
+    </div>
+  `;
+
+  dashboardMonthly.innerHTML = `
+    <div class="dash-card">
+      <span>รายเดือน</span>
+      <strong>${monthlySum.total}</strong>
+      <small>Job Order ${monthlySum.jobOrder} | Complete ${monthlySum.jobComplete}</small>
+    </div>
+    <div class="dash-card">
+      <span>Vehicle Check % เฉลี่ย</span>
+      <strong>${all.vehicleCheckAvg}%</strong>
+      <small>จากรายงานที่ถูกกรองแล้ว</small>
+    </div>
+  `;
+
+  const projectGroups = PROJECT_OPTIONS.map(project => {
+    const items = filtered.filter(r => r.project === project);
+    return {
+      project,
+      reports: items.length,
+      jobOrder: items.reduce((sum, r) => sum + Number(r.job_order || 0), 0),
+      jobComplete: items.reduce((sum, r) => sum + Number(r.job_complete || 0), 0)
+    };
+  }).filter(x => x.jobOrder || x.jobComplete);
+
+  const ranking = [...projectGroups].sort((a, b) => b.jobOrder - a.jobOrder || b.jobComplete - a.jobComplete);
+  if (dashboardRankDaily) {
+    dashboardRankDaily.innerHTML = daily.length ? [...daily]
+      .sort((a, b) => Number(b.job_order || 0) - Number(a.job_order || 0))
+      .map((row, index) => `
+        <div class="rank-chip">
+          <span>#${index + 1}</span>
+          <strong>${row.project}</strong>
+          <small>Job ${row.job_order || 0} | Complete ${row.job_complete || 0}</small>
+        </div>
+      `).join("")
+      : `<div class="rank-chip"><strong>ไม่มีข้อมูลสำหรับจัดอันดับ</strong></div>`;
+  }
+  if (dashboardRankMonthly) {
+    dashboardRankMonthly.innerHTML = monthly.length ? [...monthly]
+      .sort((a, b) => Number(b.job_order || 0) - Number(a.job_order || 0))
+      .slice(0, 5)
+      .map((row, index) => `
+        <div class="rank-chip">
+          <span>#${index + 1}</span>
+          <strong>${row.project}</strong>
+          <small>Job ${row.job_order || 0} | Complete ${row.job_complete || 0}</small>
+        </div>
+      `).join("")
+      : `<div class="rank-chip"><strong>ไม่มีข้อมูลสำหรับจัดอันดับ</strong></div>`;
+  }
+
+  dashboardTable.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Project</th>
+          <th>Reports</th>
+          <th>Job Order</th>
+          <th>Complete</th>
+          <th>Staff</th>
+          <th>Check %</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${ranking.map(row => `
+          <tr>
+            <td>${row.project}</td>
+            <td>${row.reports}</td>
+            <td>${row.jobOrder}</td>
+            <td>${row.jobComplete}</td>
+            <td>${summarizeReports(filtered.filter(r => r.project === row.project)).staffTotal}</td>
+            <td>${summarizeReports(filtered.filter(r => r.project === row.project)).vehicleCheckAvg}%</td>
+          </tr>
+        `).join("") || `<tr><td colspan="6">ไม่มีข้อมูลในช่วงที่เลือก</td></tr>`}
+      </tbody>
+    </table>
+  `;
+
+  drawBarChart(
+    chartJob,
+    ["Daily", "Monthly"],
+    [dailySum.jobOrder, monthlySum.jobOrder],
+    [["#4cc9f0", "#2563eb"], ["#f72585", "#db2777"]]
+  );
+  attachChartTooltip(chartJob, ["Daily", "Monthly"], [dailySum.jobOrder, monthlySum.jobOrder]);
+
+  drawBarChart(
+    chartProject,
+    ranking.slice(0, 5).map(x => x.project),
+    ranking.slice(0, 5).map(x => x.jobOrder),
+    [["#14b8a6", "#06b6d4"], ["#8b5cf6", "#6366f1"], ["#f59e0b", "#f97316"], ["#22c55e", "#16a34a"], ["#f72585", "#db2777"]]
+  );
+  attachChartTooltip(chartProject, ranking.slice(0, 5).map(x => x.project), ranking.slice(0, 5).map(x => x.jobOrder));
+}
+
+function exportDashboardCsv() {
+  const filtered = getFilteredReports();
+  const rows = [
+    ["Project", "Period", "Owner", "Job Order", "Job Complete", "Total Staff", "Vehicle Check %", "Feedback", "Accidents"],
+    ...filtered.map(r => [
+      r.project,
+      r.period,
+      r.owner,
+      r.job_order,
+      r.job_complete,
+      r.total_staff,
+      r.vehicle_check_percent,
+      r.feedback_count,
+      r.accidents
+    ])
+  ];
+  const blob = new Blob([toHtmlTable(rows)], { type: "application/vnd.ms-excel;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `kpi-dashboard-${new Date().toISOString().slice(0, 10)}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function reportRow(report) {
   return `
     <article class="report-row" data-id="${report.id}">
-      <div class="meta">
-        <span>${report.period || "-"}</span>
-        <span>${report.site || ""}</span>
-      </div>
+      <div class="meta"><span>${report.period || "-"}</span><span>${report.project || ""}</span></div>
       <h4>${report.owner || "Untitled report"}</h4>
-      <p>Total Job Order: ${fmtNumber(report.total_job_order)} | Completed: ${fmtNumber(report.completed_job)} | Trips: ${fmtNumber(report.total_trips)}</p>
+      <p>Job Order: ${fmtNumber(report.job_order)} | Complete: ${fmtNumber(report.job_complete)} | Staff: ${fmtNumber(report.total_staff)}</p>
     </article>
   `;
 }
 
 function renderReports() {
-  reportsList.innerHTML = state.reports.length
-    ? state.reports.map(reportRow).join("")
-    : `<div class="report-row"><p>ยังไม่มีรายงานที่บันทึก</p></div>`;
-
-  reportsList.querySelectorAll(".report-row[data-id]").forEach(el => {
-    el.addEventListener("click", () => {
-      const report = state.reports.find(r => r.id === el.dataset.id);
-      if (report) {
-        state.currentReportId = report.id;
-        fillForm(report);
-        summaryCards(report);
-        setSaveStatus("กำลังแก้ไขรายงานเดิม");
-      }
-    });
-  });
+  const visibleReports = getFilteredReports();
+  reportsList.innerHTML = visibleReports.length ? visibleReports.map(reportRow).join("") : `<div class="report-row"><p>ยังไม่มีรายงานที่บันทึก</p></div>`;
+  reportsList.querySelectorAll(".report-row[data-id]").forEach(el => el.addEventListener("click", () => {
+    const report = state.reports.find(r => r.id === el.dataset.id);
+    if (report) {
+      state.currentReportId = report.id;
+      fillForm(report);
+      summaryCards(report);
+      setSaveStatus("กำลังแก้ไขรายงานเดิม");
+    }
+  }));
 }
 
 async function loadReports() {
   if (!firebaseReady || !state.user) return;
-  if (!state.user) return;
-  const ref = collection(db, "kpi_reports", state.user.uid, "reports");
-  const q = query(ref, orderBy("updatedAt", "desc"), limit(24));
+  const q = query(collection(db, "kpi_reports", state.user.uid, "reports"), orderBy("updatedAt", "desc"), limit(24));
   const snap = await getDocs(q);
   state.reports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   renderReports();
-  summaryCards(state.reports[0]);
+  renderDashboard();
+  summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]);
 }
 
 async function saveReport() {
-  if (!firebaseReady || !state.user) {
-    setSaveStatus("ต้องเข้าสู่ระบบก่อน");
+  if (!firebaseReady || !state.user) return setSaveStatus("ต้องเข้าสู่ระบบก่อน");
+  const missing = validateRequiredFields();
+  if (missing.length) {
+    setSaveStatus(`กรุณากรอกข้อมูลหลักให้ครบ: ${missing.join(", ")}`);
     return;
   }
   setSaveStatus("กำลังบันทึก...");
-  const payload = currentPayload();
-  const ref = collection(db, "kpi_reports", state.user.uid, "reports");
-  await addDoc(ref, {
-    ...payload,
-    updatedAt: serverTimestamp(),
-    createdAt: serverTimestamp()
-  });
+  await addDoc(collection(db, "kpi_reports", state.user.uid, "reports"), { ...currentPayload(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
   state.currentReportId = null;
   setSaveStatus("บันทึกเรียบร้อย");
   await loadReports();
 }
 
 btnLogin.addEventListener("click", async () => {
-  if (!firebaseReady) {
-    setSaveStatus("กรุณาตั้งค่า Firebase config ก่อน");
-    return;
-  }
-  const provider = new GoogleAuthProvider();
-  await signInWithPopup(auth, provider);
+  if (!firebaseReady) return setSaveStatus("กรุณาตั้งค่า Firebase config ก่อน");
+  await signInWithPopup(auth, new GoogleAuthProvider());
 });
-
-btnLogout.addEventListener("click", async () => {
-  if (!firebaseReady) return;
-  await signOut(auth);
-});
-
+btnLogout.addEventListener("click", async () => { if (firebaseReady) await signOut(auth); });
 btnReset.addEventListener("click", () => fillForm(null));
-btnNewReport.addEventListener("click", () => {
-  state.currentReportId = null;
-  fillForm(null);
-  setSaveStatus("พร้อมสร้างรายงานใหม่");
-});
-
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  await saveReport();
-});
+btnNewReport.addEventListener("click", () => { state.currentReportId = null; fillForm(null); setSaveStatus("พร้อมสร้างรายงานใหม่"); });
+btnRecalculate?.addEventListener("click", () => { recalcDerivedFields(); setSaveStatus("คำนวณค่าอัตโนมัติใหม่แล้ว"); });
+btnExportCsv?.addEventListener("click", exportDashboardCsv);
+projectSelect.addEventListener("change", e => { state.selectedProject = e.target.value; if (dashboardProjectFilter) dashboardProjectFilter.value = e.target.value; syncProjectBanner(); renderReports(); renderDashboard(); summaryCards(state.reports.find(r => r.project === state.selectedProject) || state.reports[0]); setSaveStatus(`เลือก Project: ${e.target.value}`); });
+periodInput.addEventListener("change", syncProjectBanner);
+form.addEventListener("input", () => recalcDerivedFields());
+form.addEventListener("submit", async e => { e.preventDefault(); await saveReport(); });
+dashboardProjectFilter?.addEventListener("change", () => { renderReports(); renderDashboard(); });
+dashboardPeriodFilter?.addEventListener("input", () => { renderReports(); renderDashboard(); });
+dashboardModeFilter?.addEventListener("change", () => { renderReports(); renderDashboard(); });
+mainTabs.forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
 if (firebaseReady) {
   onAuthStateChanged(auth, async user => {
@@ -291,22 +620,21 @@ if (firebaseReady) {
     const signedIn = !!user;
     btnLogin.classList.toggle("hidden", signedIn);
     btnLogout.classList.toggle("hidden", !signedIn);
-    authStatus.textContent = signedIn
-      ? `${user.displayName || user.email} เข้าสู่ระบบแล้ว`
-      : "ยังไม่ได้เข้าสู่ระบบ";
-
+    authStatus.textContent = signedIn ? `${user.displayName || user.email} เข้าสู่ระบบแล้ว` : "ยังไม่ได้เข้าสู่ระบบ";
     if (signedIn) {
       if (!periodInput.value) periodInput.value = new Date().toISOString().slice(0, 7);
-      if (!siteInput.value) siteInput.value = "ลานจอด ABC";
-      if (!ownerInput.value) ownerInput.value = user.displayName || user.email || "";
+      state.selectedProject = projectSelect.value || PROJECT_OPTIONS[0];
+      applyProjectTemplate(state.selectedProject);
+      syncProjectBanner();
+      recalcDerivedFields();
       await loadReports();
       setSaveStatus("พร้อมใช้งาน");
     } else {
       state.reports = [];
       renderReports();
       summaryCards(null);
-      setSaveStatus("รอการเข้าสู่ระบบ");
       fillForm(null);
+      setSaveStatus("รอการเข้าสู่ระบบ");
     }
   });
 } else {
@@ -315,5 +643,11 @@ if (firebaseReady) {
 }
 
 buildForm();
+buildProjectOptions();
+buildSidebar();
+setupSidebarToggle();
+setView("dashboard");
 fillForm(null);
 summaryCards(null);
+syncProjectBanner();
+renderDashboard();
