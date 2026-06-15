@@ -202,7 +202,7 @@ function fillForm(report) {
 
 function buildForm() {
   form.innerHTML = KPI_SECTIONS.map(section => `
-    <section class="group" id="${section.id}">
+    <section class="group" id="section-${section.id}" data-section-id="${section.id}">
       <h3>${section.title}</h3>
       <div class="fields">
         ${section.fields.map(field => `
@@ -235,7 +235,7 @@ function applyProjectTemplate(project) {
 function buildSidebar() {
   const sidebar = document.getElementById("kpi-sidebar");
   sidebar.innerHTML = KPI_SECTIONS.map(section => `
-    <a class="side-link" href="#${section.id}" data-section="${section.id}">
+    <a class="side-link" href="#section-${section.id}" data-section="${section.id}">
       <span class="side-link-left">
         <span class="side-link-icon" aria-hidden="true">${section.icon}</span>
         <span class="side-link-label">${section.menuLabel}</span>
@@ -397,16 +397,16 @@ function setView(view) {
 }
 
 function setupSidebarActiveState() {
-  const sections = KPI_SECTIONS.map(section => document.getElementById(section.id)).filter(Boolean);
+  const sections = KPI_SECTIONS.map(section => document.getElementById(`section-${section.id}`)).filter(Boolean);
   if (!sections.length) return;
   const observer = new IntersectionObserver(entries => {
     const visible = entries
       .filter(entry => entry.isIntersecting)
       .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-    if (visible?.target?.id) setActiveSidebarSection(visible.target.id);
+    if (visible?.target?.dataset?.sectionId) setActiveSidebarSection(visible.target.dataset.sectionId);
   }, { root: null, threshold: [0.25, 0.45, 0.6] });
   sections.forEach(section => observer.observe(section));
-  setActiveSidebarSection(sections[0].id);
+  setActiveSidebarSection(sections[0].dataset.sectionId);
   document.querySelectorAll(".side-link").forEach(link => {
     link.addEventListener("click", () => {
       const sectionId = link.dataset.section;
