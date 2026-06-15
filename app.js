@@ -1,11 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { addDoc, collection, getDocs, getFirestore, limit, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = window.__FIREBASE_CONFIG__ || { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
 const firebaseReady = Boolean(firebaseConfig.apiKey && firebaseConfig.authDomain && firebaseConfig.projectId);
 const app = firebaseReady ? initializeApp(firebaseConfig) : null;
-const auth = firebaseReady ? getAuth(app) : null;
 const db = firebaseReady ? getFirestore(app) : null;
 
 const PROJECT_OPTIONS = ["INOAC อีโนแอค", "Extra ABC", "Extra ARC", "SBG Bangna", "EDC", "FOT"];
@@ -89,8 +87,6 @@ const KPI_SECTIONS = [
 const form = document.getElementById("kpi-form");
 const summaryGrid = document.getElementById("summary-grid");
 const reportsList = document.getElementById("reports-list");
-const btnLogin = document.getElementById("btn-login");
-const btnLogout = document.getElementById("btn-logout");
 const authStatus = document.getElementById("auth-status");
 const saveStatus = document.getElementById("save-status");
 const periodInput = document.getElementById("report-period");
@@ -122,7 +118,8 @@ const historySection = document.getElementById("history-section");
 const toolbarSection = document.getElementById("toolbar-section");
 const projectBanner = document.getElementById("project-banner");
 
-const state = { user: null, reports: [], currentReportId: null, selectedProject: PROJECT_OPTIONS[0] };
+const state = { reports: [], currentReportId: null, selectedProject: PROJECT_OPTIONS[0] };
+const REPORTS_COLLECTION = ["kpi_reports", "public", "reports"];
 const PROJECT_BADGES = {
   "INOAC อีโนแอค": { label: "INOAC", hue: "linear-gradient(135deg, #4cc9f0, #2563eb)" },
   "Extra ABC": { label: "ABC", hue: "linear-gradient(135deg, #f59e0b, #f97316)" },
@@ -204,7 +201,7 @@ function fillForm(report) {
   state.selectedProject = projectSelect.value;
   const template = PROJECT_TEMPLATES[state.selectedProject] || {};
   siteInput.value = report?.site || template.site || "ลานจอด ABC";
-  ownerInput.value = report?.owner || `${template.ownerPrefix || state.selectedProject} - ${state.user?.displayName || state.user?.email || ""}`.trim();
+  ownerInput.value = report?.owner || `${template.ownerPrefix || state.selectedProject} - Guest`.trim();
   KPI_SECTIONS.forEach(section => section.fields.forEach(field => {
     const el = document.getElementById(field.key);
     if (!el) return;
@@ -245,7 +242,7 @@ function buildProjectOptions() {
 function applyProjectTemplate(project) {
   const template = PROJECT_TEMPLATES[project] || {};
   if (!siteInput.value || siteInput.value === "ลานจอด ABC") siteInput.value = template.site || siteInput.value;
-  if (!ownerInput.value) ownerInput.value = `${template.ownerPrefix || project} - ${state.user?.displayName || state.user?.email || ""}`.trim();
+  if (!ownerInput.value) ownerInput.value = `${template.ownerPrefix || project} - Guest`.trim();
 }
 
 function buildSidebar() {
@@ -641,8 +638,8 @@ function renderReports() {
 }
 
 async function loadReports() {
-  if (!firebaseReady || !state.user) return;
-  const q = query(collection(db, "kpi_reports", state.user.uid, "reports"), orderBy("updatedAt", "desc"), limit(24));
+  if (!firebaseReady) return;
+  const q = query(collection(db, ...REPORTS_COLLECTION), orderBy("updatedAt", "desc"), limit(24));
   const snap = await getDocs(q);
   state.reports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   renderReports();
@@ -651,24 +648,25 @@ async function loadReports() {
 }
 
 async function saveReport() {
-  if (!firebaseReady || !state.user) return setSaveStatus("ต้องเข้าสู่ระบบก่อน");
+  if (!firebaseReady) return setSaveStatus("กรุณาตั้งค่า Firebase config ก่อน");
   const missing = validateRequiredFields();
   if (missing.length) {
     setSaveStatus(`กรุณากรอกข้อมูลหลักให้ครบ: ${missing.join(", ")}`);
     return;
   }
   setSaveStatus("กำลังบันทึก...");
-  await addDoc(collection(db, "kpi_reports", state.user.uid, "reports"), { ...currentPayload(), createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+  await addDoc(collection(db, ...REPORTS_COLLECTION), {
+    ...currentPayload(),
+    owner: ownerInput.value.trim() || "Guest",
+    createdBy: "Guest",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
   state.currentReportId = null;
   setSaveStatus("บันทึกเรียบร้อย");
   await loadReports();
 }
 
-btnLogin?.addEventListener("click", async () => {
-  if (!firebaseReady) return setSaveStatus("กรุณาตั้งค่า Firebase config ก่อน");
-  await signInWithPopup(auth, new GoogleAuthProvider());
-});
-btnLogout?.addEventListener("click", async () => { if (firebaseReady) await signOut(auth); });
 btnReset.addEventListener("click", () => fillForm(null));
 btnNewReport.addEventListener("click", () => { state.currentReportId = null; fillForm(null); setSaveStatus("พร้อมสร้างรายงานใหม่"); });
 btnRecalculate?.addEventListener("click", () => { recalcDerivedFields(); setSaveStatus("คำนวณค่าอัตโนมัติใหม่แล้ว"); });
@@ -683,28 +681,13 @@ dashboardModeFilter?.addEventListener("change", () => { renderReports(); renderD
 mainTabs.forEach(btn => btn.addEventListener("click", () => setView(btn.dataset.view)));
 
 if (firebaseReady) {
-  onAuthStateChanged(auth, async user => {
-    state.user = user;
-    const signedIn = !!user;
-    btnLogin?.classList.toggle("hidden", signedIn);
-    btnLogout?.classList.toggle("hidden", !signedIn);
-    authStatus.textContent = signedIn ? `${user.displayName || user.email} เข้าสู่ระบบแล้ว` : "ยังไม่ได้เข้าสู่ระบบ";
-    if (signedIn) {
-      if (!periodInput.value) periodInput.value = new Date().toISOString().slice(0, 7);
-      state.selectedProject = projectSelect.value || PROJECT_OPTIONS[0];
-      applyProjectTemplate(state.selectedProject);
-      syncProjectBanner();
-      recalcDerivedFields();
-      await loadReports();
-      setSaveStatus("พร้อมใช้งาน");
-    } else {
-      state.reports = [];
-      renderReports();
-      summaryCards(null);
-      fillForm(null);
-      setSaveStatus("รอการเข้าสู่ระบบ");
-    }
-  });
+  authStatus.textContent = "โหมดบันทึกข้อมูลแบบไม่ต้องล็อกอิน";
+  if (!periodInput.value) periodInput.value = new Date().toISOString().slice(0, 7);
+  state.selectedProject = projectSelect.value || PROJECT_OPTIONS[0];
+  applyProjectTemplate(state.selectedProject);
+  syncProjectBanner();
+  recalcDerivedFields();
+  loadReports().then(() => setSaveStatus("พร้อมใช้งาน")).catch(() => setSaveStatus("โหลดข้อมูลไม่สำเร็จ"));
 } else {
   authStatus.textContent = "ยังไม่ได้ตั้งค่า Firebase config";
   setSaveStatus("พร้อมตั้งค่า Firebase");
