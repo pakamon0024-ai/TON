@@ -78,3 +78,25 @@ Each report stores:
 4. Add Firebase config to the deployed app
 
 If you want, I can also convert this into a Vite-based build with environment variables for cleaner deployment.
+
+## LINE bot file analysis
+
+The Node server also supports LINE Messaging API webhooks.
+
+Webhook URL:
+
+```text
+https://your-render-service.onrender.com/callback
+```
+
+Required Render environment variables:
+
+- `LINE_CHANNEL_ACCESS_TOKEN`
+- `LINE_CHANNEL_SECRET`
+- `GEMINI_API_KEY`
+
+Supported LINE messages:
+
+- Text: replies with a short Thai response.
+- Image: downloads the image from LINE and asks Gemini to analyze it.
+- Excel/CSV file: supports `.xlsx`, `.xls`, and `.csv`; the bot reads sheet metadata plus the first 30 rows per sheet, then asks Gemini to summarize KPI highlights, unusual values, and suggestions.
