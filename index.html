@@ -1,194 +1,1263 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KPI Report | ลานจอด ABC</title>
-  <meta name="description" content="Web app สำหรับจัดทำรายงาน KPI ลานจอด ABC บน Netlify และ Firebase">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
-  <script>
-    window.__FIREBASE_CONFIG__ = {
-      apiKey: "AIzaSyDzI-JOygZAQwZNiBbIlY9OSrXMq1QRdSQ",
-      authDomain: "kpi-abc-yard.firebaseapp.com",
-      projectId: "kpi-abc-yard",
-      storageBucket: "kpi-abc-yard.firebasestorage.app",
-      messagingSenderId: "353382645394",
-      appId: "1:353382645394:web:2674ac1b5d1a2e5898304b",
-      measurementId: "G-EZG1JQHH14"
-    };
-  </script>
-  <script type="module" src="app.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KPI ABC Yard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Sarabun',sans-serif;background:#F1EFE8;color:#2C2C2A;min-height:100vh}
+.app{max-width:1000px;margin:0 auto;padding:.85rem}
+.header{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;margin-bottom:.85rem;flex-wrap:wrap;gap:10px}
+.header-left{display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;background:#185FA5;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#E6F1FB;font-size:17px;flex-shrink:0}
+.header h1{font-size:16px;font-weight:700;color:#2C2C2A}
+.header p{font-size:11px;color:#5F5E5A;margin-top:1px}
+.nav{display:flex;gap:6px;flex-wrap:wrap}
+.nav-btn{padding:6px 13px;border:0.5px solid #B4B2A9;border-radius:8px;background:transparent;cursor:pointer;font-size:12px;color:#5F5E5A;display:flex;align-items:center;gap:5px;transition:all .15s;font-family:'Sarabun',sans-serif}
+.nav-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.nav-btn:hover:not(.active){background:#F1EFE8}
+.page{display:none}.page.active{display:block}
+.card{background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;padding:.9rem 1rem;margin-bottom:.7rem}
+.card-title{font-size:13px;font-weight:700;color:#2C2C2A;display:flex;align-items:center;gap:7px;margin-bottom:.6rem}
+.date-row{display:flex;align-items:center;gap:10px;margin-bottom:.75rem;flex-wrap:wrap}
+.date-row label{font-size:14px;color:#5F5E5A;font-weight:600}
+.date-row input{padding:7px 12px;border:0.5px solid #B4B2A9;border-radius:8px;background:#fff;color:#2C2C2A;font-size:14px;font-family:'Sarabun',sans-serif}
+.unit-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem}
+.unit-tab{padding:6px 14px;border:0.5px solid #B4B2A9;border-radius:20px;background:transparent;cursor:pointer;font-size:13px;color:#5F5E5A;transition:all .15s;white-space:nowrap;font-family:'Sarabun',sans-serif}
+.unit-tab:hover:not(.active){background:#F1EFE8}
+.sec-label{font-size:11px;color:#5F5E5A;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin:1rem 0 .6rem;display:flex;align-items:center;gap:6px;border-bottom:0.5px solid #D3D1C7;padding-bottom:6px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:10px;color:#5F5E5A;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select{padding:7px 10px;border:0.5px solid #B4B2A9;border-radius:8px;background:#fff;color:#2C2C2A;font-size:14px;font-weight:600;text-align:center;width:100%;font-family:'Sarabun',sans-serif}
+.field select{text-align:left;font-size:13px}
+.field input:focus,.field select:focus{outline:none;border-color:#185FA5;box-shadow:0 0 0 3px rgba(24,95,165,.12)}
+.pct-unit{position:relative}
+.pct-unit input{padding-right:28px}
+.pct-unit::after{content:'%';position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#888780;font-size:14px;pointer-events:none}
+.save-btn{width:100%;padding:11px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.85rem;transition:all .15s;font-family:'Sarabun',sans-serif}
+.save-btn:hover{background:#0C447C}.save-btn:active{transform:scale(.98)}
+.save-btn:disabled{background:#D3D1C7;color:#888780;cursor:not-allowed}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:.7rem}
+.kpi-card{background:#fff;border:0.5px solid #D3D1C7;border-radius:10px;padding:10px 8px;text-align:center}
+.kpi-val{font-size:20px;font-weight:700;color:#2C2C2A;line-height:1.1}
+.kpi-sub{font-size:9px;color:#888780;margin-top:2px}
+.kpi-lbl{font-size:10px;color:#5F5E5A;margin-top:4px;font-weight:600}
+.kpi-icon{font-size:17px;margin-bottom:4px}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+@media(max-width:680px){.dash-grid{grid-template-columns:1fr}}
+.chart-wrap{position:relative;height:160px}
+.gauge-row{display:flex;gap:.6rem;justify-content:space-around;flex-wrap:wrap;padding:.25rem 0}
+.gauge-item{text-align:center;flex:1;min-width:100px}
+.gauge-lbl{font-size:11px;color:#5F5E5A;font-weight:600}
+.inc-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.inc-bar-wrap{flex:1;height:22px;background:#F1EFE8;border-radius:4px;overflow:hidden;display:flex}
+.inc-bar-fault{height:100%;background:#A32D2D;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;transition:width .5s;min-width:0}
+.inc-bar-ok{height:100%;background:#1D9E75;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;transition:width .5s;min-width:0}
+.inc-lbl{font-size:12px;color:#5F5E5A;width:85px;text-align:right;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inc-total{font-size:12px;font-weight:700;color:#2C2C2A;min-width:22px;text-align:right}
+
+.car-stat-grid{display:flex;gap:10px;flex-wrap:wrap}
+.car-stat-card{flex:1;min-width:90px;border-radius:10px;padding:9px 8px;text-align:center;border:0.5px solid #D3D1C7}
+.car-stat-val{font-size:21px;font-weight:700;line-height:1}
+.car-stat-lbl{font-size:10px;font-weight:600;margin-top:4px}
+.car-stat-icon{font-size:16px;margin-bottom:4px}
+.stat-and-chart{display:flex;flex-direction:column;gap:10px}
+.stat-cards-col{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px}
+.stat-chart-col{width:100%;min-width:0;position:relative;height:120px}
+.sec-card{border-radius:12px;overflow:hidden;margin-bottom:.55rem;border:0.5px solid #D3D1C7;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.sec-card-hdr{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--sec-bg);color:var(--sec-color);font-size:12px;font-weight:700;border-bottom:2px solid var(--sec-color);letter-spacing:.02em}
+.sec-card-body{background:#fff;padding:.75rem 1rem}
+.form-row-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.form-row-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px}
+.form-divider{height:0.5px;background:#E8E6E0;margin:9px 0}
+.filter-bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;background:#fff;border:0.5px solid #D3D1C7;border-radius:12px;padding:9px 14px;margin-bottom:.85rem}
+.filter-bar label{font-size:12px;font-weight:700;color:#5F5E5A;white-space:nowrap}
+.filter-seg{display:flex;border:0.5px solid #B4B2A9;border-radius:8px;overflow:hidden}
+.seg-btn{padding:6px 14px;background:transparent;border:none;cursor:pointer;font-size:13px;color:#5F5E5A;font-family:'Sarabun',sans-serif;transition:all .15s;white-space:nowrap}
+.seg-btn.active{background:#185FA5;color:#fff}
+.filter-sel{padding:6px 10px;border:0.5px solid #B4B2A9;border-radius:8px;background:#fff;color:#2C2C2A;font-size:13px;cursor:pointer;font-family:'Sarabun',sans-serif}
+.filter-date-input{padding:6px 10px;border:0.5px solid #B4B2A9;border-radius:8px;background:#fff;color:#2C2C2A;font-size:13px;font-family:'Sarabun',sans-serif}
+.filter-month-input{padding:6px 10px;border:0.5px solid #B4B2A9;border-radius:8px;background:#fff;color:#2C2C2A;font-size:13px;font-family:'Sarabun',sans-serif}
+.period-label{font-size:13px;font-weight:600;color:#185FA5;background:#E6F1FB;padding:5px 12px;border-radius:20px;white-space:nowrap}
+
+/* — Operational Dashboard: unit status strip — */
+.unit-status-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:.75rem}
+@media(max-width:760px){.unit-status-strip{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:460px){.unit-status-strip{grid-template-columns:repeat(2,1fr)}}
+.unit-status-chip{background:#fff;border:0.5px solid #D3D1C7;border-left:4px solid var(--u-color);border-radius:9px;padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;gap:2px;transition:all .15s;text-align:left;font-family:'Sarabun',sans-serif}
+.unit-status-chip:hover{box-shadow:0 2px 8px rgba(0,0,0,.07);transform:translateY(-1px)}
+.unit-status-chip.status-red{background:#FAEAEA}
+.unit-status-chip.status-yellow{background:#FDF3E3}
+.unit-status-chip.is-selected{outline:2px solid var(--u-color);outline-offset:1px}
+.usc-top{display:flex;align-items:center;gap:6px}
+.usc-name{font-size:11px;font-weight:700;color:#2C2C2A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.usc-label{font-size:9px;color:#888780;margin-left:14px;white-space:nowrap}
+
+/* — Operational Dashboard: dense tile grid — */
+.ops-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem}
+.ops-span-2{grid-column:1/-1}
+@media(max-width:680px){.ops-grid{grid-template-columns:1fr}.ops-span-2{grid-column:auto}}
+
+/* — Report mode: compact, single-screen for LINE screenshot — */
+.report-toggle-btn{padding:6px 13px;border:0.5px solid #B4B2A9;border-radius:8px;background:#fff;cursor:pointer;font-size:12px;color:#5F5E5A;display:flex;align-items:center;gap:5px;font-family:'Sarabun',sans-serif;transition:all .15s;white-space:nowrap}
+.report-toggle-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.report-toggle-btn:hover:not(.active){background:#F1EFE8}
+.report-mode .filter-bar > *:not(.period-label){display:none}
+.report-mode .filter-bar{justify-content:center}
+.report-mode .chart-wrap,.report-mode .stat-chart-col,.report-mode .ontime-chart-wrap{display:none}
+.report-mode .card{padding:.6rem .75rem}
+.report-mode .ops-grid{gap:.5rem}
+.report-mode .unit-status-strip{margin-bottom:.5rem}
+.report-mode .kpi-grid{margin-bottom:.5rem}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:8px 8px;text-align:center;font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.04em;background:#F1EFE8;border-bottom:0.5px solid #D3D1C7;white-space:nowrap}
+thead th:first-child,thead th:nth-child(2){text-align:left}
+tbody td{padding:8px;border-bottom:0.5px solid #D3D1C7;color:#2C2C2A;text-align:center}
+tbody td:first-child,tbody td:nth-child(2){text-align:left}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#F1EFE8}
+.no-data{text-align:center;padding:2.5rem;color:#888780;font-size:13px}
+.status-bar{display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 12px;border-radius:8px;background:#F1EFE8;color:#5F5E5A;border:0.5px solid #D3D1C7}
+.sdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.sdot.green{background:#1D9E75}.sdot.red{background:#A32D2D}.sdot.yellow{background:#BA7517;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.spinner{width:15px;height:15px;border:2px solid #D3D1C7;border-top-color:#185FA5;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);padding:11px 22px;border-radius:8px;font-size:14px;font-weight:600;opacity:0;transition:all .3s;z-index:9999;display:flex;align-items:center;gap:8px;white-space:nowrap;font-family:'Sarabun',sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.alert-box{padding:12px 16px;border-radius:8px;background:#FFF3E0;border:1px solid #FFC947;color:#7D4E00;font-size:13px;margin-bottom:1rem;display:flex;align-items:flex-start;gap:8px;line-height:1.6}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.legend-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#5F5E5A}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.dash-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.dash-hdr h2{font-size:15px;font-weight:700;color:#2C2C2A;display:flex;align-items:center;gap:7px}
+</style>
 </head>
 <body>
-  <div class="bg-orb orb-a"></div>
-  <div class="bg-orb orb-b"></div>
-
-  <main class="shell">
-    <section class="hero">
-      <div>
-        <p class="eyebrow">Netlify + Firebase</p>
-        <h1>KPI Report ลานจอด ABC</h1>
-        <p class="hero-copy">
-          กรอกข้อมูล KPI รายวันหรือรายเดือน เก็บลง Firestore และสรุปผลบนแดชบอร์ดเดียว
-        </p>
+<div class="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo"><i class="ti ti-truck"></i></div>
+      <div><h1>KPI ABC Yard</h1><p>ระบบบันทึกและติดตามผลการปฏิบัติงาน</p></div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div class="nav">
+        <button class="nav-btn active" onclick="switchPage('record')" id="nav-record"><i class="ti ti-edit"></i> บันทึก</button>
+        <button class="nav-btn" onclick="switchPage('dashboard')" id="nav-dashboard"><i class="ti ti-chart-bar"></i> แดชบอร์ด</button>
+        <button class="nav-btn" onclick="switchPage('history')" id="nav-history"><i class="ti ti-table"></i> ประวัติ</button>
       </div>
-    </section>
+      <div class="status-bar"><div class="sdot yellow" id="sdot"></div><span id="stxt">กำลังเชื่อมต่อ...</span></div>
+    </div>
+  </div>
 
-    <section class="workbench">
-      <aside class="card nav-rail">
-        <div class="section-head compact">
-          <div>
-            <p class="section-kicker">Navigation</p>
-            <h2>เมนูซ้าย</h2>
+  <div id="alert-box" class="alert-box" style="display:none">
+    <i class="ti ti-alert-triangle" style="flex-shrink:0;margin-top:1px"></i><span id="alert-msg"></span>
+  </div>
+
+  <!-- หน้าบันทึก -->
+  <div id="page-record" class="page active">
+
+    <!-- วันที่ + หน่วยงาน -->
+    <div class="card">
+      <div class="date-row">
+        <i class="ti ti-calendar" style="font-size:18px;color:#5F5E5A"></i>
+        <label>วันที่บันทึก</label>
+        <input type="date" id="record-date">
+        <span id="form-unit-badge" class="badge" style="margin-left:4px"></span>
+      </div>
+      <div class="unit-tabs" id="unit-tabs"></div>
+      <div style="font-size:14px;font-weight:700;color:#185FA5;display:flex;align-items:center;gap:7px;padding-top:4px">
+        <i class="ti ti-building"></i> กำลังบันทึก: <span id="form-unit-name" style="color:#2C2C2A">เลือกหน่วยงาน</span>
+      </div>
+    </div>
+
+    <!-- 1. การวิ่งงาน + Ontime -->
+    <div class="sec-card" style="--sec-color:#185FA5;--sec-bg:#EEF4FC">
+      <div class="sec-card-hdr">
+        <i class="ti ti-road"></i> การวิ่งงาน & ความตรงต่อเวลา
+      </div>
+      <div class="sec-card-body">
+        <div class="form-row-2">
+          <div class="field">
+            <label>จำนวนเที่ยววิ่ง</label>
+            <input type="number" id="f-trips" placeholder="0" min="0">
           </div>
-          <button id="sidebar-toggle" class="sidebar-toggle" aria-expanded="true" type="button">
-            <span class="toggle-label">ซ่อนเมนู</span>
-          </button>
+          <div class="field">
+            <label>จำนวนพนักงานขับรถ (ทั้งหมด)</label>
+            <input type="number" id="f-staff" placeholder="0" min="0">
+          </div>
         </div>
-        <nav class="main-tabs main-tabs-rail">
-          <button class="main-tab active" data-view="dashboard" type="button">Dashboard</button>
-          <button class="main-tab" data-view="entry" type="button">Data Entry</button>
-          <button class="main-tab" data-view="history" type="button">History</button>
-        </nav>
-        <div class="nav-rail-divider"></div>
-        <p class="section-kicker">หมวด KPI</p>
-        <nav id="kpi-sidebar" class="sidebar-nav"></nav>
-        <div class="sidebar-note">
-          เลือกเมนูด้านซ้ายเพื่อสลับ Dashboard หรือกระโดดไปยังหมวด KPI
+        <div class="form-divider"></div>
+        <div class="form-row-2">
+          <div class="field">
+            <label><i class="ti ti-user-x" style="font-size:11px;color:#A32D2D"></i> ขาดงาน</label>
+            <input type="number" id="f-absent" placeholder="0" min="0" style="border-color:#A32D2D40">
+          </div>
+          <div class="field">
+            <label><i class="ti ti-user-x" style="font-size:11px;color:#BA7517"></i> ลางาน</label>
+            <input type="number" id="f-leave" placeholder="0" min="0" style="border-color:#BA751740">
+          </div>
         </div>
-      </aside>
-
-      <section class="content-rail">
-        <section class="toolbar card" id="toolbar-section">
-          <div class="toolbar-group">
-            <label for="report-project">Project</label>
-            <select id="report-project"></select>
+        <div class="form-divider"></div>
+        <div class="form-row-2">
+          <div class="field">
+            <label><i class="ti ti-clock-check" style="font-size:11px"></i> % Pick up Ontime</label>
+            <div class="pct-unit"><input type="number" id="f-pickup-pct" placeholder="0.0" min="0" max="100" step="0.1"></div>
           </div>
-          <div class="toolbar-group">
-            <label for="report-period">วันที่บันทึก</label>
-            <input id="report-period" type="date">
+          <div class="field">
+            <label><i class="ti ti-circle-check" style="font-size:11px"></i> % Delivery Ontime</label>
+            <div class="pct-unit"><input type="number" id="f-delivery-pct" placeholder="0.0" min="0" max="100" step="0.1"></div>
           </div>
-          <div class="toolbar-group">
-            <span class="toolbar-spacer" aria-hidden="true"></span>
-            <button id="btn-recalculate" type="button" class="btn btn-secondary full-width">คำนวณใหม่</button>
-          </div>
-          <div class="toolbar-group toolbar-summary">
-            <span id="auth-status">โหมดบันทึกข้อมูลแบบไม่ต้องล็อกอิน</span>
-            <span id="save-status">ยังไม่บันทึก</span>
-          </div>
-        </section>
-
-        <div class="project-banner" id="project-banner">
-          <div>
-            <strong id="project-banner-title">
-              <span id="project-badge" class="project-badge">INOAC</span>
-              <span>Project: Inoac</span>
-            </strong>
-            <small id="project-banner-subtitle">ระบบจะบันทึกข้อมูลผูกกับ Project ที่เลือก</small>
-          </div>
-          <div id="project-banner-period">รอบรายงาน: -</div>
-        </div>
-
-        <section class="card dashboard-card" id="dashboard-section">
-          <div class="section-head compact">
-            <div>
-              <p class="section-kicker">Dashboard</p>
-              <h2>สรุปรายวัน / รายเดือน</h2>
-            </div>
-            <button id="btn-export-csv" class="btn btn-ghost" type="button">Export Excel</button>
-          </div>
-          <div class="dashboard-filters">
-            <div class="toolbar-group">
-              <label for="dashboard-project-filter">Project</label>
-              <select id="dashboard-project-filter"></select>
-            </div>
-            <div class="toolbar-group">
-              <label for="dashboard-period-filter">ช่วงวันที่ / เดือน</label>
-              <input id="dashboard-period-filter" type="date">
-            </div>
-            <div class="toolbar-group">
-              <label for="dashboard-mode-filter">มุมมอง</label>
-              <select id="dashboard-mode-filter">
-                <option value="all">ทั้งหมด</option>
-                <option value="daily">รายวัน</option>
-                <option value="monthly">รายเดือน</option>
-              </select>
-            </div>
-          </div>
-          <div id="dashboard-executive" class="dashboard-executive"></div>
-          <div class="dashboard-panels">
-            <div id="dashboard-daily" class="dashboard-grid"></div>
-            <div id="dashboard-monthly" class="dashboard-grid"></div>
-          </div>
-          <div class="dashboard-charts">
-            <div class="chart-card">
-              <h3>Job Order vs Complete</h3>
-              <div class="chart-legend"><span class="legend-dot blue"></span>Job Order <span class="legend-dot pink"></span>Complete</div>
-              <canvas id="chart-job" width="600" height="260"></canvas>
-            </div>
-            <div class="chart-card">
-              <h3>Project Summary</h3>
-              <div class="chart-legend"><span class="legend-dot teal"></span>Job Order by Project</div>
-              <canvas id="chart-project" width="600" height="260"></canvas>
-            </div>
-          </div>
-          <div class="dashboard-table-wrap">
-            <h3>Project Summary Table</h3>
-            <div class="dashboard-rank-group">
-              <h4>Ranking รายวัน</h4>
-              <div class="dashboard-rank" id="dashboard-rank-daily"></div>
-            </div>
-            <div class="dashboard-rank-group">
-              <h4>Ranking รายเดือน</h4>
-              <div class="dashboard-rank" id="dashboard-rank-monthly"></div>
-            </div>
-            <div id="dashboard-table" class="dashboard-table"></div>
-          </div>
-        </section>
-
-        <section class="layout" id="entry-section">
-          <section class="card form-card">
-            <div class="section-head">
-              <div>
-                <p class="section-kicker">Data Entry</p>
-                <h2>กรอก KPI รายวัน</h2>
-              </div>
-              <button id="btn-new-report" class="btn btn-ghost">สร้างชุดข้อมูลใหม่</button>
-            </div>
-            <form id="kpi-form" class="kpi-form"></form>
-            <div class="form-actions">
-              <button type="button" id="btn-reset" class="btn btn-secondary">ล้างค่าในฟอร์ม</button>
-              <button type="button" id="btn-save-report" class="btn btn-primary">บันทึกรายงาน</button>
-            </div>
-          </section>
-
-          <section class="stack">
-            <section class="card">
-              <div class="section-head compact">
-                <div>
-                  <p class="section-kicker">Summary</p>
-                  <h2>สรุปภาพรวม</h2>
-                </div>
-              </div>
-              <div id="summary-grid" class="summary-grid"></div>
-            </section>
-          </section>
-        </section>
-      </section>
-    </section>
-
-    <section class="card history-section" id="history-section">
-      <div class="section-head compact">
-        <div>
-          <p class="section-kicker">History</p>
-          <h2>รายงานทั้งหมด</h2>
         </div>
       </div>
-      <div id="reports-list" class="reports-list"></div>
-    </section>
-  </main>
+    </div>
+
+    <!-- 2. สถานะรถ -->
+    <div class="sec-card" style="--sec-color:#534AB7;--sec-bg:#EFEEFC">
+      <div class="sec-card-hdr">
+        <i class="ti ti-car"></i> สถานะรถ
+      </div>
+      <div class="sec-card-body">
+        <div style="font-size:11px;font-weight:700;color:#534AB7;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">รถบริษัท</div>
+        <div class="form-row-3">
+          <div class="field">
+            <label>รถวิ่งงาน</label>
+            <input type="number" id="f-car-active-co" placeholder="0" min="0" style="border-color:#534AB740">
+          </div>
+          <div class="field">
+            <label>รถจอด</label>
+            <input type="number" id="f-car-park-co" placeholder="0" min="0" style="border-color:#534AB740">
+          </div>
+          <div class="field">
+            <label>เช็คระยะ / ซ่อม</label>
+            <input type="number" id="f-car-check-co" placeholder="0" min="0" style="border-color:#534AB740">
+          </div>
+        </div>
+        <div class="form-divider"></div>
+        <div style="font-size:11px;font-weight:700;color:#534AB7;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">รถร่วม</div>
+        <div class="form-row-3">
+          <div class="field">
+            <label>รถวิ่งงาน</label>
+            <input type="number" id="f-car-active-jv" placeholder="0" min="0" style="border-color:#534AB740">
+          </div>
+          <div class="field">
+            <label>รถจอด</label>
+            <input type="number" id="f-car-park-jv" placeholder="0" min="0" style="border-color:#534AB740">
+          </div>
+          <div class="field">
+            <label>เช็คระยะ / ซ่อม</label>
+            <input type="number" id="f-car-check-jv" placeholder="0" min="0" style="border-color:#534AB740">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. อุบัติเหตุ -->
+    <div class="sec-card" style="--sec-color:#A32D2D;--sec-bg:#FAEAEA">
+      <div class="sec-card-hdr">
+        <i class="ti ti-alert-triangle"></i> อุบัติเหตุ
+      </div>
+      <div class="sec-card-body">
+        <div class="form-row-3">
+          <div class="field">
+            <label>จำนวนครั้ง</label>
+            <input type="number" id="f-accident" placeholder="0" min="0">
+          </div>
+          <div class="field">
+            <label>ฝ่ายรับผิดชอบ</label>
+            <select id="f-accident-fault">
+              <option value="none">— ไม่มี —</option>
+              <option value="our">ฝ่ายเรา (ผิด)</option>
+              <option value="other">ฝ่ายอื่น (ถูก)</option>
+              <option value="both">ทั้งสองฝ่าย</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>หมายเหตุ</label>
+            <input type="text" id="f-accident-note" placeholder="-" style="font-size:13px;font-weight:400;text-align:left">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. สินค้าเสียหาย -->
+    <div class="sec-card" style="--sec-color:#BA7517;--sec-bg:#FDF3E3">
+      <div class="sec-card-hdr">
+        <i class="ti ti-package-off"></i> สินค้าเสียหาย
+      </div>
+      <div class="sec-card-body">
+        <div class="form-row-3">
+          <div class="field">
+            <label>จำนวนครั้ง</label>
+            <input type="number" id="f-damage" placeholder="0" min="0">
+          </div>
+          <div class="field">
+            <label>ฝ่ายรับผิดชอบ</label>
+            <select id="f-damage-fault">
+              <option value="none">— ไม่มี —</option>
+              <option value="our">ฝ่ายเรา (ผิด)</option>
+              <option value="other">ฝ่ายอื่น (ถูก)</option>
+              <option value="both">ทั้งสองฝ่าย</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>หมายเหตุ</label>
+            <input type="text" id="f-damage-note" placeholder="-" style="font-size:13px;font-weight:400;text-align:left">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. เรื่องร้องเรียน -->
+    <div class="sec-card" style="--sec-color:#993556;--sec-bg:#FAECF1">
+      <div class="sec-card-hdr">
+        <i class="ti ti-message-exclamation"></i> เรื่องร้องเรียน
+      </div>
+      <div class="sec-card-body">
+        <div class="form-row-2">
+          <div class="field">
+            <label>จำนวนเรื่องร้องเรียน</label>
+            <input type="number" id="f-complaint" placeholder="0" min="0">
+          </div>
+          <div class="field">
+            <label>รายละเอียด</label>
+            <input type="text" id="f-complaint-note" placeholder="-" style="font-size:13px;font-weight:400;text-align:left">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ปุ่มบันทึก -->
+    <button class="save-btn" id="save-btn" onclick="saveRecord()">
+      <i class="ti ti-device-floppy"></i> บันทึกข้อมูล
+    </button>
+
+  </div>
+
+  <!-- แดชบอร์ด -->
+  <div id="page-dashboard" class="page">
+    <div class="dash-hdr">
+      <h2><i class="ti ti-layout-dashboard"></i> แดชบอร์ด KPI</h2>
+      <button class="report-toggle-btn" id="btn-report-mode" onclick="toggleReportMode()">
+        <i class="ti ti-camera"></i> มุมมองสรุป (แคปจอ)
+      </button>
+    </div>
+
+    <!-- สถานะรวมรายหน่วยงาน (at-a-glance) -->
+    <div class="unit-status-strip" id="unit-status-strip"></div>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <label><i class="ti ti-filter" style="margin-right:4px"></i>มุมมอง</label>
+      <div class="filter-seg">
+        <button class="seg-btn active" id="seg-month" onclick="setMode('month')">รายเดือน</button>
+        <button class="seg-btn" id="seg-day" onclick="setMode('day')">รายวัน</button>
+      </div>
+
+      <!-- รายเดือน -->
+      <div id="ctrl-month" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#5F5E5A">เดือน</label>
+        <input type="month" id="filter-month" class="filter-month-input" onchange="renderDash()">
+        <label style="font-size:12px;color:#5F5E5A">หน่วยงาน</label>
+        <select id="filter-unit-month" class="filter-sel" onchange="renderDash()">
+          <option value="all">ทุกหน่วยงาน</option>
+        </select>
+      </div>
+
+      <!-- รายวัน -->
+      <div id="ctrl-day" style="display:none;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="font-size:12px;color:#5F5E5A">วันที่</label>
+        <input type="date" id="filter-date" class="filter-date-input" onchange="renderDash()">
+        <label style="font-size:12px;color:#5F5E5A">หน่วยงาน</label>
+        <select id="filter-unit-day" class="filter-sel" onchange="renderDash()">
+          <option value="all">ทุกหน่วยงาน</option>
+        </select>
+      </div>
+
+      <span class="period-label" id="period-label">—</span>
+    </div>
+
+    <!-- KPI Summary -->
+    <div class="kpi-grid" id="kpi-summary"></div>
+
+    <!-- Operational tile grid -->
+    <div class="ops-grid">
+      <div class="card ops-span-2" style="padding:1rem 1.25rem">
+        <div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-users" style="color:#185FA5"></i> สถานะพนักงานขับรถ</div>
+        <div class="stat-and-chart">
+          <div class="stat-cards-col" id="staff-stat-grid"></div>
+          <div class="stat-chart-col"><canvas id="chart-staff"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card ops-span-2" style="padding:1rem 1.25rem">
+        <div class="card-title" style="margin-bottom:.75rem"><i class="ti ti-car" style="color:#534AB7"></i> สถานะรถ</div>
+        <div class="stat-and-chart">
+          <div class="stat-cards-col" id="car-stat-grid"></div>
+          <div class="stat-chart-col"><canvas id="chart-car"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-road" style="color:#185FA5"></i> จำนวนเที่ยววิ่ง</div>
+        <div class="chart-wrap"><canvas id="chart-trips"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-clock-check" style="color:#1D9E75"></i> % Ontime</div>
+        <div class="gauge-row" id="gauge-ontime"></div>
+        <div class="ontime-chart-wrap" style="position:relative;height:120px;margin-top:.4rem"><canvas id="chart-ontime"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><i class="ti ti-alert-triangle" style="color:#A32D2D"></i> อุบัติเหตุ (ฝ่ายเราผิด)</div>
+        <div class="chart-wrap"><canvas id="chart-accident"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><i class="ti ti-package-off" style="color:#BA7517"></i> สินค้าเสียหาย (ฝ่ายเราผิด)</div>
+        <div class="chart-wrap"><canvas id="chart-damage"></canvas></div>
+      </div>
+
+      <div class="card ops-span-2">
+        <div class="card-title"><i class="ti ti-message-exclamation" style="color:#993556"></i> เรื่องร้องเรียน</div>
+        <div style="position:relative;height:200px"><canvas id="chart-complaint"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:1rem">
+      <button onclick="exportExcel()" style="display:flex;align-items:center;gap:7px;padding:9px 18px;background:#1D9E75;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Sarabun',sans-serif">
+        <i class="ti ti-table-export"></i> Export Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- ประวัติ -->
+  <div id="page-history" class="page">
+    <div class="dash-hdr">
+      <h2><i class="ti ti-table"></i> ประวัติการบันทึก</h2>
+      <select class="filter-sel" id="history-unit" onchange="renderHistory()">
+        <option value="all">ทุกหน่วยงาน</option>
+      </select>
+    </div>
+    <div class="card" style="padding:0">
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th><th>หน่วยงาน</th>
+              <th>เที่ยว</th><th>พขร.</th>
+              <th>Pick%</th><th>Del%</th>
+              <th>วิ่ง</th><th>จอด</th><th>เช็ค</th>
+              <th>อุบัติ</th><th>ฝ่าย</th>
+              <th>เสียหาย</th><th>ฝ่าย</th>
+              <th>ร้องเรียน</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+const UNITS=[
+  {id:'extra_abc',name:'Extra ABC',color:'#185FA5'},
+  {id:'extra_arc',name:'Extra ARC',color:'#1D9E75'},
+  {id:'fot',name:'FOT',color:'#BA7517'},
+  {id:'inoac',name:'INOAC',color:'#993556'},
+  {id:'sbg',name:'SBG Bangna',color:'#534AB7'},
+  {id:'edc',name:'EDC',color:'#A32D2D'}
+];
+const FAULT_LABEL={none:'—',our:'ฝ่ายเรา',other:'ฝ่ายอื่น',both:'ทั้งสองฝ่าย'};
+const DB_URLS=[
+  'https://kpi-abc-yard-default-rtdb.asia-southeast1.firebasedatabase.app',
+  'https://kpi-abc-yard-default-rtdb.firebaseio.com'
+];
+const FB_CONFIG={
+  apiKey:'AIzaSyDzI-JOygZAQwZNiBbIlY9OSrXMq1QRdSQ',
+  authDomain:'kpi-abc-yard.firebaseapp.com',
+  databaseURL:DB_URLS[0],
+  projectId:'kpi-abc-yard',
+  storageBucket:'kpi-abc-yard.firebasestorage.app',
+  messagingSenderId:'353382645394',
+  appId:'1:353382645394:web:2674ac1b5d1a2e5898304b'
+};
+
+let db=null,records=[],currentUnit=UNITS[0].id,fbConnected=false,connTimer=null;
+let charts={};
+let dashMode='month'; // 'month' | 'day'
+
+// Register datalabels plugin globally
+Chart.register(ChartDataLabels);
+
+/* — Firebase — */
+function setStatus(st,msg){
+  document.getElementById('sdot').className='sdot '+(st==='ok'?'green':st==='err'?'red':'yellow');
+  document.getElementById('stxt').textContent=msg;
+}
+function showAlert(msg){document.getElementById('alert-msg').textContent=msg;document.getElementById('alert-box').style.display='flex';}
+function hideAlert(){document.getElementById('alert-box').style.display='none';}
+
+function initFB(idx){
+  try{
+    FB_CONFIG.databaseURL=DB_URLS[idx];
+    if(!firebase.apps.length)firebase.initializeApp(FB_CONFIG);
+    db=firebase.database();
+    connTimer=setTimeout(()=>{
+      if(!fbConnected&&idx===0){setStatus('yellow','ลอง endpoint อื่น...');firebase.app().delete().then(()=>{firebase.apps.length=0;initFB(1)}).catch(()=>initFB(1));}
+      else if(!fbConnected){setStatus('err','เชื่อมต่อไม่ได้');showAlert('ตรวจสอบ Firebase Rules: .read และ .write ต้องเป็น true');}
+    },8000);
+    db.ref('.info/connected').on('value',snap=>{
+      fbConnected=snap.val()===true;
+      if(fbConnected){clearTimeout(connTimer);hideAlert();setStatus('ok','Firebase เชื่อมต่อแล้ว ✓');document.getElementById('save-btn').disabled=false;}
+      else{setStatus('yellow','กำลังเชื่อมต่อ...');document.getElementById('save-btn').disabled=true;}
+    });
+    db.ref('kpi_records').on('value',snap=>{
+      records=[];
+      snap.forEach(c=>{records.push({_key:c.key,...c.val()})});
+      records.sort((a,b)=>b.date.localeCompare(a.date));
+      const ap=document.querySelector('.page.active');
+      if(ap){if(ap.id==='page-dashboard')renderDash();if(ap.id==='page-history')renderHistory();}
+    });
+  }catch(e){setStatus('err',e.message);showAlert('Firebase error: '+e.message);}
+}
+
+/* — Form helpers — */
+function getV(id){return parseFloat(document.getElementById(id).value)||0;}
+function getS(id){return document.getElementById(id).value||'';}
+function setV(id,v){document.getElementById(id).value=v!=null?v:'';}
+
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.getElementById('nav-'+p).classList.add('active');
+  if(p==='dashboard')renderDash();
+  if(p==='history')renderHistory();
+}
+
+function buildTabs(){
+  document.getElementById('unit-tabs').innerHTML=UNITS.map(u=>
+    `<button class="unit-tab${u.id===currentUnit?' active':''}" style="${u.id===currentUnit?'background:'+u.color+';color:#fff;border-color:'+u.color+';':''}" onclick="selectUnit('${u.id}')">${u.name}</button>`
+  ).join('');
+}
+
+function selectUnit(id){
+  currentUnit=id;
+  const u=UNITS.find(x=>x.id===id);
+  document.getElementById('form-unit-name').textContent=u.name;
+  const badge=document.getElementById('form-unit-badge');
+  badge.textContent='';badge.style.cssText='';
+  buildTabs();
+  const date=document.getElementById('record-date').value;
+  const ex=records.find(r=>r.date===date&&r.unit===id);
+  if(ex){
+    setV('f-trips',ex.trips||0);setV('f-staff',ex.staff||0);
+    setV('f-absent',ex.absent||0);setV('f-leave',ex.leave||0);
+    setV('f-pickup-pct',ex.pickupPct||0);setV('f-delivery-pct',ex.deliveryPct||0);
+    setV('f-car-active-co',ex.carActiveCo||0);setV('f-car-park-co',ex.carParkCo||0);setV('f-car-check-co',ex.carCheckCo||0);
+    setV('f-car-active-jv',ex.carActiveJv||0);setV('f-car-park-jv',ex.carParkJv||0);setV('f-car-check-jv',ex.carCheckJv||0);
+    setV('f-accident',ex.accident||0);document.getElementById('f-accident-fault').value=ex.accidentFault||'none';setV('f-accident-note',ex.accidentNote||'');
+    setV('f-damage',ex.damage||0);document.getElementById('f-damage-fault').value=ex.damageFault||'none';setV('f-damage-note',ex.damageNote||'');
+    setV('f-complaint',ex.complaint||0);setV('f-complaint-note',ex.complaintNote||'');
+    badge.textContent='มีข้อมูลแล้ว';badge.style.cssText='background:#E1F5EE;color:#0F6E56';
+  }else{
+    ['f-trips','f-staff','f-absent','f-leave','f-pickup-pct','f-delivery-pct','f-car-active-co','f-car-park-co','f-car-check-co','f-car-active-jv','f-car-park-jv','f-car-check-jv','f-accident','f-accident-note','f-damage','f-damage-note','f-complaint','f-complaint-note'].forEach(f=>setV(f,''));
+    document.getElementById('f-accident-fault').value='none';
+    document.getElementById('f-damage-fault').value='none';
+  }
+}
+
+async function saveRecord(){
+  if(!fbConnected){showToast('ยังไม่เชื่อมต่อ Firebase','warn');return;}
+  const date=document.getElementById('record-date').value;
+  if(!date){showToast('กรุณาเลือกวันที่','warn');return;}
+  const btn=document.getElementById('save-btn');
+  btn.disabled=true;btn.innerHTML='<div class="spinner"></div> กำลังบันทึก...';
+  const carActiveCo=getV('f-car-active-co'),carParkCo=getV('f-car-park-co'),carCheckCo=getV('f-car-check-co');
+  const carActiveJv=getV('f-car-active-jv'),carParkJv=getV('f-car-park-jv'),carCheckJv=getV('f-car-check-jv');
+  const rec={date,unit:currentUnit,
+    trips:getV('f-trips'),staff:getV('f-staff'),
+    absent:getV('f-absent'),leave:getV('f-leave'),
+    pickupPct:getV('f-pickup-pct'),deliveryPct:getV('f-delivery-pct'),
+    carActiveCo,carParkCo,carCheckCo,
+    carActiveJv,carParkJv,carCheckJv,
+    carActive:carActiveCo+carActiveJv,carPark:carParkCo+carParkJv,carCheck:carCheckCo+carCheckJv,
+    accident:getV('f-accident'),accidentFault:getS('f-accident-fault'),accidentNote:getS('f-accident-note'),
+    damage:getV('f-damage'),damageFault:getS('f-damage-fault'),damageNote:getS('f-damage-note'),
+    complaint:getV('f-complaint'),complaintNote:getS('f-complaint-note'),
+    updatedAt:Date.now()};
+  try{
+    const ex=records.find(r=>r.date===date&&r.unit===currentUnit);
+    if(ex&&ex._key) await db.ref('kpi_records/'+ex._key).update(rec);
+    else await db.ref('kpi_records').push(rec);
+    showToast('บันทึกสำเร็จ ✓');selectUnit(currentUnit);
+  }catch(e){
+    showToast('บันทึกล้มเหลว','warn');
+    if(e.message.includes('permission'))showAlert('Firebase Rules ยังปิดอยู่ กรุณาเปิด .read และ .write เป็น true');
+  }
+  btn.disabled=false;btn.innerHTML='<i class="ti ti-device-floppy"></i> บันทึกข้อมูล';
+}
+
+/* ═══════════════════════════════
+   DASHBOARD
+═══════════════════════════════ */
+function toggleReportMode(){
+  const page=document.getElementById('page-dashboard');
+  const on=page.classList.toggle('report-mode');
+  const btn=document.getElementById('btn-report-mode');
+  btn.classList.toggle('active',on);
+  btn.innerHTML=on?'<i class="ti ti-x"></i> ออกจากมุมมองสรุป':'<i class="ti ti-camera"></i> มุมมองสรุป (แคปจอ)';
+}
+
+function setMode(m){
+  dashMode=m;
+  document.getElementById('seg-month').classList.toggle('active',m==='month');
+  document.getElementById('seg-day').classList.toggle('active',m==='day');
+  document.getElementById('ctrl-month').style.display=m==='month'?'flex':'none';
+  document.getElementById('ctrl-day').style.display=m==='day'?'flex':'none';
+  renderDash();
+}
+
+function getFilteredRecords(){
+  const unitMonthSel=document.getElementById('filter-unit-month').value;
+  const unitDaySel=document.getElementById('filter-unit-day').value;
+  if(dashMode==='month'){
+    const ym=document.getElementById('filter-month').value; // "2025-06"
+    if(!ym)return[];
+    let f=records.filter(r=>r.date.startsWith(ym));
+    if(unitMonthSel!=='all') f=f.filter(r=>r.unit===unitMonthSel);
+    return f;
+  } else {
+    const d=document.getElementById('filter-date').value;
+    if(!d)return[];
+    let f=records.filter(r=>r.date===d);
+    if(unitDaySel!=='all') f=f.filter(r=>r.unit===unitDaySel);
+    return f;
+  }
+}
+
+function getPeriodRecords(){
+  // เหมือน getFilteredRecords แต่ไม่กรองหน่วยงาน ใช้สำหรับสรุปสถานะรายหน่วยงานทั้งหมด
+  if(dashMode==='month'){
+    const ym=document.getElementById('filter-month').value;
+    if(!ym)return[];
+    return records.filter(r=>r.date.startsWith(ym));
+  } else {
+    const d=document.getElementById('filter-date').value;
+    if(!d)return[];
+    return records.filter(r=>r.date===d);
+  }
+}
+
+function quickFilterUnit(unitId){
+  const sel=document.getElementById(dashMode==='month'?'filter-unit-month':'filter-unit-day');
+  sel.value=sel.value===unitId?'all':unitId;
+  renderDash();
+}
+
+function renderUnitStatusStrip(){
+  const pr=getPeriodRecords();
+  const activeUnit=document.getElementById(dashMode==='month'?'filter-unit-month':'filter-unit-day').value;
+  document.getElementById('unit-status-strip').innerHTML=UNITS.map(u=>{
+    const ur=pr.filter(r=>r.unit===u.id);
+    let status='none',label='ไม่มีข้อมูล';
+    if(ur.length){
+      const pk=avg(ur,'pickupPct'),dl=avg(ur,'deliveryPct');
+      const accOur=sum(ur.filter(r=>r.accidentFault==='our'||r.accidentFault==='both'),'accident');
+      const dmgOur=sum(ur.filter(r=>r.damageFault==='our'||r.damageFault==='both'),'damage');
+      const comp=sum(ur,'complaint');
+      if(accOur>0||dmgOur>0||pk<90||dl<90){status='red';label='มีปัญหา';}
+      else if(pk<95||dl<95||comp>0){status='yellow';label='เฝ้าระวัง';}
+      else{status='green';label='ปกติ';}
+    }
+    const dotStyle=status==='none'?'background:#D3D1C7':'';
+    const selected=activeUnit===u.id?' is-selected':'';
+    return`<div class="unit-status-chip status-${status}${selected}" style="--u-color:${u.color}" onclick="quickFilterUnit('${u.id}')" title="คลิกเพื่อกรองเฉพาะหน่วยงานนี้">
+      <div class="usc-top"><span class="sdot ${status==='red'?'red':status==='yellow'?'yellow':status==='green'?'green':''}" style="${dotStyle}"></span><span class="usc-name">${u.name}</span></div>
+      <span class="usc-label">${label}</span>
+    </div>`;
+  }).join('');
+}
+
+function getDaysInMonth(ym){
+  // ym = "2025-06"
+  const [y,m]=ym.split('-').map(Number);
+  const days=new Date(y,m,0).getDate();
+  return Array.from({length:days},(_,i)=>{
+    const dd=String(i+1).padStart(2,'0');
+    return `${ym}-${dd}`;
+  });
+}
+
+function thMonth(ym){
+  if(!ym)return'';
+  const [y,m]=ym.split('-');
+  const months=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return months[parseInt(m)-1]+' '+(parseInt(y)+543);
+}
+
+function sum(arr,k){return arr.reduce((t,r)=>t+(parseFloat(r[k])||0),0);}
+function avg(arr,k){if(!arr.length)return 0;return sum(arr,k)/arr.length;}
+
+function mkChart(id,type,data,opts={}){
+  if(charts[id])charts[id].destroy();
+  const ctx=document.getElementById(id);
+  if(!ctx)return;
+  // default datalabels off; individual charts opt-in via opts.plugins.datalabels
+  const defaultDL={datalabels:{display:false}};
+  charts[id]=new Chart(ctx,{type,data,options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},...defaultDL,...(opts.plugins||{})},
+    ...opts
+  }});
+}
+
+function renderDash(){
+  const f=getFilteredRecords();
+  renderUnitStatusStrip();
+
+  /* period label */
+  let plabel='';
+  if(dashMode==='month'){
+    const ym=document.getElementById('filter-month').value;
+    const usel=document.getElementById('filter-unit-month').value;
+    plabel=thMonth(ym)+(usel!=='all'?' · '+UNITS.find(x=>x.id===usel)?.name:'');
+  } else {
+    const d=document.getElementById('filter-date').value;
+    const usel=document.getElementById('filter-unit-day').value;
+    plabel=(d||'—')+(usel!=='all'?' · '+UNITS.find(x=>x.id===usel)?.name:'');
+  }
+  document.getElementById('period-label').textContent=plabel||'—';
+
+  const totalTrips=sum(f,'trips'),totalStaff=sum(f,'staff');
+  const totalAbsent=sum(f,'absent'),totalLeave=sum(f,'leave');
+  const totalCarActive=sum(f,'carActive'),totalCarPark=sum(f,'carPark'),totalCarCheck=sum(f,'carCheck');
+  const totalCar=totalCarActive+totalCarPark+totalCarCheck;
+  const avgPickup=avg(f,'pickupPct'),avgDelivery=avg(f,'deliveryPct');
+  const totalAccident=sum(f,'accident'),totalDamage=sum(f,'damage'),totalComplaint=sum(f,'complaint');
+
+  /* KPI cards — เที่ยววิ่ง, Ontime, อุบัติเหตุ, เสียหาย, ร้องเรียน */
+  document.getElementById('kpi-summary').innerHTML=`
+    <div class="kpi-card"><div class="kpi-icon" style="color:#185FA5"><i class="ti ti-road"></i></div><div class="kpi-val">${totalTrips.toLocaleString()}</div><div class="kpi-lbl">เที่ยววิ่งรวม</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="color:#1D9E75"><i class="ti ti-clock-check"></i></div><div class="kpi-val" style="color:${avgPickup>=95?'#1D9E75':avgPickup>=90?'#BA7517':'#A32D2D'}">${f.length?avgPickup.toFixed(1):'—'}%</div><div class="kpi-sub">Pick up Ontime</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="color:#1D9E75"><i class="ti ti-circle-check"></i></div><div class="kpi-val" style="color:${avgDelivery>=95?'#1D9E75':avgDelivery>=90?'#BA7517':'#A32D2D'}">${f.length?avgDelivery.toFixed(1):'—'}%</div><div class="kpi-sub">Delivery Ontime</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="color:${totalAccident>0?'#A32D2D':'#888780'}"><i class="ti ti-alert-triangle"></i></div><div class="kpi-val" style="color:${totalAccident>0?'#A32D2D':'#2C2C2A'}">${totalAccident}</div><div class="kpi-lbl">อุบัติเหตุ</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="color:${totalDamage>0?'#BA7517':'#888780'}"><i class="ti ti-package-off"></i></div><div class="kpi-val" style="color:${totalDamage>0?'#BA7517':'#2C2C2A'}">${totalDamage}</div><div class="kpi-lbl">สินค้าเสียหาย</div></div>
+    <div class="kpi-card"><div class="kpi-icon" style="color:${totalComplaint>0?'#BA7517':'#888780'}"><i class="ti ti-message-exclamation"></i></div><div class="kpi-val" style="color:${totalComplaint>0?'#BA7517':'#2C2C2A'}">${totalComplaint}</div><div class="kpi-lbl">เรื่องร้องเรียน</div></div>`;
+
+  /* — กำหนด X axis — */
+  // เลือก "ทุกหน่วยงาน": แกน X = หน่วยงาน (เปรียบเทียบรายหน่วยงานเสมอ ไม่ว่ารายเดือน/รายวัน)
+  // เลือกหน่วยงานเดียว: รายเดือน -> แกน X = วันที่ในเดือน, รายวัน -> จุดเดียว
+  const unitSel = dashMode==='month'
+    ? document.getElementById('filter-unit-month').value
+    : document.getElementById('filter-unit-day').value;
+
+  let labels, tripsData, staffData, pickupData, deliveryData;
+
+  const ym2 = dashMode==='month' ? document.getElementById('filter-month').value : null;
+  const days2 = ym2 ? getDaysInMonth(ym2) : [];
+  const xLabels = unitSel==='all'
+    ? UNITS.map(u=>u.name)
+    : (dashMode==='month' ? days2.map(d=>parseInt(d.slice(8))) : ['']);
+
+  if(unitSel==='all'){
+    // เปรียบเทียบรายหน่วยงาน (รวมทั้งช่วงเวลาที่เลือก)
+    labels=UNITS.map(u=>u.name);
+    tripsData=UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'trips'));
+    staffData=UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'staff'));
+    pickupData=UNITS.map(u=>{const ur=f.filter(r=>r.unit===u.id);return ur.length?avg(ur,'pickupPct'):null;});
+    deliveryData=UNITS.map(u=>{const ur=f.filter(r=>r.unit===u.id);return ur.length?avg(ur,'deliveryPct'):null;});
+  } else if(dashMode==='month'){
+    const ym=document.getElementById('filter-month').value;
+    const days=ym?getDaysInMonth(ym):[];
+    labels=days.map(d=>parseInt(d.slice(8))); // วันที่ 1,2,...31
+    tripsData=days.map(d=>{const r=f.find(x=>x.date===d);return r?r.trips:0;});
+    staffData=days.map(d=>{const r=f.find(x=>x.date===d);return r?r.staff:0;});
+    pickupData=days.map(d=>{const r=f.find(x=>x.date===d);return r?r.pickupPct:null;});
+    deliveryData=days.map(d=>{const r=f.find(x=>x.date===d);return r?r.deliveryPct:null;});
+  } else {
+    // หน่วยงานเดียว วันเดียว -> แสดงค่าจุดเดียว
+    labels=[''];
+    tripsData=[f.length?f[0].trips:0];
+    staffData=[f.length?f[0].staff:0];
+    pickupData=[f.length?f[0].pickupPct:null];
+    deliveryData=[f.length?f[0].deliveryPct:null];
+  }
+
+  const barColors = unitSel==='all'
+    ? UNITS.map(u=>u.color+'CC')
+    : Array(labels.length).fill('#185FA5CC');
+  const barBorder = unitSel==='all'
+    ? UNITS.map(u=>u.color)
+    : Array(labels.length).fill('#185FA5');
+
+  /* Car stat cards — แนวตั้ง 4 ใบ */
+  document.getElementById('car-stat-grid').innerHTML=`
+    <div class="car-stat-card" style="background:#EFEEFC;border-color:#534AB740;min-width:110px">
+      <div class="car-stat-icon" style="color:#534AB7"><i class="ti ti-truck"></i></div>
+      <div class="car-stat-val" style="color:#534AB7">${totalCar}</div>
+      <div class="car-stat-lbl" style="color:#534AB7">รถทั้งหมด</div>
+    </div>
+    <div class="car-stat-card" style="background:#EEF4FC;border-color:#185FA540;min-width:110px">
+      <div class="car-stat-icon" style="color:#185FA5"><i class="ti ti-road"></i></div>
+      <div class="car-stat-val" style="color:#185FA5">${totalCarActive}</div>
+      <div class="car-stat-lbl" style="color:#185FA5">วิ่งงาน</div>
+    </div>
+    <div class="car-stat-card" style="background:#F1EFE8;border-color:#B4B2A9;min-width:110px">
+      <div class="car-stat-icon" style="color:#5F5E5A"><i class="ti ti-map-pin"></i></div>
+      <div class="car-stat-val" style="color:#5F5E5A">${totalCarPark}</div>
+      <div class="car-stat-lbl" style="color:#5F5E5A">รถจอด</div>
+    </div>
+    <div class="car-stat-card" style="background:${totalCarCheck>0?'#FDF3E3':'#F1EFE8'};border-color:${totalCarCheck>0?'#BA751740':'#B4B2A9'};min-width:110px">
+      <div class="car-stat-icon" style="color:${totalCarCheck>0?'#BA7517':'#5F5E5A'}"><i class="ti ti-wrench"></i></div>
+      <div class="car-stat-val" style="color:${totalCarCheck>0?'#BA7517':'#5F5E5A'}">${totalCarCheck}</div>
+      <div class="car-stat-lbl" style="color:${totalCarCheck>0?'#BA7517':'#5F5E5A'}">เช็ค/ซ่อม</div>
+    </div>`;
+
+  /* chart รถ stacked bar: เปรียบเทียบรายหน่วยงาน หรือรายวันของหน่วยงานเดียว */
+  let carActiveData, carParkData, carCheckData;
+  if(unitSel==='all'){
+    carActiveData=UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'carActive'));
+    carParkData  =UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'carPark'));
+    carCheckData =UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'carCheck'));
+  } else if(dashMode==='month'){
+    carActiveData=days2.map(d=>(f.find(x=>x.date===d)||{carActive:0}).carActive||0);
+    carParkData  =days2.map(d=>(f.find(x=>x.date===d)||{carPark:0}).carPark||0);
+    carCheckData =days2.map(d=>(f.find(x=>x.date===d)||{carCheck:0}).carCheck||0);
+  } else {
+    carActiveData=[f.length?f[0].carActive||0:0];
+    carParkData  =[f.length?f[0].carPark||0:0];
+    carCheckData =[f.length?f[0].carCheck||0:0];
+  }
+  mkChart('chart-car','bar',{
+    labels:xLabels,
+    datasets:[
+      {label:'วิ่งงาน', data:carActiveData,backgroundColor:'#185FA5CC',borderRadius:3,stack:'car'},
+      {label:'จอด',     data:carParkData,  backgroundColor:'#B4B2A9CC',borderRadius:3,stack:'car'},
+      {label:'เช็ค/ซ่อม',data:carCheckData,backgroundColor:'#BA7517CC',borderRadius:3,stack:'car'}
+    ]
+  },{
+    plugins:{
+      legend:{display:true,position:'bottom',labels:{font:{family:'Sarabun',size:11},boxWidth:10,padding:8}},
+      datalabels:{
+        display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,
+        anchor:'center',align:'center',
+        color:'#fff',font:{family:'Sarabun',size:10,weight:'700'},
+        formatter:v=>v>0?v:''
+      }
+    },
+    layout:{padding:{top:10}},
+    scales:{
+      y:{beginAtZero:true,stacked:true,ticks:{stepSize:1,font:{family:'Sarabun'}}},
+      x:{stacked:true,ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:16}}
+    }
+  });
+
+  mkChart('chart-trips','bar',{
+    labels:xLabels,
+    datasets:[{
+      label:'เที่ยววิ่ง',data:tripsData,
+      backgroundColor:barColors,borderColor:barBorder,borderWidth:1,borderRadius:4
+    }]
+  },{
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>'เที่ยว: '+c.raw}},
+      datalabels:{
+        display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,
+        anchor:'end',align:'end',offset:-2,
+        color:'#2C2C2A',font:{family:'Sarabun',size:11,weight:'700'},
+        formatter:v=>v>0?v.toLocaleString():''
+      }
+    },
+    layout:{padding:{top:20}},
+    scales:{
+      y:{beginAtZero:true,ticks:{font:{family:'Sarabun'}}},
+      x:{ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:16}}
+    }
+  });
+
+  /* Gauge ontime */
+  function gColor(v){return v>=95?'#1D9E75':v>=90?'#BA7517':'#A32D2D';}
+  function gauge(label,val){
+    if(val===null||val===undefined){return`<div class="gauge-item"><div style="width:90px;height:90px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#F1EFE8;color:#B4B2A9;font-size:13px">N/A</div><div class="gauge-lbl">${label}</div></div>`;}
+    const c=gColor(val);
+    const r=38,circ=2*Math.PI*r;
+    return`<div class="gauge-item">
+      <div style="position:relative;width:90px;height:90px;margin:0 auto 8px">
+        <svg viewBox="0 0 90 90" style="width:90px;height:90px;transform:rotate(-90deg)">
+          <circle cx="45" cy="45" r="${r}" fill="none" stroke="#F1EFE8" stroke-width="10"/>
+          <circle cx="45" cy="45" r="${r}" fill="none" stroke="${c}" stroke-width="10" stroke-dasharray="${circ}" stroke-dashoffset="${circ*(1-val/100)}" stroke-linecap="round"/>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column">
+          <div style="font-size:18px;font-weight:700;color:${c}">${val.toFixed(1)}</div>
+          <div style="font-size:10px;color:#888780">%</div>
+        </div>
+      </div>
+      <div class="gauge-lbl">${label}</div>
+    </div>`;
+  }
+  const gPickup=f.length?avg(f,'pickupPct'):null;
+  const gDelivery=f.length?avg(f,'deliveryPct'):null;
+  document.getElementById('gauge-ontime').innerHTML=gauge('Pick up Ontime',gPickup)+gauge('Delivery Ontime',gDelivery);
+
+  /* chart ontime: line (รายวันของหน่วยงานเดียว) / bar (เปรียบเทียบรายหน่วยงาน) */
+  const ontimeIsLine = unitSel!=='all' && dashMode==='month';
+  mkChart('chart-ontime', ontimeIsLine?'line':'bar',{
+    labels:xLabels,
+    datasets:[
+      {label:'Pick up',data:pickupData,borderColor:'#185FA5',backgroundColor:'#185FA530',fill:ontimeIsLine,tension:.3,pointRadius:ontimeIsLine?2:4,spanGaps:true,borderRadius:4},
+      {label:'Delivery',data:deliveryData,borderColor:'#1D9E75',backgroundColor:'#1D9E7530',fill:ontimeIsLine,tension:.3,pointRadius:ontimeIsLine?2:4,spanGaps:true,borderRadius:4}
+    ]
+  },{
+    plugins:{
+      legend:{display:true,position:'bottom',labels:{font:{family:'Sarabun',size:11},boxWidth:10,padding:8}},
+      datalabels:{
+        display:!ontimeIsLine?(ctx=>ctx.dataset.data[ctx.dataIndex]!=null):false,
+        anchor:'end',align:'end',offset:-2,
+        color:'#2C2C2A',font:{family:'Sarabun',size:10,weight:'700'},
+        formatter:v=>v!=null?v.toFixed(1)+'%':''
+      }
+    },
+    layout:{padding:{top:16}},
+    scales:{
+      y:{beginAtZero:false,min:0,max:100,ticks:{callback:v=>v+'%',font:{family:'Sarabun'}}},
+      x:{ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:unitSel==='all'?6:16}}
+    }
+  });
+
+  /* Staff stat cards — แนวตั้ง 4 ใบ */
+  const totalStaffActive = Math.max(0, totalStaff - totalAbsent - totalLeave);
+  document.getElementById('staff-stat-grid').innerHTML=`
+    <div class="car-stat-card" style="background:#EEF4FC;border-color:#185FA540;min-width:110px">
+      <div class="car-stat-icon" style="color:#185FA5"><i class="ti ti-users"></i></div>
+      <div class="car-stat-val" style="color:#185FA5">${totalStaff}</div>
+      <div class="car-stat-lbl" style="color:#185FA5">พนักงาน (รวม)</div>
+    </div>
+    <div class="car-stat-card" style="background:#E1F5EE;border-color:#1D9E7540;min-width:110px">
+      <div class="car-stat-icon" style="color:#1D9E75"><i class="ti ti-car"></i></div>
+      <div class="car-stat-val" style="color:#1D9E75">${totalStaffActive}</div>
+      <div class="car-stat-lbl" style="color:#1D9E75">วิ่งงาน</div>
+    </div>
+    <div class="car-stat-card" style="background:${totalAbsent>0?'#FAEAEA':'#F1EFE8'};border-color:${totalAbsent>0?'#A32D2D40':'#B4B2A9'};min-width:110px">
+      <div class="car-stat-icon" style="color:${totalAbsent>0?'#A32D2D':'#5F5E5A'}"><i class="ti ti-user-x"></i></div>
+      <div class="car-stat-val" style="color:${totalAbsent>0?'#A32D2D':'#5F5E5A'}">${totalAbsent}</div>
+      <div class="car-stat-lbl" style="color:${totalAbsent>0?'#A32D2D':'#5F5E5A'}">ขาดงาน</div>
+    </div>
+    <div class="car-stat-card" style="background:${totalLeave>0?'#FDF3E3':'#F1EFE8'};border-color:${totalLeave>0?'#BA751740':'#B4B2A9'};min-width:110px">
+      <div class="car-stat-icon" style="color:${totalLeave>0?'#BA7517':'#5F5E5A'}"><i class="ti ti-user-x"></i></div>
+      <div class="car-stat-val" style="color:${totalLeave>0?'#BA7517':'#5F5E5A'}">${totalLeave}</div>
+      <div class="car-stat-lbl" style="color:${totalLeave>0?'#BA7517':'#5F5E5A'}">ลางาน</div>
+    </div>`;
+
+  /* chart พนักงาน stacked: วิ่งงาน + ขาด + ลา — เปรียบเทียบรายหน่วยงาน หรือรายวันของหน่วยงานเดียว */
+  let staffActiveData2, absentData2, leaveData2;
+  if(unitSel==='all'){
+    staffActiveData2=UNITS.map(u=>{
+      const ur=f.filter(r=>r.unit===u.id);
+      return Math.max(0,sum(ur,'staff')-sum(ur,'absent')-sum(ur,'leave'));
+    });
+    absentData2=UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'absent'));
+    leaveData2 =UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'leave'));
+  } else if(dashMode==='month'){
+    staffActiveData2=days2.map(d=>{const r=f.find(x=>x.date===d);return r?Math.max(0,(r.staff||0)-(r.absent||0)-(r.leave||0)):0;});
+    absentData2    =days2.map(d=>{const r=f.find(x=>x.date===d);return r?r.absent||0:0;});
+    leaveData2     =days2.map(d=>{const r=f.find(x=>x.date===d);return r?r.leave||0:0;});
+  } else {
+    staffActiveData2=[f.length?Math.max(0,(f[0].staff||0)-(f[0].absent||0)-(f[0].leave||0)):0];
+    absentData2    =[f.length?f[0].absent||0:0];
+    leaveData2     =[f.length?f[0].leave||0:0];
+  }
+  mkChart('chart-staff','bar',{
+    labels:xLabels,
+    datasets:[
+      {label:'วิ่งงาน',data:staffActiveData2,backgroundColor:'#1D9E75CC',borderRadius:3,stack:'st'},
+      {label:'ขาด',   data:absentData2,      backgroundColor:'#A32D2DCC',borderRadius:3,stack:'st'},
+      {label:'ลา',    data:leaveData2,        backgroundColor:'#BA7517CC',borderRadius:3,stack:'st'}
+    ]
+  },{
+    plugins:{
+      legend:{display:true,position:'bottom',labels:{font:{family:'Sarabun',size:11},boxWidth:10,padding:8}},
+      datalabels:{
+        display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,
+        anchor:'center',align:'center',
+        color:'#fff',font:{family:'Sarabun',size:10,weight:'700'},
+        formatter:v=>v>0?v:''
+      }
+    },
+    layout:{padding:{top:10}},
+    scales:{
+      y:{beginAtZero:true,stacked:true,ticks:{stepSize:1,font:{family:'Sarabun'}}},
+      x:{stacked:true,ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:16}}
+    }
+  });
+
+  /* — helper: นับเฉพาะกรณี "ฝ่ายเราผิด" (our + both) เท่านั้น — */
+  function incidentBarData(field, faultField, filtered, days, unitSel){
+    const isOur=r=>r[faultField]==='our'||r[faultField]==='both';
+    if(unitSel==='all'){
+      return UNITS.map(u=>{
+        const ur=filtered.filter(r=>r.unit===u.id);
+        return sum(ur.filter(isOur),field);
+      });
+    } else if(dashMode==='month'){
+      return days.map(d=>{
+        const r=filtered.find(x=>x.date===d);
+        if(!r)return 0;
+        return isOur(r)?(parseFloat(r[field])||0):0;
+      });
+    } else {
+      const r=filtered[0];
+      if(!r)return[0];
+      return [isOur(r)?(parseFloat(r[field])||0):0];
+    }
+  }
+
+  /* กราฟอุบัติเหตุ — เฉพาะฝ่ายเราผิดเท่านั้น */
+  const accData = incidentBarData('accident','accidentFault',f,days2,unitSel);
+  const accColors = unitSel==='all' ? UNITS.map(u=>u.color+'CC') : accData.map(v=>v>0?'#A32D2DCC':'#D3D1C7');
+  mkChart('chart-accident','bar',{
+    labels:xLabels,
+    datasets:[{label:'อุบัติเหตุ(ฝ่ายเราผิด)',data:accData,backgroundColor:accColors,borderRadius:4}]
+  },{
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>'อุบัติเหตุ: '+c.raw+' ครั้ง'}},
+      datalabels:{
+        display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,
+        anchor:'end',align:'end',offset:-2,
+        color:'#A32D2D',font:{family:'Sarabun',size:11,weight:'700'},
+        formatter:v=>v>0?v:''
+      }
+    },
+    layout:{padding:{top:20}},
+    scales:{
+      y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Sarabun'}}},
+      x:{ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:unitSel==="all"?6:16}}
+    }
+  });
+
+  /* กราฟสินค้าเสียหาย — เฉพาะฝ่ายเราผิดเท่านั้น */
+  const dmgData = incidentBarData('damage','damageFault',f,days2,unitSel);
+  const dmgColors = unitSel==='all' ? UNITS.map(u=>u.color+'CC') : dmgData.map(v=>v>0?'#BA7517CC':'#D3D1C7');
+  mkChart('chart-damage','bar',{
+    labels:xLabels,
+    datasets:[{label:'สินค้าเสียหาย(ฝ่ายเราผิด)',data:dmgData,backgroundColor:dmgColors,borderRadius:4}]
+  },{
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>'สินค้าเสียหาย: '+c.raw+' ครั้ง'}},
+      datalabels:{
+        display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,
+        anchor:'end',align:'end',offset:-2,
+        color:'#BA7517',font:{family:'Sarabun',size:11,weight:'700'},
+        formatter:v=>v>0?v:''
+      }
+    },
+    layout:{padding:{top:20}},
+    scales:{
+      y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Sarabun'}}},
+      x:{ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:unitSel==="all"?6:16}}
+    }
+  });
+
+  /* เรื่องร้องเรียน */
+  let compData,compColors2;
+  if(unitSel==='all'){
+    compData=UNITS.map(u=>sum(f.filter(r=>r.unit===u.id),'complaint'));
+    compColors2=UNITS.map(u=>u.color+'CC');
+  } else if(dashMode==='month'){
+    compData=days2.map(d=>sum(f.filter(r=>r.date===d),'complaint'));
+    compColors2=compData.map(v=>v>0?'#993556CC':'#D3D1C7');
+  } else {
+    compData=[f.length?f[0].complaint||0:0];
+    compColors2=['#993556CC'];
+  }
+  mkChart('chart-complaint','bar',{
+    labels:xLabels,
+    datasets:[{label:'ร้องเรียน',data:compData,backgroundColor:compColors2,borderRadius:4}]
+  },{
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>'ร้องเรียน: '+c.raw}},
+      datalabels:{
+        display:ctx=>ctx.dataset.data[ctx.dataIndex]>0,
+        anchor:'end',align:'end',offset:-2,
+        color:'#993556',font:{family:'Sarabun',size:12,weight:'700'},
+        formatter:v=>v>0?v:''
+      }
+    },
+    layout:{padding:{top:20}},
+    scales:{
+      y:{beginAtZero:true,ticks:{stepSize:1,font:{family:'Sarabun'}}},
+      x:{ticks:{font:{family:'Sarabun',size:10},maxRotation:0,autoSkip:true,maxTicksLimit:unitSel==="all"?6:16}}
+    }
+  });
+}
+
+/* —————— EXPORT EXCEL —————— */
+function exportExcel(){
+  if(!records.length){showToast('ยังไม่มีข้อมูล','warn');return;}
+
+  const wb = XLSX.utils.book_new();
+
+  /* Sheet 1: ข้อมูลดิบทั้งหมด */
+  const rawHeader=['วันที่','หน่วยงาน','เที่ยววิ่ง','พขร.(ทั้งหมด)','ขาดงาน','ลางาน','Pick up Ontime%','Delivery Ontime%',
+    'รถวิ่งงาน(รวม)','รถจอด(รวม)','เช็คระยะ/ซ่อม(รวม)',
+    'บริษัท-วิ่งงาน','บริษัท-จอด','บริษัท-เช็ค/ซ่อม',
+    'ร่วม-วิ่งงาน','ร่วม-จอด','ร่วม-เช็ค/ซ่อม',
+    'อุบัติเหตุ','ฝ่ายอุบัติเหตุ','หมายเหตุอุบัติ',
+    'สินค้าเสียหาย','ฝ่ายสินค้าเสียหาย','หมายเหตุเสียหาย',
+    'ร้องเรียน','รายละเอียดร้องเรียน'];
+  const rawRows = records.map(r=>{
+    const u=UNITS.find(x=>x.id===r.unit)||{name:r.unit};
+    return [r.date, u.name, r.trips||0, r.staff||0, r.absent||0, r.leave||0,
+      r.pickupPct||0, r.deliveryPct||0,
+      r.carActive||0, r.carPark||0, r.carCheck||0,
+      r.carActiveCo||0, r.carParkCo||0, r.carCheckCo||0,
+      r.carActiveJv||0, r.carParkJv||0, r.carCheckJv||0,
+      r.accident||0, FAULT_LABEL[r.accidentFault||'none'], r.accidentNote||'',
+      r.damage||0, FAULT_LABEL[r.damageFault||'none'], r.damageNote||'',
+      r.complaint||0, r.complaintNote||''];
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet([rawHeader,...rawRows]);
+  ws1['!cols']=[{wch:12},{wch:14},{wch:10},{wch:14},{wch:12},{wch:12},{wch:16},{wch:16},
+    {wch:12},{wch:10},{wch:14},
+    {wch:12},{wch:10},{wch:14},{wch:12},{wch:10},{wch:14},
+    {wch:10},{wch:14},{wch:20},
+    {wch:12},{wch:14},{wch:20},{wch:12},{wch:24}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'ข้อมูลทั้งหมด');
+
+  /* Sheet 2: สรุปรายหน่วยงาน */
+  const summaryHeader=['หน่วยงาน','เที่ยววิ่งรวม','ขาดงาน(รวม)',
+    'Avg Pick up%','Avg Delivery%',
+    'อุบัติเหตุ(รวม)','อุบัติ-ฝ่ายเราผิด',
+    'สินค้าเสียหาย(รวม)','เสียหาย-ฝ่ายเราผิด',
+    'ร้องเรียน(รวม)'];
+  const summaryRows = UNITS.map(u=>{
+    const ur=records.filter(r=>r.unit===u.id);
+    const accOur=sum(ur.filter(r=>r.accidentFault==='our'||r.accidentFault==='both'),'accident');
+    const dmgOur=sum(ur.filter(r=>r.damageFault==='our'||r.damageFault==='both'),'damage');
+    return [u.name, sum(ur,'trips'), sum(ur,'staff'),
+      ur.length?parseFloat(avg(ur,'pickupPct').toFixed(2)):0,
+      ur.length?parseFloat(avg(ur,'deliveryPct').toFixed(2)):0,
+      sum(ur,'accident'), accOur,
+      sum(ur,'damage'), dmgOur,
+      sum(ur,'complaint')];
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet([summaryHeader,...summaryRows]);
+  ws2['!cols']=[{wch:14},{wch:12},{wch:12},{wch:14},{wch:14},{wch:14},{wch:16},{wch:16},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'สรุปรายหน่วยงาน');
+
+  /* Sheet 3: Dashboard ที่กำลังดูอยู่ */
+  const fRec = getFilteredRecords();
+  if(fRec.length){
+    const periodLabel = dashMode==='month'
+      ? thMonth(document.getElementById('filter-month').value)
+      : document.getElementById('filter-date').value;
+    const dashHeader=['วันที่/หน่วยงาน','เที่ยววิ่ง','ขาดงาน','Pick up%','Delivery%','อุบัติเหตุ','อุบัติ-ฝ่ายเราผิด','สินค้าเสียหาย','เสียหาย-ฝ่ายเราผิด','ร้องเรียน'];
+    const dashRows = fRec.map(r=>{
+      const u=UNITS.find(x=>x.id===r.unit)||{name:r.unit};
+      const accOur=(r.accidentFault==='our'||r.accidentFault==='both')?(r.accident||0):0;
+      const dmgOur=(r.damageFault==='our'||r.damageFault==='both')?(r.damage||0):0;
+      return [r.date+' '+u.name, r.trips||0, r.staff||0,
+        r.pickupPct||0, r.deliveryPct||0,
+        r.accident||0, accOur, r.damage||0, dmgOur, r.complaint||0];
+    });
+    const ws3 = XLSX.utils.aoa_to_sheet([['ช่วงเวลา: '+periodLabel],[''],dashHeader,...dashRows]);
+    ws3['!cols']=[{wch:22},{wch:10},{wch:10},{wch:10},{wch:12},{wch:12},{wch:16},{wch:14},{wch:18},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws3, 'แดชบอร์ด-'+periodLabel.replace(/[\/\\?*\[\]]/g,''));
+  }
+
+  const fname='KPI_ABC_Yard_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  XLSX.writeFile(wb, fname);
+  showToast('Export Excel สำเร็จ ✓');
+}
+
+/* — History — */
+function renderHistory(){
+  const unit=document.getElementById('history-unit').value;
+  const sel=unit==='all'?records:records.filter(r=>r.unit===unit);
+  const tbody=document.getElementById('history-body');
+  if(!sel.length){tbody.innerHTML=`<tr><td colspan="15"><div class="no-data">ยังไม่มีข้อมูล</div></td></tr>`;return;}
+  tbody.innerHTML=sel.slice(0,100).map(r=>{
+    const u=UNITS.find(x=>x.id===r.unit)||{name:r.unit,color:'#888'};
+    return`<tr>
+      <td>${r.date}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:50%;background:${u.color};flex-shrink:0"></span>${u.name}</span></td>
+      <td>${r.trips||0}</td><td>${r.staff||0}</td>
+      <td>${(r.pickupPct||0).toFixed(1)}%</td><td>${(r.deliveryPct||0).toFixed(1)}%</td>
+      <td>${r.carActive||0}</td><td>${r.carPark||0}</td><td>${r.carCheck||0}</td>
+      <td style="color:${(r.accident||0)>0?'#A32D2D':'inherit'}">${r.accident||0}</td>
+      <td>${FAULT_LABEL[r.accidentFault||'none']}</td>
+      <td style="color:${(r.damage||0)>0?'#BA7517':'inherit'}">${r.damage||0}</td>
+      <td>${FAULT_LABEL[r.damageFault||'none']}</td>
+      <td style="color:${(r.complaint||0)>0?'#BA7517':'inherit'}">${r.complaint||0}</td>
+      <td style="white-space:nowrap">
+        <button onclick="editRecord('${r.date}','${r.unit}')" style="border:none;background:none;cursor:pointer;color:#185FA5;font-size:15px;padding:2px" title="แก้ไข"><i class="ti ti-edit"></i></button>
+        <button onclick="deleteRecord('${r._key}')" style="border:none;background:none;cursor:pointer;color:#888780;font-size:15px;padding:2px" title="ลบ"><i class="ti ti-trash"></i></button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editRecord(date, unitId){
+  switchPage('record');
+  document.getElementById('record-date').value=date;
+  selectUnit(unitId);
+  window.scrollTo({top:0,behavior:'smooth'});
+  showToast('โหลดข้อมูลวันที่ '+date+' มาแก้ไขแล้ว — แก้ไขแล้วกดบันทึกได้เลย');
+}
+
+async function deleteRecord(key){
+  if(!key||!confirm('ลบข้อมูลนี้?'))return;
+  try{await db.ref('kpi_records/'+key).remove();showToast('ลบแล้ว');}
+  catch(e){showToast('ลบไม่สำเร็จ','warn');}
+}
+
+function showToast(msg,type){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=type==='warn'?'#993C1D':'#0F6E56';
+  t.style.color=type==='warn'?'#FAECE7':'#E1F5EE';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+function init(){
+  const today=new Date().toISOString().slice(0,10);
+  const thisMonth=today.slice(0,7);
+  document.getElementById('record-date').value=today;
+  document.getElementById('filter-month').value=thisMonth;
+  document.getElementById('filter-date').value=today;
+  buildTabs();
+  document.getElementById('form-unit-name').textContent=UNITS[0].name;
+  document.getElementById('record-date').addEventListener('change',()=>selectUnit(currentUnit));
+
+  // populate unit selects
+  ['filter-unit-month','filter-unit-day','history-unit'].forEach(sid=>{
+    const sel=document.getElementById(sid);
+    UNITS.forEach(u=>{const o=document.createElement('option');o.value=u.id;o.textContent=u.name;sel.appendChild(o);});
+  });
+  initFB(0);
+}
+init();
+</script>
 </body>
 </html>
