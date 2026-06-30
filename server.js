@@ -100,41 +100,51 @@ async function downloadLineContent(messageId) {
   return { buffer, mimeType };
 }
 
-async function callGemini(parts, maxOutputTokens = 4096) {
-  const geminiKey = process.env.GEMINI_API_KEY;
-  if (!geminiKey) {
-    return "รับไฟล์แล้วครับ แต่ยังไม่ได้ตั้งค่า GEMINI_API_KEY จึงยังวิเคราะห์เนื้อหาให้ไม่ได้";
+async function callOpenAI(content, maxOutputTokens = 4096) {
+  const openaiKey = process.env.OPENAI_API_KEY || process.env.GPT_API_KEY;
+  if (!openaiKey) {
+    return "รับไฟล์แล้วครับ แต่ยังไม่ได้ตั้งค่า OPENAI_API_KEY จึงยังวิเคราะห์เนื้อหาให้ไม่ได้";
   }
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: { temperature: 0.4, maxOutputTokens }
-      })
-    }
-  );
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${openaiKey}`
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+      input: [{
+        role: "user",
+        content
+      }],
+      max_output_tokens: maxOutputTokens
+    })
+  });
 
   const data = await response.json();
   if (data.error) throw new Error(data.error.message);
 
-  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+  return data.output_text?.trim()
+    || data.output?.flatMap((item) => item.content || [])
+      .map((part) => part.text || "")
+      .join("")
+      .trim()
     || "วิเคราะห์ไม่สำเร็จครับ ลองส่งไฟล์ใหม่อีกครั้ง";
 }
 
 async function analyzeTextMessage(text) {
-  return callGemini([{
+  return callOpenAI([{
+    type: "input_text",
     text: `ตอบแชท LINE ภาษาไทยแบบกระชับและช่วยงาน KPI/รายงานถ้าเกี่ยวข้อง ข้อความผู้ใช้: "${text}"`
   }], 2048);
 }
 
 async function analyzeImageMessage(messageId) {
   const { buffer, mimeType } = await downloadLineContent(messageId);
-  return callGemini([
+  return callOpenAI([
     {
+      type: "input_text",
       text: [
         "วิเคราะห์ภาพนี้เป็นภาษาไทย",
         "ถ้าเป็นภาพเอกสาร ตาราง KPI หรือรายงาน ให้สรุปตัวเลขสำคัญ จุดผิดปกติ และข้อเสนอแนะ",
@@ -142,10 +152,8 @@ async function analyzeImageMessage(messageId) {
       ].join("\n")
     },
     {
-      inline_data: {
-        mime_type: mimeType,
-        data: buffer.toString("base64")
-      }
+      type: "input_image",
+      image_url: `data:${mimeType};base64,${buffer.toString("base64")}`
     }
   ]);
 }
@@ -184,7 +192,8 @@ async function analyzeExcelMessage(message) {
   }
 
   const preview = workbookToPreview(buffer, message.fileName || "uploaded-file");
-  return callGemini([{
+  return callOpenAI([{
+    type: "input_text",
     text: [
       "วิเคราะห์ไฟล์ Excel/CSV นี้เป็นภาษาไทย",
       "ให้สรุปข้อมูลสำคัญ, KPI/ตัวเลขที่น่าสนใจ, จุดผิดปกติ, และข้อเสนอแนะที่นำไปใช้ได้",
@@ -252,7 +261,8 @@ app.get("/health", (req, res) => {
     ok: true,
     hasLineToken: !!process.env.LINE_CHANNEL_ACCESS_TOKEN,
     hasLineSecret: !!process.env.LINE_CHANNEL_SECRET,
-    hasGeminiKey: !!process.env.GEMINI_API_KEY
+    hasOpenAIKey: !!(process.env.OPENAI_API_KEY || process.env.GPT_API_KEY),
+    openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini"
   });
 });
 

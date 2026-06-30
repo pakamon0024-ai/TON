@@ -5,8 +5,10 @@ services:
     buildCommand: npm install
     startCommand: npm start
     envVars:
-      - key: GEMINI_API_KEY
+      - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
       - key: FB_PAGE_ID
         sync: false
       - key: FB_TOKEN

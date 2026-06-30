@@ -93,10 +93,11 @@ Required Render environment variables:
 
 - `LINE_CHANNEL_ACCESS_TOKEN`
 - `LINE_CHANNEL_SECRET`
-- `GEMINI_API_KEY`
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL` (optional, defaults to `gpt-4.1-mini`)
 
 Supported LINE messages:
 
 - Text: replies with a short Thai response.
-- Image: downloads the image from LINE and asks Gemini to analyze it.
-- Excel/CSV file: supports `.xlsx`, `.xls`, and `.csv`; the bot reads sheet metadata plus the first 30 rows per sheet, then asks Gemini to summarize KPI highlights, unusual values, and suggestions.
+- Image: downloads the image from LINE and asks OpenAI to analyze it.
+- Excel/CSV file: supports `.xlsx`, `.xls`, and `.csv`; the bot reads sheet metadata plus the first 30 rows per sheet, then asks OpenAI to summarize KPI highlights, unusual values, and suggestions.
