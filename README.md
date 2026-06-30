@@ -100,4 +100,5 @@ Supported LINE messages:
 
 - Text: replies with a short Thai response.
 - Image: downloads the image from LINE and asks OpenAI to analyze it.
+- PDF file: extracts text from the PDF and asks OpenAI to summarize key points, KPI values, risks, and suggestions.
 - Excel/CSV file: supports `.xlsx`, `.xls`, and `.csv`; the bot reads sheet metadata plus the first 30 rows per sheet, then asks OpenAI to summarize KPI highlights, unusual values, and suggestions.

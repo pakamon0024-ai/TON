@@ -4,6 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const fetch = require("node-fetch");
 const XLSX = require("xlsx");
+const pdfParse = require("pdf-parse");
 
 const app = express();
 const root = __dirname;
@@ -59,27 +60,6 @@ async function replyLineMessage(replyToken, text) {
 
   const body = await response.text();
   if (!response.ok) throw new Error(`LINE reply failed (${response.status}): ${body}`);
-}
-
-async function pushLineMessage(to, text) {
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN;
-  if (!token) throw new Error("Missing LINE_CHANNEL_ACCESS_TOKEN");
-  if (!to) throw new Error("Missing LINE push target");
-
-  const response = await fetch("https://api.line.me/v2/bot/message/push", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({
-      to,
-      messages: [{ type: "text", text: text.slice(0, 4900) }]
-    })
-  });
-
-  const body = await response.text();
-  if (!response.ok) throw new Error(`LINE push failed (${response.status}): ${body}`);
 }
 
 async function downloadLineContent(messageId) {
@@ -166,6 +146,10 @@ function isExcelFile(fileName = "", mimeType = "") {
     || mimeType.includes("csv");
 }
 
+function isPdfFile(fileName = "", mimeType = "") {
+  return fileName.toLowerCase().endsWith(".pdf") || mimeType.includes("pdf");
+}
+
 function workbookToPreview(buffer, fileName) {
   const workbook = XLSX.read(buffer, { type: "buffer" });
   const summary = workbook.SheetNames.map((sheetName) => {
@@ -188,7 +172,7 @@ function workbookToPreview(buffer, fileName) {
 async function analyzeExcelMessage(message) {
   const { buffer, mimeType } = await downloadLineContent(message.id);
   if (!isExcelFile(message.fileName, mimeType)) {
-    return `รับไฟล์ "${message.fileName || "ไม่ทราบชื่อ"}" แล้วครับ ตอนนี้รองรับการวิเคราะห์เฉพาะไฟล์ Excel/CSV`;
+    return `รับไฟล์ "${message.fileName || "ไม่ทราบชื่อ"}" แล้วครับ ตอนนี้รองรับการวิเคราะห์ไฟล์ PDF, Excel และ CSV`;
   }
 
   const preview = workbookToPreview(buffer, message.fileName || "uploaded-file");
@@ -203,11 +187,48 @@ async function analyzeExcelMessage(message) {
   }]);
 }
 
+async function analyzePdfMessage(message) {
+  const { buffer, mimeType } = await downloadLineContent(message.id);
+  if (!isPdfFile(message.fileName, mimeType)) {
+    return `รับไฟล์ "${message.fileName || "ไม่ทราบชื่อ"}" แล้วครับ ตอนนี้รองรับการวิเคราะห์ไฟล์ PDF, Excel และ CSV`;
+  }
+
+  const parsed = await pdfParse(buffer);
+  const text = (parsed.text || "").replace(/\s+/g, " ").trim();
+
+  if (!text) {
+    return "อ่านตัวอักษรจาก PDF นี้ไม่ได้ครับ อาจเป็นไฟล์สแกนเป็นรูปภาพ ลองส่งเป็นรูปภาพหน้าที่ต้องการวิเคราะห์แทนได้ครับ";
+  }
+
+  return callOpenAI([{
+    type: "input_text",
+    text: [
+      `วิเคราะห์ไฟล์ PDF ชื่อ "${message.fileName || "uploaded.pdf"}" เป็นภาษาไทย`,
+      "ให้สรุปใจความสำคัญ, ตัวเลข/KPI ที่พบ, จุดผิดปกติหรือความเสี่ยง, และข้อเสนอแนะที่นำไปใช้ได้",
+      "เนื้อหา PDF:",
+      text.slice(0, 24000)
+    ].join("\n\n")
+  }]);
+}
+
+async function analyzeFileMessage(message) {
+  const fileName = message.fileName || "";
+  const lowerName = fileName.toLowerCase();
+
+  if (lowerName.endsWith(".pdf")) return analyzePdfMessage(message);
+  if ([".xlsx", ".xls", ".csv"].some((ext) => lowerName.endsWith(ext))) return analyzeExcelMessage(message);
+
+  const { mimeType } = await downloadLineContent(message.id);
+  if (isPdfFile(fileName, mimeType)) return analyzePdfMessage(message);
+  if (isExcelFile(fileName, mimeType)) return analyzeExcelMessage(message);
+
+  return `รับไฟล์ "${fileName || "ไม่ทราบชื่อ"}" แล้วครับ ตอนนี้รองรับ PDF, Excel และ CSV`;
+}
+
 async function handleLineEvent(event) {
   if (event.type !== "message" || !event.replyToken) return;
 
   const message = event.message || {};
-  const pushTarget = event.source?.userId || event.source?.groupId || event.source?.roomId;
 
   if (message.type === "text") {
     await replyLineMessage(event.replyToken, await analyzeTextMessage(message.text || ""));
@@ -215,18 +236,16 @@ async function handleLineEvent(event) {
   }
 
   if (message.type === "image") {
-    await replyLineMessage(event.replyToken, "รับรูปแล้วครับ กำลังวิเคราะห์ให้...");
-    await pushLineMessage(pushTarget, await analyzeImageMessage(message.id));
+    await replyLineMessage(event.replyToken, await analyzeImageMessage(message.id));
     return;
   }
 
   if (message.type === "file") {
-    await replyLineMessage(event.replyToken, `รับไฟล์ "${message.fileName || "ไฟล์"}" แล้วครับ กำลังวิเคราะห์ให้...`);
-    await pushLineMessage(pushTarget, await analyzeExcelMessage(message));
+    await replyLineMessage(event.replyToken, await analyzeFileMessage(message));
     return;
   }
 
-  await replyLineMessage(event.replyToken, "รับข้อความแล้วครับ ตอนนี้รองรับข้อความ รูปภาพ และไฟล์ Excel/CSV");
+  await replyLineMessage(event.replyToken, "รับข้อความแล้วครับ ตอนนี้รองรับข้อความ รูปภาพ PDF และไฟล์ Excel/CSV");
 }
 
 async function handleLineWebhook(req, res) {
