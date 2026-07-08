@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>รายงานสถิติอุบัติเหตุประจำปี 2026 | Amphol Transports</title>
+  <meta name="description" content="แดชบอร์ดสถิติอุบัติเหตุและความเสียหายของสินค้า ประจำปี 2026 บริษัท Amphol Transports" />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <div class="brand-icon">🚛</div>
+        <div class="brand-text">
+          <h1>รายงานสถิติอุบัติเหตุ</h1>
+          <span class="brand-sub">Amphol Transports — ประจำปี 2026</span>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div class="update-badge" id="updateBadge">
+          <span class="pulse-dot"></span>
+          <span id="lastUpdated">กำลังโหลด...</span>
+        </div>
+        <button class="btn-refresh" id="btnRefresh" onclick="refreshData()">
+          <span class="refresh-icon">↻</span> รีเฟรช
+        </button>
+      </div>
+    </div>
+
+    <!-- Config Bar -->
+    <div class="config-bar" id="configBar">
+      <div class="config-inner">
+        <span class="config-label">🔗 Power Automate URL:</span>
+        <input
+          type="text"
+          id="dataUrl"
+          class="config-input"
+          placeholder="วาง URL จาก Power Automate ที่นี่ (หรือเว้นว่างเพื่อใช้ข้อมูลตัวอย่าง)"
+        />
+        <button class="btn-connect" onclick="connectData()">เชื่อมต่อ</button>
+        <button class="btn-toggle-config" onclick="toggleConfig()" title="ซ่อน">✕</button>
+      </div>
+    </div>
+    <button class="btn-show-config" id="btnShowConfig" onclick="toggleConfig()" style="display:none">⚙️ ตั้งค่า URL</button>
+  </header>
+
+  <!-- ===== MAIN ===== -->
+  <main class="main">
+
+    <!-- Status Banner -->
+    <div class="status-banner" id="statusBanner" style="display:none"></div>
+
+    <!-- KPI Cards -->
+    <section class="kpi-section">
+      <div class="kpi-card kpi-total">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-body">
+          <div class="kpi-label">รวมทั้งหมด</div>
+          <div class="kpi-value" id="kpiTotal">0</div>
+          <div class="kpi-sub">รายการ</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-accident">
+        <div class="kpi-icon">⚠️</div>
+        <div class="kpi-body">
+          <div class="kpi-label">อุบัติเหตุ</div>
+          <div class="kpi-value" id="kpiAccident">0</div>
+          <div class="kpi-sub">ครั้ง</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-damage">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-body">
+          <div class="kpi-label">สินค้าเสียหาย</div>
+          <div class="kpi-value" id="kpiDamage">0</div>
+          <div class="kpi-sub">รายการ</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-ng">
+        <div class="kpi-icon">🔴</div>
+        <div class="kpi-body">
+          <div class="kpi-label">NG (ค้างดำเนินการ)</div>
+          <div class="kpi-value" id="kpiNg">0</div>
+          <div class="kpi-sub">รายการ</div>
+        </div>
+      </div>
+      <div class="kpi-card kpi-ok">
+        <div class="kpi-icon">✅</div>
+        <div class="kpi-body">
+          <div class="kpi-label">OK (เสร็จสิ้น)</div>
+          <div class="kpi-value" id="kpiOk">0</div>
+          <div class="kpi-sub">รายการ</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Row 1 -->
+    <section class="charts-grid">
+
+      <div class="chart-card chart-wide">
+        <div class="chart-header">
+          <h2 class="chart-title">📅 อุบัติเหตุรายเดือน</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartMonthly"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">🚗 เจ้าของรถ</h2>
+        </div>
+        <div class="chart-body chart-body-donut">
+          <canvas id="chartOwner"></canvas>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Charts Row 2 -->
+    <section class="charts-grid charts-grid-3">
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">🅿️ ลานจอด</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartParking"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">📍 พื้นที่เกิดเหตุ</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartArea"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">⚡ ประเภทความเสียหาย</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartType"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Charts Row 3 -->
+    <section class="charts-grid charts-grid-2">
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">🏢 หน่วยงาน</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartDept"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">💥 ลักษณะการเกิดเหตุ</h2>
+        </div>
+        <div class="chart-body">
+          <canvas id="chartCause"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">กำลังโหลดข้อมูล...</p>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
