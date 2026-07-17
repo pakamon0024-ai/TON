@@ -419,6 +419,19 @@ function showApprovalPrint(data) {
   };
 }
 
+function companyLetterhead() {
+  return `
+    <div class="letterhead">
+      <div class="letterhead-name-th">บริษัท เอ.พี.ทรานสปอร์ต เซ็นเตอร์ จำกัด</div>
+      <div class="letterhead-name-en">A.P. TRANSPORT CENTER CO., LTD.</div>
+      <div class="letterhead-detail">1/4 หมู่ 4 ต.พิมพา อ.บางปะกง จ.ฉะเชิงเทรา 24180</div>
+      <div class="letterhead-detail">Tel. - &nbsp;&nbsp; Fax. -</div>
+      <div class="letterhead-detail">www.amphol2000.com &nbsp;|&nbsp; E-mail: apt@amphol2000.com</div>
+    </div>
+    <hr class="print-divider" />
+  `;
+}
+
 function buildPettyCashDoc(data) {
   const rows = (data.items || []).map((item, i) => `
     <tr>
@@ -430,6 +443,7 @@ function buildPettyCashDoc(data) {
   `).join('');
   return `
     <div class="print-doc">
+      ${companyLetterhead()}
       <h1>ใบสำคัญจ่ายเงินสดย่อย</h1>
       <p class="print-subtitle">Petty Cash Voucher</p>
       <hr class="print-divider" />
@@ -465,6 +479,7 @@ function buildApprovalDoc(data) {
   `).join('');
   return `
     <div class="print-doc">
+      ${companyLetterhead()}
       <h1>บันทึกข้อความ</h1>
       <p class="print-subtitle" style="font-weight:700;font-size:15px">เรื่อง: ${escapeHtml(data.subject || 'ขออนุมัติสำรองจ่ายเงิน')}</p>
       <hr class="print-divider" />
@@ -515,6 +530,7 @@ function exportHistoryPDF() {
   const totalAll = records.reduce((s, r) => s + (r.total || 0), 0);
   const html = `
     <div class="print-doc">
+      ${companyLetterhead()}
       <h1>รายงานประวัติรายการทั้งหมด</h1>
       <p class="print-subtitle">สร้างเมื่อ: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
       <hr class="print-divider" />
