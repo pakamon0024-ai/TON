@@ -296,9 +296,9 @@ function renderDashboard() {
   } else {
     tbody.innerHTML = recent.map(r => `
       <tr>
-        <td style="font-family:monospace;font-size:0.82rem">${r.docno}</td>
+        <td style="font-family:monospace;font-size:0.82rem">${escapeHtml(r.docno)}</td>
         <td>${r.type === 'petty' ? '<span class="badge badge-blue">💵 เงินสดย่อย</span>' : '<span class="badge badge-purple">📝 สำรองจ่าย</span>'}</td>
-        <td>${r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-')}</td>
+        <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
         <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
         <td>${statusBadge(r.status)}</td>
         <td style="font-size:0.8rem;color:var(--text-muted)">${formatDate(r.date)}</td>
@@ -326,9 +326,9 @@ function renderHistory() {
   } else {
     tbody.innerHTML = filtered.map(r => `
       <tr>
-        <td style="font-family:monospace;font-size:0.82rem">${r.docno}</td>
+        <td style="font-family:monospace;font-size:0.82rem">${escapeHtml(r.docno)}</td>
         <td>${r.type === 'petty' ? '<span class="badge badge-blue">💵 เงินสดย่อย</span>' : '<span class="badge badge-purple">📝 สำรองจ่าย</span>'}</td>
-        <td>${r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-')}</td>
+        <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
         <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
         <td>
           <select class="status-select" onchange="changeStatus(${r.id}, this.value)" style="background:transparent;border:none;color:inherit;font-family:inherit;font-size:0.82rem;cursor:pointer">
@@ -423,8 +423,8 @@ function buildPettyCashDoc(data) {
   const rows = (data.items || []).map((item, i) => `
     <tr>
       <td style="text-align:center">${i + 1}</td>
-      <td>${item.item}</td>
-      <td>${item.cat}</td>
+      <td>${escapeHtml(item.item)}</td>
+      <td>${escapeHtml(item.cat)}</td>
       <td style="text-align:right">${formatMoney(item.amount)}</td>
     </tr>
   `).join('');
@@ -434,11 +434,11 @@ function buildPettyCashDoc(data) {
       <p class="print-subtitle">Petty Cash Voucher</p>
       <hr class="print-divider" />
       <div class="print-info">
-        <div class="print-info-row"><span class="print-label">หน่วยงาน:</span><span>${data.dept}</span></div>
-        <div class="print-info-row"><span class="print-label">เลขที่เอกสาร:</span><span>${data.docno}</span></div>
-        <div class="print-info-row"><span class="print-label">ผู้เบิก:</span><span>${data.requester}</span></div>
+        <div class="print-info-row"><span class="print-label">หน่วยงาน:</span><span>${escapeHtml(data.dept)}</span></div>
+        <div class="print-info-row"><span class="print-label">เลขที่เอกสาร:</span><span>${escapeHtml(data.docno)}</span></div>
+        <div class="print-info-row"><span class="print-label">ผู้เบิก:</span><span>${escapeHtml(data.requester)}</span></div>
         <div class="print-info-row"><span class="print-label">วันที่:</span><span>${formatDate(data.date)}</span></div>
-        <div class="print-info-row" style="grid-column:1/-1"><span class="print-label">วัตถุประสงค์:</span><span>${data.purpose}</span></div>
+        <div class="print-info-row" style="grid-column:1/-1"><span class="print-label">วัตถุประสงค์:</span><span>${escapeHtml(data.purpose)}</span></div>
       </div>
       <table>
         <thead><tr><th style="width:40px">ลำดับ</th><th>รายการ</th><th>หมวดหมู่</th><th style="text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
@@ -458,31 +458,31 @@ function buildApprovalDoc(data) {
   const rows = (data.items || []).map((item, i) => `
     <tr>
       <td style="text-align:center">${i + 1}</td>
-      <td>${item.item}</td>
-      <td>${item.cat}</td>
+      <td>${escapeHtml(item.item)}</td>
+      <td>${escapeHtml(item.cat)}</td>
       <td style="text-align:right">${formatMoney(item.amount)}</td>
     </tr>
   `).join('');
   return `
     <div class="print-doc">
       <h1>บันทึกข้อความ</h1>
-      <p class="print-subtitle" style="font-weight:700;font-size:15px">เรื่อง: ${data.subject || 'ขออนุมัติสำรองจ่ายเงิน'}</p>
+      <p class="print-subtitle" style="font-weight:700;font-size:15px">เรื่อง: ${escapeHtml(data.subject || 'ขออนุมัติสำรองจ่ายเงิน')}</p>
       <hr class="print-divider" />
       <div class="print-info">
-        <div class="print-info-row"><span class="print-label">ส่วนราชการ:</span><span>${data.dept}</span></div>
-        <div class="print-info-row"><span class="print-label">ที่:</span><span>${data.docno}</span></div>
-        <div class="print-info-row"><span class="print-label">เรียน:</span><span>${data.to}</span></div>
+        <div class="print-info-row"><span class="print-label">ส่วนราชการ:</span><span>${escapeHtml(data.dept)}</span></div>
+        <div class="print-info-row"><span class="print-label">ที่:</span><span>${escapeHtml(data.docno)}</span></div>
+        <div class="print-info-row"><span class="print-label">เรียน:</span><span>${escapeHtml(data.to || '-')}</span></div>
         <div class="print-info-row"><span class="print-label">วันที่:</span><span>${formatDate(data.date)}</span></div>
       </div>
-      <p class="print-body-text">${data.reason || ''}</p>
+      <p class="print-body-text">${escapeHtml(data.reason || '')}</p>
       <table>
         <thead><tr><th style="width:40px">ลำดับ</th><th>รายการ</th><th>หมวดหมู่</th><th style="text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
-      <p class="print-body-text">${data.closing || ''}</p>
+      <p class="print-body-text">${escapeHtml(data.closing || '')}</p>
       <div class="print-sigs">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-date">${data.requester || ''}</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-date">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ .............</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้บังคับบัญชา</div><div class="print-sig-date">วันที่ .............</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
@@ -503,10 +503,10 @@ function exportHistoryPDF() {
   const rows = records.map((r, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${r.docno}</td>
+      <td>${escapeHtml(r.docno)}</td>
       <td>${r.type === 'petty' ? 'เงินสดย่อย' : 'สำรองจ่าย'}</td>
-      <td>${r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-')}</td>
-      <td>${r.requester}</td>
+      <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
+      <td>${escapeHtml(r.requester)}</td>
       <td style="text-align:right">${formatMoney(r.total)}</td>
       <td>${r.status === 'approved' ? 'อนุมัติ' : r.status === 'rejected' ? 'ไม่อนุมัติ' : 'รออนุมัติ'}</td>
       <td>${formatDate(r.date)}</td>
@@ -545,6 +545,12 @@ function exportHistoryPDF() {
 }
 
 // ===== Utilities =====
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
 function formatMoney(val) {
   const num = parseFloat(val) || 0;
   return '฿' + num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -604,7 +610,19 @@ if (records.length === 0) {
         { no: 1, item: 'ค่าสถานที่จัดงาน', cat: 'ค่าเดินทาง', amount: 15000 },
         { no: 2, item: 'ค่าอาหารและเครื่องดื่ม', cat: 'ค่าอาหาร/เครื่องดื่ม', amount: 8000 },
       ],
-      total: 23000, status: 'pending', savedAt: new Date().toISOString()
+      total: 23000, status: 'pending', savedAt: new Date().toISOString(),
+      data: {
+        dept: 'ฝ่ายการตลาด', docno: `AP-${yr}${m}-001`, date: today,
+        to: 'กรรมการผู้จัดการ', subject: 'ขออนุมัติสำรองจ่ายค่าจัดงาน',
+        requester: 'นางสาวสุดา มีสุข',
+        reason: 'เนื่องด้วย ฝ่ายการตลาด มีความจำเป็นต้องสำรองจ่ายเงินล่วงหน้าสำหรับค่าใช้จ่ายในการจัดงาน เพื่อให้กิจกรรมดังกล่าวสำเร็จลุล่วงตามวัตถุประสงค์ที่วางไว้',
+        closing: 'จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และหากอนุมัติแล้ว กรุณาลงนามในช่องที่กำหนด',
+        items: [
+          { no: 1, item: 'ค่าสถานที่จัดงาน', cat: 'ค่าเดินทาง', amount: 15000 },
+          { no: 2, item: 'ค่าอาหารและเครื่องดื่ม', cat: 'ค่าอาหาร/เครื่องดื่ม', amount: 8000 },
+        ],
+        total: 23000
+      }
     },
     {
       id: 3, type: 'petty', docno: `PC-${yr}${m}-002`,
