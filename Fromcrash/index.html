@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ระบบเงินสดย่อย & อนุมัติสำรองจ่าย | Fromcrash</title>
+  <meta name="description" content="ระบบจัดการเงินสดย่อยและหนังสือขออนุมัติสำรองจ่ายออนไลน์ พร้อม Export PDF" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">💼</div>
+      <div class="logo-text">
+        <span class="logo-main">FinFlow</span>
+        <span class="logo-sub">ระบบการเงิน</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-page="dashboard" onclick="showPage('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span>ภาพรวม</span>
+      </a>
+      <a href="#" class="nav-item" data-page="petty-cash" onclick="showPage('petty-cash')">
+        <span class="nav-icon">💵</span>
+        <span>เงินสดย่อย</span>
+      </a>
+      <a href="#" class="nav-item" data-page="approval" onclick="showPage('approval')">
+        <span class="nav-icon">📝</span>
+        <span>ขออนุมัติสำรองจ่าย</span>
+      </a>
+      <a href="#" class="nav-item" data-page="history" onclick="showPage('history')">
+        <span class="nav-icon">🗂️</span>
+        <span>ประวัติรายการ</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="org-info">
+        <div class="org-avatar">บ</div>
+        <div>
+          <div class="org-name">บริษัท ตัวอย่าง จำกัด</div>
+          <div class="org-dept">ฝ่ายการเงิน</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()">☰</button>
+        <div class="page-title" id="pageTitle">ภาพรวมระบบ</div>
+      </div>
+      <div class="topbar-right">
+        <div class="current-date" id="currentDate"></div>
+        <div class="user-badge">
+          <span class="user-avatar">👤</span>
+          <span class="user-name">ผู้ใช้งาน</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Pages -->
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="dashboard-grid">
+        <div class="stat-card" style="--accent: #6c63ff">
+          <div class="stat-icon">💵</div>
+          <div class="stat-info">
+            <div class="stat-label">วงเงินสดย่อยทั้งหมด</div>
+            <div class="stat-value" id="dash-total-petty">฿0.00</div>
+          </div>
+        </div>
+        <div class="stat-card" style="--accent: #43e97b">
+          <div class="stat-icon">✅</div>
+          <div class="stat-info">
+            <div class="stat-label">รายการที่อนุมัติแล้ว</div>
+            <div class="stat-value" id="dash-approved">0 รายการ</div>
+          </div>
+        </div>
+        <div class="stat-card" style="--accent: #f7971e">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-info">
+            <div class="stat-label">รอการอนุมัติ</div>
+            <div class="stat-value" id="dash-pending">0 รายการ</div>
+          </div>
+        </div>
+        <div class="stat-card" style="--accent: #f64f59">
+          <div class="stat-icon">📋</div>
+          <div class="stat-info">
+            <div class="stat-label">รายการทั้งหมด</div>
+            <div class="stat-value" id="dash-total-records">0 รายการ</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="recent-section">
+        <div class="section-header">
+          <h2>รายการล่าสุด</h2>
+        </div>
+        <div class="recent-table-wrap">
+          <table class="data-table" id="dashRecentTable">
+            <thead>
+              <tr>
+                <th>เลขที่</th>
+                <th>ประเภท</th>
+                <th>รายการ</th>
+                <th>จำนวนเงิน</th>
+                <th>สถานะ</th>
+                <th>วันที่</th>
+              </tr>
+            </thead>
+            <tbody id="dashRecentBody">
+              <tr><td colspan="6" class="empty-state">ยังไม่มีรายการ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PETTY CASH PAGE -->
+    <div class="page" id="page-petty-cash">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">💵</div>
+          <div>
+            <h2>ใบสำคัญจ่ายเงินสดย่อย</h2>
+            <p>กรอกข้อมูลรายการเงินสดย่อยที่ต้องการเบิก</p>
+          </div>
+          <button class="btn-print" onclick="printPettyCash()">🖨️ Export PDF</button>
+        </div>
+
+        <div class="form-card" id="pettyCashForm">
+          <!-- Header Info -->
+          <div class="form-row-3">
+            <div class="form-group">
+              <label>หน่วยงาน / ฝ่าย</label>
+              <input type="text" id="pc-dept" value="ฝ่ายการเงิน" placeholder="หน่วยงาน / ฝ่าย" />
+            </div>
+            <div class="form-group">
+              <label>เลขที่เอกสาร</label>
+              <input type="text" id="pc-docno" placeholder="PC-2026-001" />
+            </div>
+            <div class="form-group">
+              <label>วันที่</label>
+              <input type="date" id="pc-date" />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ผู้เบิก</label>
+              <input type="text" id="pc-requester" value="นายสมชาย ใจดี" placeholder="ชื่อผู้เบิก" />
+            </div>
+            <div class="form-group">
+              <label>วัตถุประสงค์</label>
+              <input type="text" id="pc-purpose" value="ค่าใช้จ่ายในการดำเนินงาน" placeholder="วัตถุประสงค์" />
+            </div>
+          </div>
+
+          <!-- Items Table -->
+          <div class="items-section">
+            <div class="items-header">
+              <h3>รายการค่าใช้จ่าย</h3>
+              <button class="btn-add-row" onclick="addPettyRow()">+ เพิ่มรายการ</button>
+            </div>
+            <div class="table-wrap">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px">ลำดับ</th>
+                    <th>รายการ</th>
+                    <th style="width:160px">หมวดหมู่</th>
+                    <th style="width:130px">จำนวนเงิน (บาท)</th>
+                    <th style="width:40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="pettyItemsBody">
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="3" style="text-align:right;font-weight:600;">รวมทั้งสิ้น</td>
+                    <td id="pc-total" style="text-align:right;font-weight:700;color:var(--accent-primary)">฿0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Signature -->
+          <div class="signature-row">
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้เบิก</div>
+              <div class="sig-date">วันที่ ........./........./.........</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้ตรวจสอบ</div>
+              <div class="sig-date">วันที่ ........./........./.........</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้อนุมัติ</div>
+              <div class="sig-date">วันที่ ........./........./.........</div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-secondary" onclick="clearPettyCash()">🗑️ ล้างข้อมูล</button>
+            <button class="btn-primary" onclick="savePettyCash()">💾 บันทึกรายการ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROVAL PAGE -->
+    <div class="page" id="page-approval">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">📝</div>
+          <div>
+            <h2>หนังสือขออนุมัติสำรองจ่าย</h2>
+            <p>กรอกข้อมูลเพื่อขออนุมัติสำรองจ่ายล่วงหน้า</p>
+          </div>
+          <button class="btn-print" onclick="printApproval()">🖨️ Export PDF</button>
+        </div>
+
+        <div class="form-card" id="approvalForm">
+          <!-- Memo Header -->
+          <div class="memo-header">
+            <div class="memo-title-block">
+              <div class="memo-tag">บันทึกข้อความ</div>
+              <div class="memo-org" id="memo-org-display">บริษัท ตัวอย่าง จำกัด</div>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ส่วนราชการ / หน่วยงาน</label>
+              <input type="text" id="ap-dept" value="ฝ่ายการเงินและบัญชี" placeholder="หน่วยงาน" />
+            </div>
+            <div class="form-group">
+              <label>ที่ (เลขที่หนังสือ)</label>
+              <input type="text" id="ap-docno" placeholder="AP-2026-001" />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>วันที่</label>
+              <input type="date" id="ap-date" />
+            </div>
+            <div class="form-group">
+              <label>เรื่อง</label>
+              <input type="text" id="ap-subject" value="ขออนุมัติสำรองจ่ายเงิน" placeholder="เรื่อง" />
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>เรียน (ผู้มีอำนาจอนุมัติ)</label>
+              <input type="text" id="ap-to" value="กรรมการผู้จัดการ" placeholder="เรียน" />
+            </div>
+            <div class="form-group">
+              <label>ผู้ขออนุมัติ</label>
+              <input type="text" id="ap-requester" value="นายสมชาย ใจดี" placeholder="ชื่อผู้ขออนุมัติ" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>ความเป็นมา / เหตุผล</label>
+            <textarea id="ap-reason" rows="3" placeholder="อธิบายเหตุผลความจำเป็น...">เนื่องด้วย ฝ่ายการเงินและบัญชี มีความจำเป็นต้องสำรองจ่ายเงินล่วงหน้าสำหรับค่าใช้จ่ายในการดำเนินงาน เพื่อให้กิจกรรมดังกล่าวสำเร็จลุล่วงตามวัตถุประสงค์ที่วางไว้</textarea>
+          </div>
+
+          <!-- Approval Items -->
+          <div class="items-section">
+            <div class="items-header">
+              <h3>รายการที่ขออนุมัติ</h3>
+              <button class="btn-add-row" onclick="addApprovalRow()">+ เพิ่มรายการ</button>
+            </div>
+            <div class="table-wrap">
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px">ลำดับ</th>
+                    <th>รายการ</th>
+                    <th style="width:160px">หมวดหมู่</th>
+                    <th style="width:130px">จำนวนเงิน (บาท)</th>
+                    <th style="width:40px"></th>
+                  </tr>
+                </thead>
+                <tbody id="approvalItemsBody">
+                </tbody>
+                <tfoot>
+                  <tr class="total-row">
+                    <td colspan="3" style="text-align:right;font-weight:600;">รวมทั้งสิ้น</td>
+                    <td id="ap-total" style="text-align:right;font-weight:700;color:var(--accent-primary)">฿0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</label>
+            <textarea id="ap-closing" rows="2">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และหากอนุมัติแล้ว กรุณาลงนามในช่องที่กำหนด</textarea>
+          </div>
+
+          <!-- Signature -->
+          <div class="signature-row">
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้ขออนุมัติ</div>
+              <div class="sig-name" id="ap-sig-name">นายสมชาย ใจดี</div>
+              <div class="sig-date">วันที่ ........./........./.........</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้บังคับบัญชา</div>
+              <div class="sig-date">วันที่ ........./........./.........</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้อนุมัติ</div>
+              <div class="sig-date">วันที่ ........./........./.........</div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn-secondary" onclick="clearApproval()">🗑️ ล้างข้อมูล</button>
+            <button class="btn-primary" onclick="saveApproval()">💾 บันทึกรายการ</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HISTORY PAGE -->
+    <div class="page" id="page-history">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">🗂️</div>
+          <div>
+            <h2>ประวัติรายการทั้งหมด</h2>
+            <p>รายการเงินสดย่อยและการขออนุมัติสำรองจ่าย</p>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label>ประเภท</label>
+            <select id="filterType" onchange="renderHistory()">
+              <option value="all">ทั้งหมด</option>
+              <option value="petty">เงินสดย่อย</option>
+              <option value="approval">สำรองจ่าย</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>ค้นหา</label>
+            <input type="text" id="filterSearch" placeholder="ค้นหารายการ..." oninput="renderHistory()" />
+          </div>
+          <button class="btn-secondary" onclick="exportHistoryPDF()">📄 Export ประวัติ PDF</button>
+          <button class="btn-danger" onclick="clearAllHistory()">🗑️ ล้างประวัติทั้งหมด</button>
+        </div>
+
+        <div class="recent-table-wrap">
+          <table class="data-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>เลขที่</th>
+                <th>ประเภท</th>
+                <th>รายการ</th>
+                <th>จำนวนเงิน</th>
+                <th>สถานะ</th>
+                <th>วันที่บันทึก</th>
+                <th>การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <tr><td colspan="7" class="empty-state">ยังไม่มีรายการ</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- Print Modal -->
+  <div class="modal-overlay" id="printModal" onclick="closePrintModal()">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3 id="modalTitle">ตัวอย่างเอกสาร</h3>
+        <button class="modal-close" onclick="closePrintModal()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closePrintModal()">ปิด</button>
+        <button class="btn-primary" onclick="doPrint()">🖨️ Export PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
