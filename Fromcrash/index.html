@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,10 +8,15 @@
   <meta name="description" content="ระบบจัดการเงินสดย่อยและหนังสือขออนุมัติสำรองจ่ายออนไลน์ พร้อม Export PDF" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 </head>
+
 <body>
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
@@ -39,7 +45,27 @@
         <span class="nav-icon">🗂️</span>
         <span>ประวัติรายการ</span>
       </a>
+      <a href="#" class="nav-item" data-page="claims" onclick="showPage('claims')">
+        <span class="nav-icon">🛡️</span>
+        <span>เคลมประกันภัย</span>
+      </a>
     </nav>
+
+    <!-- Requester Manager Panel -->
+    <div class="requester-panel" id="requesterPanel">
+      <div class="requester-panel-header" onclick="toggleRequesterPanel()">
+        <span>👤 จัดการผู้เบิก</span>
+        <span class="requester-panel-arrow" id="requesterArrow">▾</span>
+      </div>
+      <div class="requester-panel-body" id="requesterPanelBody">
+        <div class="requester-add-row">
+          <input type="text" id="newRequesterInput" placeholder="พิมพ์ชื่อผู้เบิก..."
+            onkeydown="if(event.key==='Enter') addRequester()" />
+          <button class="btn-requester-add" onclick="addRequester()" title="เพิ่ม">+</button>
+        </div>
+        <ul class="requester-list" id="requesterList"></ul>
+      </div>
+    </div>
 
     <div class="sidebar-footer">
       <div class="org-info">
@@ -121,7 +147,9 @@
               </tr>
             </thead>
             <tbody id="dashRecentBody">
-              <tr><td colspan="6" class="empty-state">ยังไม่มีรายการ</td></tr>
+              <tr>
+                <td colspan="6" class="empty-state">ยังไม่มีรายการ</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -145,7 +173,11 @@
           <div class="form-row-3">
             <div class="form-group">
               <label>หน่วยงาน / ฝ่าย</label>
-              <input type="text" id="pc-dept" value="ฝ่ายการเงิน" placeholder="หน่วยงาน / ฝ่าย" />
+              <select id="pc-dept">
+                <option value="">-- เลือกหน่วยงาน --</option>
+                <option value="Safety">Safety</option>
+                <option value="Transport">Transport</option>
+              </select>
             </div>
             <div class="form-group">
               <label>เลขที่เอกสาร</label>
@@ -160,7 +192,9 @@
           <div class="form-row-2">
             <div class="form-group">
               <label>ผู้เบิก</label>
-              <input type="text" id="pc-requester" value="นายสมชาย ใจดี" placeholder="ชื่อผู้เบิก" />
+              <select id="pc-requester">
+                <option value="">-- เลือกผู้เบิก --</option>
+              </select>
             </div>
             <div class="form-group">
               <label>วัตถุประสงค์</label>
@@ -203,7 +237,8 @@
             <div class="sig-box">
               <div class="sig-line"></div>
               <div class="sig-label">ผู้เบิก</div>
-              <div class="sig-date">วันที่ ........./........./.........</div>
+              <div class="sig-name" id="pc-sig-name"></div>
+              <div class="sig-date" id="pc-sig-date">วันที่ ........./........./.........</div>
             </div>
             <div class="sig-box">
               <div class="sig-line"></div>
@@ -248,8 +283,8 @@
 
           <div class="form-row-2">
             <div class="form-group">
-              <label>ส่วนราชการ / หน่วยงาน</label>
-              <input type="text" id="ap-dept" value="ฝ่ายการเงินและบัญชี" placeholder="หน่วยงาน" />
+              <label>ลูกค้า</label>
+              <input type="text" id="ap-dept" placeholder="ชื่อลูกค้า" />
             </div>
             <div class="form-group">
               <label>ที่ (เลขที่หนังสือ)</label>
@@ -271,17 +306,20 @@
           <div class="form-row-2">
             <div class="form-group">
               <label>เรียน (ผู้มีอำนาจอนุมัติ)</label>
-              <input type="text" id="ap-to" value="กรรมการผู้จัดการ" placeholder="เรียน" />
+              <input type="text" id="ap-to" value="คุณนิธิโรจน์ คำภานุช" placeholder="เรียน" />
             </div>
             <div class="form-group">
               <label>ผู้ขออนุมัติ</label>
-              <input type="text" id="ap-requester" value="นายสมชาย ใจดี" placeholder="ชื่อผู้ขออนุมัติ" />
+              <select id="ap-requester">
+                <option value="">-- เลือกผู้ขออนุมัติ --</option>
+              </select>
             </div>
           </div>
 
           <div class="form-group">
             <label>ความเป็นมา / เหตุผล</label>
-            <textarea id="ap-reason" rows="3" placeholder="อธิบายเหตุผลความจำเป็น...">เนื่องด้วย ฝ่ายการเงินและบัญชี มีความจำเป็นต้องสำรองจ่ายเงินล่วงหน้าสำหรับค่าใช้จ่ายในการดำเนินงาน เพื่อให้กิจกรรมดังกล่าวสำเร็จลุล่วงตามวัตถุประสงค์ที่วางไว้</textarea>
+            <textarea id="ap-reason" rows="3"
+              placeholder="อธิบายเหตุผลความจำเป็น...">เนื่องด้วย ฝ่ายการเงินและบัญชี มีความจำเป็นต้องสำรองจ่ายเงินล่วงหน้าสำหรับค่าใช้จ่ายในการดำเนินงาน เพื่อให้กิจกรรมดังกล่าวสำเร็จลุล่วงตามวัตถุประสงค์ที่วางไว้</textarea>
           </div>
 
           <!-- Approval Items -->
@@ -316,7 +354,8 @@
 
           <div class="form-group">
             <label>จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</label>
-            <textarea id="ap-closing" rows="2">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และหากอนุมัติแล้ว กรุณาลงนามในช่องที่กำหนด</textarea>
+            <textarea id="ap-closing"
+              rows="2">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และหากอนุมัติแล้ว กรุณาลงนามในช่องที่กำหนด</textarea>
           </div>
 
           <!-- Signature -->
@@ -324,8 +363,8 @@
             <div class="sig-box">
               <div class="sig-line"></div>
               <div class="sig-label">ผู้ขออนุมัติ</div>
-              <div class="sig-name" id="ap-sig-name">นายสมชาย ใจดี</div>
-              <div class="sig-date">วันที่ ........./........./.........</div>
+              <div class="sig-name" id="ap-sig-name"></div>
+              <div class="sig-date" id="ap-sig-date">วันที่ ........./........./.........</div>
             </div>
             <div class="sig-box">
               <div class="sig-line"></div>
@@ -389,11 +428,242 @@
               </tr>
             </thead>
             <tbody id="historyBody">
-              <tr><td colspan="7" class="empty-state">ยังไม่มีรายการ</td></tr>
+              <tr>
+                <td colspan="7" class="empty-state">ยังไม่มีรายการ</td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- CLAIMS PAGE (เคลมประกันภัย) -->
+    <div class="page" id="page-claims">
+      <div id="ic-hdr" class="ic-toprow">
+        <div class="ic-toprow-l">
+          <span class="ic-badge-total" id="hTotal">0 เคส</span>
+          <div class="fbdot" id="fbDot" title="Firebase Status"></div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="nb on" onclick="icGoTo('dashboard')" id="nav-dashboard">📊 แดชบอร์ด</button>
+        <button class="nb" onclick="icGoTo('summary')" id="nav-summary">📈 สรุปเคส</button>
+        <button class="nb" onclick="icGoTo('status')" id="nav-status">🧭 สถานะ</button>
+        <button class="nb" onclick="icGoTo('list')" id="nav-list">📋 รายการทั้งหมด <span class="nbc" id="lBadge">0</span></button>
+        <button class="nb" onclick="icGoTo('add')" id="nav-add">➕ เพิ่มเคส</button>
+        <button class="nb" onclick="icGoTo('settings')" id="nav-settings">⚙️ Firebase</button>
+      </div>
+
+      <div class="ic-main">
+
+        <!-- DASHBOARD -->
+        <div class="pg on" id="pg-dashboard">
+          <div class="trow"><div class="pgttl">📊 แดชบอร์ด</div><div class="ctxt" id="dashUp"></div></div>
+          <div class="sg" id="statGrid"></div>
+          <div class="cg2">
+            <div class="cc"><div class="ct">สถานะเคสทั้งหมด</div><div class="ch"><canvas id="cStatus"></canvas></div></div>
+            <div class="cc"><div class="ct">จำนวนเคสตามลานจอด</div><div class="ch"><canvas id="cYard"></canvas></div></div>
+            <div class="cc"><div class="ct">มูลค่าเรียกเก็บ vs ประกันจ่าย รายเดือน</div><div class="ch"><canvas id="cMonth"></canvas></div></div>
+            <div class="cc"><div class="ct">พนักงานขับรถ — เคสสูงสุด</div><div class="ch"><canvas id="cDriver"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- SUMMARY -->
+        <div class="pg" id="pg-summary">
+          <div class="trow"><div class="pgttl">📈 สรุปเคสทั้งหมด</div><button class="btn bt" onclick="icExportSummaryCSV()">📥 Export สรุป CSV</button></div>
+          <div class="sg" id="sumStat"></div>
+          <div class="sumgr" id="sumGrid"></div>
+        </div>
+
+        <!-- STATUS -->
+        <div class="pg" id="pg-status">
+          <div class="trow">
+            <div class="pgttl">🧭 สถานะการเคลม</div>
+            <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:flex-end;">
+              <div class="fg"><div class="flbl">ลานจอด</div><select class="fc" id="stY" onchange="icRenderStatus()"><option value="">ทั้งหมด</option></select></div>
+              <div class="fg"><div class="flbl">พนักงานขับรถ</div><select class="fc" id="stD" onchange="icRenderStatus()"><option value="">ทั้งหมด</option></select></div>
+            </div>
+          </div>
+          <div class="pipe" id="pipeView"></div>
+        </div>
+
+        <!-- LIST -->
+        <div class="pg" id="pg-list">
+          <div class="trow"><div class="pgttl">📋 รายการเคสทั้งหมด</div><button class="btn bp" onclick="icGoTo('add')">➕ เพิ่มเคสใหม่</button></div>
+          <div class="iobar">
+            <span class="iottl">📁 ไฟล์</span>
+            <button class="btn bs" onclick="icDownloadTemplate()">📄 Template CSV</button>
+            <div class="iodiv"></div>
+            <label class="btn bs" style="cursor:pointer">📥 Import CSV/JSON<input type="file" class="hidden" id="importFile" accept=".json,.csv" onchange="icImportData(event)"></label>
+            <button class="btn bs" onclick="icExportJSON()">💾 Export JSON</button>
+            <button class="btn bt" onclick="icExportCSV()">📊 Export CSV</button>
+            <div class="iodiv"></div>
+            <button class="btn bt" onclick="icExportSummaryCSV()">📈 Export สรุป</button>
+            <div class="iodiv"></div>
+            <button class="btn bs" id="pushBtn" onclick="icPushToFB()" style="display:none;">⬆️ Push Firebase</button>
+          </div>
+          <div class="fbar">
+            <div class="fg"><div class="flbl">ลานจอด</div><select class="fc" id="fY" onchange="icRenderList()"><option value="">ทั้งหมด</option></select></div>
+            <div class="fg"><div class="flbl">พนักงานขับรถ</div><select class="fc" id="fD" onchange="icRenderList()"><option value="">ทั้งหมด</option></select></div>
+            <div class="fg"><div class="flbl">สถานะ</div>
+              <select class="fc" id="fS" onchange="icRenderList()">
+                <option value="">ทั้งหมด</option><option value="0">เปิดเคส</option><option value="1">รอตั้งเบิก</option>
+                <option value="2">รอจ่าย</option><option value="3">รอระบัดจ่าย</option><option value="4">ปิดเคส ✓</option>
+              </select>
+            </div>
+            <div class="fg"><div class="flbl">ลูกค้า</div><select class="fc" id="fC" onchange="icRenderList()"><option value="">ทั้งหมด</option></select></div>
+            <div class="fg"><div class="flbl">ค้นหา</div><input type="text" class="fc" id="fQ" placeholder="ทะเบียน / TMS / ชื่อ..." oninput="icRenderList()" style="min-width:180px;"></div>
+            <button class="btn bs bxs" onclick="icClearFilters()">🔄 ล้าง</button>
+          </div>
+          <div class="ctxt" id="lCount" style="margin-bottom:8px;"></div>
+          <div class="twrap">
+            <table class="dt">
+              <thead><tr>
+                <th onclick="icSortBy('seq')">#</th><th onclick="icSortBy('incidentDate')">วันที่เกิดเหตุ</th>
+                <th onclick="icSortBy('plate')">ทะเบียน</th><th onclick="icSortBy('insurance')">ประกัน</th>
+                <th onclick="icSortBy('yard')">ลานจอด</th><th onclick="icSortBy('driver')">พนักงาน</th>
+                <th onclick="icSortBy('tmsNo')">TMS</th><th onclick="icSortBy('customer')">ลูกค้า</th>
+                <th onclick="icSortBy('claimAmount')">มูลค่าเรียกเก็บ</th><th onclick="icSortBy('insAmount')">ประกันจ่าย</th>
+                <th onclick="icSortBy('diff')">ส่วนต่าง</th><th>สถานะ</th><th>จัดการ</th>
+              </tr></thead>
+              <tbody id="tBody"></tbody>
+            </table>
+            <div id="empState" class="empst" style="display:none;"><div class="eic">📭</div><h3>ไม่พบรายการ</h3><p>เพิ่มเคสใหม่หรือเปลี่ยนตัวกรอง</p></div>
+            <div class="pgn" id="pgn"></div>
+          </div>
+        </div>
+
+        <!-- ADD/EDIT -->
+        <div class="pg" id="pg-add">
+          <div class="trow"><div class="pgttl" id="fTitle">➕ เพิ่มเคสใหม่</div><button class="btn bs" onclick="icCancelForm()">✕ ยกเลิก</button></div>
+          <div class="fcard">
+            <input type="hidden" id="editId">
+            <div class="fsec">
+              <div class="fst">📋 ข้อมูลเบื้องต้น</div>
+              <div class="fgr">
+                <div class="fg2"><div class="fl">วันที่เกิดเหตุ <span class="req">*</span></div><input type="date" class="fi" id="f_incidentDate"></div>
+                <div class="fg2"><div class="fl">ทะเบียนรถ <span class="req">*</span></div><input type="text" class="fi" id="f_plate" placeholder="เช่น กข 1234 กรุงเทพ"></div>
+                <div class="fg2"><div class="fl">ประกัน</div><input type="text" class="fi" id="f_insurance" placeholder="บริษัทประกัน"></div>
+                <div class="fg2"><div class="fl">ลานจอด <span class="req">*</span></div>
+                  <select class="fsel" id="f_yard"><option value="">-- เลือก --</option><option>ABC</option><option>APC</option><option>ARC</option><option>AKC</option><option>อื่นๆ</option></select>
+                </div>
+                <div class="fg2"><div class="fl">เจ้าของรถ</div><input type="text" class="fi" id="f_owner"></div>
+                <div class="fg2"><div class="fl">ชื่อพนักงานขับรถ</div><input type="text" class="fi" id="f_driver"></div>
+                <div class="fg2"><div class="fl">เลขที่ TMS</div><input type="text" class="fi" id="f_tmsNo"></div>
+                <div class="fg2"><div class="fl">ลูกค้า</div><input type="text" class="fi" id="f_customer"></div>
+                <div class="fg2 full"><div class="fl">ลักษณะการเกิดเหตุ</div><textarea class="fta" id="f_incident" placeholder="อธิบายลักษณะการเกิดเหตุ..."></textarea></div>
+              </div>
+            </div>
+            <div class="fsec">
+              <div class="fst">💰 การเบิก &amp; การจ่าย</div>
+              <div class="fgr">
+                <div class="fg2"><div class="fl">มูลค่าเรียกเก็บ (บาท)</div><input type="number" class="fi" id="f_claimAmount" placeholder="0.00" min="0" step="0.01" oninput="icCalcDiff()"></div>
+                <div class="fg2"><div class="fl">วันที่ตั้งเบิก</div><input type="date" class="fi" id="f_billingDate"></div>
+                <div class="fg2"><div class="fl">วันที่จ่ายเงิน</div><input type="date" class="fi" id="f_paymentDate"></div>
+                <div class="fg2"><div class="fl">เลขที่ใบสำคัญจ่าย</div><input type="text" class="fi" id="f_voucherNo"></div>
+                <div class="fg2"><div class="fl">ประกันจ่าย (บาท)</div><input type="number" class="fi" id="f_insAmount" placeholder="0.00" min="0" step="0.01" oninput="icCalcDiff()"></div>
+                <div class="fg2"><div class="fl">วันที่ประกันจ่าย</div><input type="date" class="fi" id="f_insPayDate"></div>
+                <div class="fg2"><div class="fl">เลขที่ใบรับ</div><input type="text" class="fi" id="f_receiptNo"></div>
+                <div class="fg2"><div class="fl">ส่วนต่าง (อัตโนมัติ)</div><input type="text" class="fi" id="f_diff" readonly></div>
+              </div>
+            </div>
+            <div class="fsec">
+              <div class="fst">📝 หมายเหตุ</div>
+              <div class="fgr"><div class="fg2 full"><textarea class="fta" id="f_remark" placeholder="บันทึกหมายเหตุ..."></textarea></div></div>
+            </div>
+            <div class="fact">
+              <button class="btn bs" onclick="icCancelForm()">ยกเลิก</button>
+              <button class="btn bp" onclick="icSaveCase()">💾 บันทึกข้อมูล</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="pg" id="pg-settings">
+          <div class="trow"><div class="pgttl">⚙️ ตั้งค่า Firebase</div></div>
+
+          <div class="setcard">
+            <div class="setttl">📥 วิธีรับ Firebase Config</div>
+            <div class="setdesc">
+              1. เข้าที่ <strong style="color:var(--amber)">console.firebase.google.com</strong> → เลือก Project<br>
+              2. คลิก ⚙️ Project Settings → แท็บ <strong>General</strong><br>
+              3. เลื่อนลงถึง <strong>Your apps</strong> → เลือก Web app <code>&lt;/&gt;</code> หรือสร้างใหม่<br>
+              4. คัดลอกค่าใน <code>firebaseConfig</code> มาใส่ช่องด้านล่าง<br>
+              5. ต้องเปิดใช้ <strong>Realtime Database</strong> และตั้ง Rules ให้ read/write ได้
+            </div>
+          </div>
+
+          <div class="setcard">
+            <div class="setttl">🔥 Firebase Configuration</div>
+            <div class="setdesc">คัดลอกค่าจาก Firebase Console → วางแยกเป็น Browser ของเครื่องที่เข้าถึงที่นี้เท่านั้น</div>
+            <div class="setgr">
+              <div class="setr full"><div class="setl">API Key *</div><input class="seti" id="fb_apiKey" placeholder="AIzaSy..."></div>
+              <div class="setr full"><div class="setl">Auth Domain *</div><input class="seti" id="fb_authDomain" placeholder="your-project.firebaseapp.com"></div>
+              <div class="setr full"><div class="setl">Database URL *</div><input class="seti" id="fb_databaseURL" placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"></div>
+              <div class="setr"><div class="setl">Project ID *</div><input class="seti" id="fb_projectId" placeholder="your-project-id"></div>
+              <div class="setr"><div class="setl">Storage Bucket</div><input class="seti" id="fb_storageBucket" placeholder="your-project.appspot.com"></div>
+              <div class="setr"><div class="setl">Messaging Sender ID</div><input class="seti" id="fb_messagingSenderId" placeholder="123456789"></div>
+              <div class="setr"><div class="setl">App ID</div><input class="seti" id="fb_appId" placeholder="1:123:web:abc..."></div>
+              <div class="setr"><div class="setl">Database Path</div><input class="seti" id="fb_dbPath" placeholder="/insurance_claims"></div>
+              <div class="setr"><div class="setl">Auto Sync</div>
+                <select class="seti fsel2" id="fb_autoSync">
+                  <option value="realtime">Real-time (แนะนำ)</option>
+                  <option value="manual">Manual เท่านั้น</option>
+                </select>
+              </div>
+              <div class="setr"><div class="setl">เมื่อข้อมูลขัดแย้งกัน</div>
+                <select class="seti fsel2" id="fb_conflict">
+                  <option value="merge">Merge (รวมทั้งสอง)</option>
+                  <option value="firebase_wins">Firebase ชนะ (เชื่อ Server)</option>
+                  <option value="local_wins">Local ชนะ (เชื่อเครื่องนี้)</option>
+                </select>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:18px;padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;align-items:center;">
+              <button class="btn bp" onclick="icSaveFbConfig()">💾 บันทึกและเชื่อมต่อ</button>
+              <button class="btn bs" onclick="icTestFbConn()">🔍 ทดสอบ</button>
+              <button class="btn bs" onclick="icSyncNow()">🔄 Sync ตอนนี้</button>
+              <button class="btn bd" onclick="icClearFbConfig()" style="margin-left:auto;">🗑️ ลบ Config</button>
+            </div>
+          </div>
+
+          <div class="setcard">
+            <div class="setttl">📜 Log การเชื่อมต่อ</div>
+            <div id="fbLog" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);line-height:1.9;max-height:200px;overflow-y:auto;min-height:40px;"></div>
+            <div style="margin-top:8px;">
+              <button class="btn bs bxs" onclick="document.getElementById('fbLog').innerHTML=''">🗑️ ล้าง Log</button>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /ic-main -->
+
+      <!-- DETAIL MODAL -->
+      <div class="mov" id="detailModal">
+        <div class="mod">
+          <div class="modhdr">
+            <div><div class="modid" id="dm_id"></div><div class="modpl" id="dm_pl"></div><div style="margin-top:5px;" id="dm_badge"></div></div>
+            <div style="display:flex;gap:7px;"><button class="btn bs bxs" onclick="icEditFromDetail()">✏️ แก้ไข</button><button class="btn bic bs" onclick="icCloseDetail()">✕</button></div>
+          </div>
+          <div id="dm_tr"></div>
+          <div id="dm_body"></div>
+        </div>
+      </div>
+
+      <!-- CONFIRM DELETE -->
+      <div class="mov" id="confirmModal">
+        <div class="mod mod-sm">
+          <div style="font-size:15px;font-weight:700;margin-bottom:10px;">⚠️ ยืนยันการลบ</div>
+          <div style="color:var(--muted);margin-bottom:18px;font-size:13px;">ต้องการลบเคสนี้ใช่หรือไม่? ไม่สามารถย้อนกลับได้</div>
+          <div style="display:flex;gap:9px;justify-content:flex-end;">
+            <button class="btn bs" onclick="icCloseConfirm()">ยกเลิก</button>
+            <button class="btn bd" onclick="icDoDelete()">🗑️ ลบ</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ic-toast" id="ic-toast"></div>
     </div>
 
   </main>
@@ -417,5 +687,7 @@
   </div>
 
   <script src="app.js"></script>
+  <script src="claims.js"></script>
 </body>
+
 </html>

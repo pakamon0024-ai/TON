@@ -3,6 +3,7 @@ let records = JSON.parse(localStorage.getItem('finflow_records') || '[]');
 let pettyRows = [];
 let approvalRows = [];
 let currentPrintFn = null;
+let requesters = JSON.parse(localStorage.getItem('finflow_requesters') || '[]');
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addApprovalRow();
   updateCurrentDate();
   autoDocNo();
+  loadRequesters();
 });
 
 function updateCurrentDate() {
@@ -50,12 +52,14 @@ function showPage(page) {
     dashboard: 'ภาพรวมระบบ',
     'petty-cash': 'ฟอร์มเงินสดย่อย',
     approval: 'หนังสือขออนุมัติสำรองจ่าย',
-    history: 'ประวัติรายการ'
+    history: 'ประวัติรายการ',
+    claims: 'เคลมประกันภัย'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'history') renderHistory();
+  if (page === 'claims' && typeof icOnPageShown === 'function') icOnPageShown();
 
   // close sidebar on mobile
   document.getElementById('sidebar').classList.remove('open');
@@ -64,6 +68,112 @@ function showPage(page) {
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
+
+// ===== Requester Manager =====
+function loadRequesters() {
+  renderRequesterList();
+  syncRequesterDropdowns();
+}
+
+function toggleRequesterPanel() {
+  const body = document.getElementById('requesterPanelBody');
+  const arrow = document.getElementById('requesterArrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+function addRequester() {
+  const input = document.getElementById('newRequesterInput');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (requesters.includes(name)) {
+    showToast('มีชื่อนี้อยู่แล้ว', 'warning'); return;
+  }
+  requesters.push(name);
+  saveRequesters();
+  renderRequesterList();
+  syncRequesterDropdowns();
+  input.value = '';
+  input.focus();
+  showToast(`เพิ่มผู้เบิก: ${name}`, 'success');
+}
+
+function removeRequester(name) {
+  requesters = requesters.filter(r => r !== name);
+  saveRequesters();
+  renderRequesterList();
+  syncRequesterDropdowns();
+  showToast(`ลบแล้ว: ${name}`, 'warning');
+}
+
+function saveRequesters() {
+  localStorage.setItem('finflow_requesters', JSON.stringify(requesters));
+}
+
+function renderRequesterList() {
+  const ul = document.getElementById('requesterList');
+  if (!ul) return;
+  if (requesters.length === 0) {
+    ul.innerHTML = '<li class="requester-list-empty">ยังไม่มีรายชื่อ — พิมพ์ชื่อเพื่อเพิ่ม</li>';
+    return;
+  }
+  ul.innerHTML = requesters.map(name => `
+    <li>
+      <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
+      <button class="btn-req-delete" onclick="removeRequester('${escapeHtml(name).replace(/'/g, "&apos;")}')"
+        title="ลบรายชื่อนี้">✕</button>
+    </li>
+  `).join('');
+}
+
+function syncRequesterDropdowns() {
+  ['pc-requester', 'ap-requester'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    const placeholder = id === 'pc-requester' ? '-- เลือกผู้เบิก --' : '-- เลือกผู้ขออนุมัติ --';
+    sel.innerHTML = `<option value="">${placeholder}</option>` +
+      requesters.map(r => `<option value="${escapeHtml(r)}" ${r === current ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('');
+  });
+  attachRequesterListeners();
+}
+
+function attachRequesterListeners() {
+  const pcSel = document.getElementById('pc-requester');
+  const apSel = document.getElementById('ap-requester');
+  if (pcSel) {
+    pcSel.onchange = () => updateSignature('pc');
+    // trigger if already has value
+    updateSignature('pc');
+  }
+  if (apSel) {
+    apSel.onchange = () => updateSignature('ap');
+    updateSignature('ap');
+  }
+}
+
+function updateSignature(prefix) {
+  const sel = document.getElementById(`${prefix}-requester`);
+  const sigName = document.getElementById(`${prefix}-sig-name`);
+  const sigDate = document.getElementById(`${prefix}-sig-date`);
+  if (!sel || !sigName || !sigDate) return;
+
+  const name = sel.value;
+  if (name) {
+    sigName.textContent = name;
+    const now = new Date();
+    const day   = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year  = now.getFullYear() + 543;
+    sigDate.textContent = `วันที่ ${day}/${month}/${year}`;
+    sigName.style.opacity = '1';
+  } else {
+    sigName.textContent = '';
+    sigDate.textContent = 'วันที่ ........./........./........';
+    sigName.style.opacity = '0.4';
+  }
+}
+
 
 // ===== Categories =====
 const categories = [
@@ -425,7 +535,8 @@ function companyLetterhead() {
       <div class="letterhead-name-th">บริษัท เอ.พี.ทรานสปอร์ต เซ็นเตอร์ จำกัด</div>
       <div class="letterhead-name-en">A.P. TRANSPORT CENTER CO., LTD.</div>
       <div class="letterhead-detail">1/4 หมู่ 4 ต.พิมพา อ.บางปะกง จ.ฉะเชิงเทรา 24180</div>
-      <div class="letterhead-detail">Tel. - &nbsp;&nbsp; Fax. -</div>
+      <div class="letterhead-detail">Tel. 033-050710 &nbsp;&nbsp; Fax. -</div>
+      <div class="letterhead-detail">เลขประจำตัวผู้เสียภาษี: 0-2455-50000-03-1</div>
       <div class="letterhead-detail">www.amphol2000.com &nbsp;|&nbsp; E-mail: apt@amphol2000.com</div>
     </div>
     <hr class="print-divider" />
@@ -460,9 +571,9 @@ function buildPettyCashDoc(data) {
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
       <div class="print-sigs">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้เบิก</div><div class="print-sig-date">วันที่ .............</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-date">วันที่ .............</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้เบิก</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
     </div>
   `;
@@ -484,7 +595,7 @@ function buildApprovalDoc(data) {
       <p class="print-subtitle" style="font-weight:700;font-size:15px">เรื่อง: ${escapeHtml(data.subject || 'ขออนุมัติสำรองจ่ายเงิน')}</p>
       <hr class="print-divider" />
       <div class="print-info">
-        <div class="print-info-row"><span class="print-label">ส่วนราชการ:</span><span>${escapeHtml(data.dept)}</span></div>
+        <div class="print-info-row"><span class="print-label">ลูกค้า:</span><span>${escapeHtml(data.dept)}</span></div>
         <div class="print-info-row"><span class="print-label">ที่:</span><span>${escapeHtml(data.docno)}</span></div>
         <div class="print-info-row"><span class="print-label">เรียน:</span><span>${escapeHtml(data.to || '-')}</span></div>
         <div class="print-info-row"><span class="print-label">วันที่:</span><span>${formatDate(data.date)}</span></div>
@@ -497,9 +608,9 @@ function buildApprovalDoc(data) {
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
       <p class="print-body-text">${escapeHtml(data.closing || '')}</p>
       <div class="print-sigs">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-date">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ .............</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้บังคับบัญชา</div><div class="print-sig-date">วันที่ .............</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้บังคับบัญชา</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
     </div>
   `;
@@ -577,6 +688,10 @@ function formatDate(val) {
   const d = new Date(val);
   if (isNaN(d)) return val;
   return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function todayThaiDate() {
+  return new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function statusBadge(status) {
