@@ -4,6 +4,8 @@ let pettyRows = [];
 let approvalRows = [];
 let currentPrintFn = null;
 let requesters = JSON.parse(localStorage.getItem('finflow_requesters') || '[]');
+let editingPettyId = null;
+let editingApprovalId = null;
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -53,13 +55,15 @@ function showPage(page) {
     'petty-cash': 'ฟอร์มเงินสดย่อย',
     approval: 'หนังสือขออนุมัติสำรองจ่าย',
     history: 'ประวัติรายการ',
-    claims: 'เคลมประกันภัย'
+    claims: 'เคลมประกันภัย',
+    masterdata: 'ฐานข้อมูลหลัก'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'history') renderHistory();
   if (page === 'claims' && typeof icOnPageShown === 'function') icOnPageShown();
+  if (page === 'masterdata' && typeof renderMasterData === 'function') renderMasterData();
 
   // close sidebar on mobile
   document.getElementById('sidebar').classList.remove('open');
@@ -259,24 +263,39 @@ function savePettyCash() {
   if (data.items.some(i => !i.item)) {
     showToast('กรุณากรอกรายการค่าใช้จ่ายให้ครบ', 'warning'); return;
   }
-  const record = {
-    id: Date.now(),
-    type: 'petty',
-    docno: data.docno,
-    dept: data.dept,
-    requester: data.requester,
-    purpose: data.purpose,
-    date: data.date,
-    items: data.items,
-    total: data.total,
-    status: 'pending',
-    savedAt: new Date().toISOString()
-  };
-  records.unshift(record);
+  if (editingPettyId) {
+    const idx = records.findIndex(r => r.id === editingPettyId);
+    if (idx >= 0) {
+      records[idx] = {
+        ...records[idx],
+        docno: data.docno, dept: data.dept, requester: data.requester,
+        purpose: data.purpose, date: data.date, items: data.items, total: data.total,
+      };
+    }
+    showToast('✅ แก้ไขรายการเงินสดย่อยแล้ว!', 'success');
+    cancelEditPetty();
+  } else {
+    const record = {
+      id: Date.now(),
+      type: 'petty',
+      docno: data.docno,
+      dept: data.dept,
+      requester: data.requester,
+      purpose: data.purpose,
+      date: data.date,
+      items: data.items,
+      total: data.total,
+      status: 'pending',
+      savedAt: new Date().toISOString()
+    };
+    records.unshift(record);
+    showToast('✅ บันทึกรายการเงินสดย่อยแล้ว!', 'success');
+    autoDocNo();
+  }
   saveRecords();
-  showToast('✅ บันทึกรายการเงินสดย่อยแล้ว!', 'success');
+  rsPushIfReady();
   renderDashboard();
-  autoDocNo();
+  renderHistory();
 }
 
 function clearPettyCash() {
@@ -286,6 +305,47 @@ function clearPettyCash() {
   setToday();
   autoDocNo();
   showToast('ล้างข้อมูลแล้ว', 'warning');
+}
+
+function editRecord(id) {
+  const rec = records.find(r => r.id === id);
+  if (!rec) return;
+  if (rec.type === 'petty') loadPettyCashForEdit(rec);
+  else loadApprovalForEdit(rec.data || rec, rec.id);
+  showPage(rec.type === 'petty' ? 'petty-cash' : 'approval');
+}
+
+function loadPettyCashForEdit(rec) {
+  editingPettyId = rec.id;
+  setSelectValueSafe('pc-dept', rec.dept || '');
+  document.getElementById('pc-docno').value = rec.docno || '';
+  document.getElementById('pc-date').value = rec.date || '';
+  document.getElementById('pc-purpose').value = rec.purpose || '';
+
+  pettyRows = (rec.items || []).map((item, i) => ({ id: Date.now() + i }));
+  if (pettyRows.length === 0) pettyRows = [{ id: Date.now() }];
+  renderPettyRows();
+  (rec.items || []).forEach((item, i) => {
+    const row = pettyRows[i];
+    if (!row) return;
+    document.getElementById(`pc-item-${row.id}`).value = item.item || '';
+    document.getElementById(`pc-cat-${row.id}`).value = item.cat || '';
+    document.getElementById(`pc-amount-${row.id}`).value = item.amount || '';
+  });
+  calcPettyTotal();
+
+  setSelectValueSafe('pc-requester', rec.requester || '');
+  updateSignature('pc');
+
+  document.getElementById('pc-edit-docno').textContent = rec.docno || '';
+  document.getElementById('pc-edit-banner').style.display = 'flex';
+  showToast('โหลดข้อมูลเพื่อแก้ไขแล้ว', 'success');
+}
+
+function cancelEditPetty() {
+  editingPettyId = null;
+  document.getElementById('pc-edit-banner').style.display = 'none';
+  clearPettyCash();
 }
 
 // ===== Approval =====
@@ -331,6 +391,23 @@ function calcApprovalTotal() {
     total += isNaN(v) ? 0 : v;
   });
   document.getElementById('ap-total').textContent = formatMoney(total);
+  updateApprovalNotes();
+}
+
+function updateApprovalNotes() {
+  const note1El = document.getElementById('ap-note1');
+  const note2El = document.getElementById('ap-note2');
+  if (!note1El || !note2El) return;
+  const customer = document.getElementById('ap-dept').value.trim() || '-';
+  let total = 0;
+  approvalRows.forEach(row => {
+    const v = parseFloat(document.getElementById(`ap-amount-${row.id}`)?.value || 0);
+    total += isNaN(v) ? 0 : v;
+  });
+  const amountText = formatMoney(total);
+  const bahtText = thaiBahtText(total);
+  note1El.value = `ลูกค้า ${customer} จำนวนเงิน ${amountText} (${bahtText}) ตามเอกสารแนบ`;
+  note2El.value = `ทางหน่วยงาน Safety ขออนุมัติสำรองจ่ายให้ลูกค้า ${customer} เป็นจำนวนเงิน ${amountText} (${bahtText}) และทำการตั้งเบิกประกันสินค้า`;
 }
 
 function getApprovalData() {
@@ -349,6 +426,8 @@ function getApprovalData() {
     subject: document.getElementById('ap-subject').value,
     requester: document.getElementById('ap-requester').value,
     reason: document.getElementById('ap-reason').value,
+    note1: document.getElementById('ap-note1').value,
+    note2: document.getElementById('ap-note2').value,
     closing: document.getElementById('ap-closing').value,
     items, total
   };
@@ -359,25 +438,41 @@ function saveApproval() {
   if (!data.docno || !data.requester || data.items.length === 0) {
     showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return;
   }
-  const record = {
-    id: Date.now(),
-    type: 'approval',
-    docno: data.docno,
-    dept: data.dept,
-    requester: data.requester,
-    subject: data.subject,
-    date: data.date,
-    items: data.items,
-    total: data.total,
-    status: 'pending',
-    data: data,
-    savedAt: new Date().toISOString()
-  };
-  records.unshift(record);
+  if (editingApprovalId) {
+    const idx = records.findIndex(r => r.id === editingApprovalId);
+    if (idx >= 0) {
+      records[idx] = {
+        ...records[idx],
+        docno: data.docno, dept: data.dept, requester: data.requester,
+        subject: data.subject, date: data.date, items: data.items, total: data.total,
+        data: data,
+      };
+    }
+    showToast('✅ แก้ไขหนังสือขออนุมัติแล้ว!', 'success');
+    cancelEditApproval();
+  } else {
+    const record = {
+      id: Date.now(),
+      type: 'approval',
+      docno: data.docno,
+      dept: data.dept,
+      requester: data.requester,
+      subject: data.subject,
+      date: data.date,
+      items: data.items,
+      total: data.total,
+      status: 'pending',
+      data: data,
+      savedAt: new Date().toISOString()
+    };
+    records.unshift(record);
+    showToast('✅ บันทึกหนังสือขออนุมัติแล้ว!', 'success');
+    autoDocNo();
+  }
   saveRecords();
-  showToast('✅ บันทึกหนังสือขออนุมัติแล้ว!', 'success');
+  rsPushIfReady();
   renderDashboard();
-  autoDocNo();
+  renderHistory();
 }
 
 function clearApproval() {
@@ -387,6 +482,44 @@ function clearApproval() {
   setToday();
   autoDocNo();
   showToast('ล้างข้อมูลแล้ว', 'warning');
+}
+
+function loadApprovalForEdit(data, recordId) {
+  editingApprovalId = recordId;
+  document.getElementById('ap-dept').value = data.dept || '';
+  document.getElementById('ap-docno').value = data.docno || '';
+  document.getElementById('ap-date').value = data.date || '';
+  document.getElementById('ap-to').value = data.to || '';
+  document.getElementById('ap-subject').value = data.subject || '';
+  document.getElementById('ap-reason').value = data.reason || '';
+  document.getElementById('ap-closing').value = data.closing || '';
+
+  approvalRows = (data.items || []).map((item, i) => ({ id: Date.now() + i + 1000 }));
+  if (approvalRows.length === 0) approvalRows = [{ id: Date.now() + 1000 }];
+  renderApprovalRows();
+  (data.items || []).forEach((item, i) => {
+    const row = approvalRows[i];
+    if (!row) return;
+    document.getElementById(`ap-item-${row.id}`).value = item.item || '';
+    document.getElementById(`ap-cat-${row.id}`).value = item.cat || '';
+    document.getElementById(`ap-amount-${row.id}`).value = item.amount || '';
+  });
+  calcApprovalTotal();
+
+  setSelectValueSafe('ap-requester', data.requester || '');
+  updateSignature('ap');
+  if (data.note1) document.getElementById('ap-note1').value = data.note1;
+  if (data.note2) document.getElementById('ap-note2').value = data.note2;
+
+  document.getElementById('ap-edit-docno').textContent = data.docno || '';
+  document.getElementById('ap-edit-banner').style.display = 'flex';
+  showToast('โหลดข้อมูลเพื่อแก้ไขแล้ว', 'success');
+}
+
+function cancelEditApproval() {
+  editingApprovalId = null;
+  document.getElementById('ap-edit-banner').style.display = 'none';
+  clearApproval();
 }
 
 // ===== Dashboard =====
@@ -402,7 +535,7 @@ function renderDashboard() {
   const tbody = document.getElementById('dashRecentBody');
   const recent = records.slice(0, 8);
   if (recent.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีรายการ</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ยังไม่มีรายการ</td></tr>';
   } else {
     tbody.innerHTML = recent.map(r => `
       <tr>
@@ -412,6 +545,7 @@ function renderDashboard() {
         <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
         <td>${statusBadge(r.status)}</td>
         <td style="font-size:0.8rem;color:var(--text-muted)">${formatDate(r.date)}</td>
+        <td><button class="action-btn action-view" onclick="editRecord(${r.id})">✏️ แก้ไข</button></td>
       </tr>
     `).join('');
   }
@@ -451,6 +585,7 @@ function renderHistory() {
         <td>
           <div style="display:flex;gap:6px">
             <button class="action-btn action-view" onclick="viewRecord(${r.id})">ดู</button>
+            <button class="action-btn action-view" onclick="editRecord(${r.id})">แก้ไข</button>
             <button class="action-btn action-delete" onclick="deleteRecord(${r.id})">ลบ</button>
           </div>
         </td>
@@ -461,19 +596,19 @@ function renderHistory() {
 
 function changeStatus(id, status) {
   const rec = records.find(r => r.id === id);
-  if (rec) { rec.status = status; saveRecords(); renderDashboard(); }
+  if (rec) { rec.status = status; saveRecords(); rsPushIfReady(); renderDashboard(); }
 }
 
 function deleteRecord(id) {
   if (!confirm('ยืนยันการลบรายการนี้?')) return;
   records = records.filter(r => r.id !== id);
-  saveRecords(); renderHistory(); renderDashboard();
+  saveRecords(); rsPushIfReady(); renderHistory(); renderDashboard();
   showToast('ลบรายการแล้ว', 'warning');
 }
 
 function clearAllHistory() {
   if (!confirm('ยืนยันการล้างประวัติทั้งหมด?')) return;
-  records = []; saveRecords(); renderHistory(); renderDashboard();
+  records = []; saveRecords(); rsPushIfReady(); renderHistory(); renderDashboard();
   showToast('ล้างประวัติทั้งหมดแล้ว', 'warning');
 }
 
@@ -570,10 +705,9 @@ function buildPettyCashDoc(data) {
         <tbody>${rows}</tbody>
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
-      <div class="print-sigs">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้เบิก</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
+      <div class="print-sigs print-sigs-2">
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้จัดทำ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">คุณนิธิโรจน์ คำภานุช</div><div class="print-sig-position">ประธานบริษัท</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
     </div>
   `;
@@ -606,11 +740,12 @@ function buildApprovalDoc(data) {
         <tbody>${rows}</tbody>
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
+      <p class="print-body-text">${escapeHtml(data.note1 || '')}</p>
+      <p class="print-body-text">${escapeHtml(data.note2 || '')}</p>
       <p class="print-body-text">${escapeHtml(data.closing || '')}</p>
-      <div class="print-sigs">
+      <div class="print-sigs print-sigs-2">
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้บังคับบัญชา</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">&nbsp;</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">คุณนิธิโรจน์ คำภานุช</div><div class="print-sig-position">ประธานบริษัท</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
     </div>
   `;
@@ -618,6 +753,10 @@ function buildApprovalDoc(data) {
 
 function doPrint() {
   if (currentPrintFn) currentPrintFn();
+}
+
+function printDocument() {
+  window.print();
 }
 
 function closePrintModal() {
@@ -672,6 +811,17 @@ function exportHistoryPDF() {
 }
 
 // ===== Utilities =====
+// เติม <option> ให้อัตโนมัติถ้าค่าที่จะตั้งไม่อยู่ในตัวเลือกปัจจุบันของ select
+// (เช่น แก้ไขรายการที่ผู้เบิกไม่ได้อยู่ในลิสต์ผู้เบิกของเครื่องนี้)
+function setSelectValueSafe(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (value && ![...el.options].some(o => o.value === value)) {
+    el.appendChild(new Option(value, value));
+  }
+  el.value = value || '';
+}
+
 function escapeHtml(str) {
   return String(str ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -688,6 +838,50 @@ function formatDate(val) {
   const d = new Date(val);
   if (isNaN(d)) return val;
   return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+// แปลงตัวเลขเป็นข้อความจำนวนเงินภาษาไทย เช่น 23000 -> "สองหมื่นสามพันบาทถ้วน"
+function thaiBahtText(amount) {
+  const digitTh = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+  const placeTh = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน'];
+
+  function groupToText(n) {
+    const s = String(n);
+    let result = '';
+    const len = s.length;
+    for (let i = 0; i < len; i++) {
+      const d = parseInt(s[i], 10);
+      const place = len - i - 1;
+      if (d === 0) continue;
+      if (place === 0 && d === 1 && len > 1) result += 'เอ็ด';
+      else if (place === 1 && d === 2) result += 'ยี่สิบ';
+      else if (place === 1 && d === 1) result += 'สิบ';
+      else result += digitTh[d] + placeTh[place];
+    }
+    return result;
+  }
+
+  function intToText(intPart) {
+    if (intPart === 0) return 'ศูนย์';
+    const groups = [];
+    let n = intPart;
+    while (n > 0) {
+      groups.unshift(n % 1000000);
+      n = Math.floor(n / 1000000);
+    }
+    return groups.map((g, idx) => {
+      if (g === 0) return '';
+      return groupToText(g) + 'ล้าน'.repeat(groups.length - 1 - idx);
+    }).join('');
+  }
+
+  const num = Math.abs(parseFloat(amount) || 0);
+  const intPart = Math.floor(num);
+  const decPart = Math.round((num - intPart) * 100);
+
+  let result = intToText(intPart) + 'บาท';
+  result += decPart > 0 ? (intToText(decPart) + 'สตางค์') : 'ถ้วน';
+  return result;
 }
 
 function todayThaiDate() {
@@ -716,54 +910,3 @@ function showToast(msg, type = 'success') {
   toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
 }
 
-// ===== Sample Data (first run) =====
-if (records.length === 0) {
-  const now = new Date();
-  const today = now.toISOString().split('T')[0];
-  const yr = now.getFullYear() + 543;
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  records = [
-    {
-      id: 1, type: 'petty', docno: `PC-${yr}${m}-001`,
-      dept: 'ฝ่ายการเงิน', requester: 'นายสมชาย ใจดี',
-      purpose: 'ค่าวัสดุสำนักงาน', date: today,
-      items: [
-        { no: 1, item: 'กระดาษ A4', cat: 'ค่าวัสดุสำนักงาน', amount: 350 },
-        { no: 2, item: 'ปากกา/ดินสอ', cat: 'ค่าวัสดุสำนักงาน', amount: 180 },
-      ],
-      total: 530, status: 'approved', savedAt: new Date().toISOString()
-    },
-    {
-      id: 2, type: 'approval', docno: `AP-${yr}${m}-001`,
-      dept: 'ฝ่ายการตลาด', requester: 'นางสาวสุดา มีสุข',
-      subject: 'ขออนุมัติสำรองจ่ายค่าจัดงาน', date: today,
-      items: [
-        { no: 1, item: 'ค่าสถานที่จัดงาน', cat: 'ค่าเดินทาง', amount: 15000 },
-        { no: 2, item: 'ค่าอาหารและเครื่องดื่ม', cat: 'ค่าอาหาร/เครื่องดื่ม', amount: 8000 },
-      ],
-      total: 23000, status: 'pending', savedAt: new Date().toISOString(),
-      data: {
-        dept: 'ฝ่ายการตลาด', docno: `AP-${yr}${m}-001`, date: today,
-        to: 'กรรมการผู้จัดการ', subject: 'ขออนุมัติสำรองจ่ายค่าจัดงาน',
-        requester: 'นางสาวสุดา มีสุข',
-        reason: 'เนื่องด้วย ฝ่ายการตลาด มีความจำเป็นต้องสำรองจ่ายเงินล่วงหน้าสำหรับค่าใช้จ่ายในการจัดงาน เพื่อให้กิจกรรมดังกล่าวสำเร็จลุล่วงตามวัตถุประสงค์ที่วางไว้',
-        closing: 'จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ และหากอนุมัติแล้ว กรุณาลงนามในช่องที่กำหนด',
-        items: [
-          { no: 1, item: 'ค่าสถานที่จัดงาน', cat: 'ค่าเดินทาง', amount: 15000 },
-          { no: 2, item: 'ค่าอาหารและเครื่องดื่ม', cat: 'ค่าอาหาร/เครื่องดื่ม', amount: 8000 },
-        ],
-        total: 23000
-      }
-    },
-    {
-      id: 3, type: 'petty', docno: `PC-${yr}${m}-002`,
-      dept: 'ฝ่าย IT', requester: 'นายวิชัย เก่งดี',
-      purpose: 'ค่าซื้ออุปกรณ์ IT', date: today,
-      items: [
-        { no: 1, item: 'สาย LAN', cat: 'ค่าวัสดุสำนักงาน', amount: 500 },
-      ],
-      total: 500, status: 'pending', savedAt: new Date().toISOString()
-    }
-  ];
-  saveRecords();
-}

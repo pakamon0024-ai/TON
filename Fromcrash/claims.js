@@ -23,8 +23,10 @@ const TRS = [
   {lbl:'ปิดเคส',              ic:'✅', gd:c=>c.insPayDate,   gs:c=>(c.claimAmount&&c.insAmount)?'ส่วนต่าง ฿'+icFmtNum(c.claimAmount-c.insAmount):''},
 ];
 
-const CSVH = ['ลำดับ','วันที่เกิดเหตุ','ทะเบียน','ประกัน','ลานจอด','เจ้าของรถ','ชื่อพนักงานขับรถ','เลขที่ TMS','ลักษณะการเกิดเหตุ','ลูกค้า','มูลค่าเรียกเก็บ','วันที่ตั้งเบิก','วันที่จ่ายเงิน','เลขที่ใบสำคัญจ่าย','ประกันจ่าย (บาท)','วันที่ประกันจ่าย','เลขที่ใบรับ','ส่วนต่าง (บาท)','หมายเหตุ'];
-const CSVK = ['seq','incidentDate','plate','insurance','yard','owner','driver','tmsNo','incident','customer','claimAmount','billingDate','paymentDate','voucherNo','insAmount','insPayDate','receiptNo','diff','remark'];
+const CSVH = ['ลำดับ','วันที่เกิดเหตุ','ทะเบียน','ประเภทเหตุ','ประกัน','ลานจอด','เจ้าของรถ','ชื่อพนักงานขับรถ','เลขที่ TMS','ลักษณะการเกิดเหตุ','ลูกค้า','มูลค่าเรียกเก็บ','วันที่ตั้งเบิก','วันที่จ่ายเงิน','เลขที่ใบสำคัญจ่าย','ประกันจ่าย (บาท)','วันที่ประกันจ่าย','เลขที่ใบรับ','ส่วนต่าง (บาท)','หมายเหตุ'];
+const CSVK = ['seq','incidentDate','plate','incidentType','insurance','yard','owner','driver','tmsNo','incident','customer','claimAmount','billingDate','paymentDate','voucherNo','insAmount','insPayDate','receiptNo','diff','remark'];
+const INSURERS = ['Sompo','วิริยะ','เออร์โก','แอ๊กซ่า','สหมงคล','เมืองไทย'];
+const INCIDENT_TYPES = ['อุบัติเหตุ','สินค้าเสียหาย'];
 
 // ═══════════════════════════════════════════
 // STATE
@@ -75,11 +77,21 @@ function icGoTo(page) {
 // ═══════════════════════════════════════════
 // FORM
 // ═══════════════════════════════════════════
+// เติม <option> ให้อัตโนมัติถ้าค่าที่บันทึกไว้ไม่อยู่ในตัวเลือกมาตรฐาน (เช่น ประกันเจ้าอื่นที่กรอกไว้ก่อนหน้านี้)
+function icSetSelectValue(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (value && ![...el.options].some(o => o.value === value)) {
+    el.appendChild(new Option(value, value));
+  }
+  el.value = value || '';
+}
+
 function icResetForm() {
   editId = null;
   document.getElementById('fTitle').textContent = '➕ เพิ่มเคสใหม่';
   document.getElementById('editId').value = '';
-  ['incidentDate','plate','insurance','yard','owner','driver','tmsNo','customer',
+  ['incidentDate','plate','incidentType','insurance','yard','owner','driver','tmsNo','customer',
    'incident','claimAmount','billingDate','paymentDate','voucherNo',
    'insAmount','insPayDate','receiptNo','diff','remark'].forEach(k => {
     const el = document.getElementById('f_' + k);
@@ -91,12 +103,14 @@ function icLoadForm(c) {
   editId = c.id;
   document.getElementById('fTitle').textContent = '✏️ แก้ไขเคส #' + c.seq;
   document.getElementById('editId').value = c.id;
-  ['incidentDate','plate','insurance','yard','owner','driver','tmsNo','customer',
+  ['incidentDate','plate','incidentType','yard','driver','tmsNo','customer',
    'incident','claimAmount','billingDate','paymentDate','voucherNo',
    'insAmount','insPayDate','receiptNo','remark'].forEach(k => {
     const el = document.getElementById('f_' + k);
     if (el) el.value = c[k] || '';
   });
+  icSetSelectValue('f_insurance', c.insurance || '');
+  icSetSelectValue('f_owner', c.owner || '');
   icCalcDiff();
 }
 
@@ -115,6 +129,7 @@ function icSaveCase() {
   const ia = parseFloat(document.getElementById('f_insAmount').value) || 0;
   const d = {
     incidentDate: iDate, plate,
+    incidentType: document.getElementById('f_incidentType').value,
     insurance: document.getElementById('f_insurance').value.trim(),
     yard:      document.getElementById('f_yard').value,
     owner:     document.getElementById('f_owner').value.trim(),
@@ -325,12 +340,14 @@ function icFilter() {
   const dF = document.getElementById('fD').value;
   const sF = document.getElementById('fS').value;
   const cF = document.getElementById('fC').value;
+  const tF = document.getElementById('fT').value;
   const q  = (document.getElementById('fQ').value || '').toLowerCase();
   let f = claims;
   if (yF) f = f.filter(c => c.yard === yF);
   if (dF) f = f.filter(c => c.driver === dF);
   if (sF !== '') f = f.filter(c => icGetStatus(c) === +sF);
   if (cF) f = f.filter(c => c.customer === cF);
+  if (tF) f = f.filter(c => c.incidentType === tF);
   if (q) f = f.filter(c => ['plate','tmsNo','driver','customer','insurance','seq'].some(k => (String(c[k]||'')).toLowerCase().includes(q)));
   f.sort((a,b) => {
     let av = a[sortF] ?? 0, bv = b[sortF] ?? 0;
@@ -359,6 +376,7 @@ function icRenderList() {
         <td class="cm" style="font-family:'IBM Plex Mono',monospace">${c.seq}</td>
         <td>${icFmtDate(c.incidentDate)}</td>
         <td class="ca" style="font-weight:700;">${c.plate||'-'}</td>
+        <td>${c.incidentType ? `<span class="badge ${c.incidentType==='อุบัติเหตุ'?'s2':'s3'}">${c.incidentType}</span>` : '-'}</td>
         <td class="cm">${c.insurance||'-'}</td>
         <td>${c.yard ? `<span class="badge s1">${c.yard}</span>` : '-'}</td>
         <td>${c.driver||'-'}</td>
@@ -389,7 +407,7 @@ function icRenderList() {
 }
 
 function icSetPage(p) { pgNo = p; icRenderList(); }
-function icClearFilters() { ['fY','fD','fS','fC','fQ'].forEach(id => document.getElementById(id).value = ''); pgNo = 1; icRenderList(); }
+function icClearFilters() { ['fY','fD','fS','fC','fT','fQ'].forEach(id => document.getElementById(id).value = ''); pgNo = 1; icRenderList(); }
 
 // ═══════════════════════════════════════════
 // TRACKER
@@ -425,6 +443,7 @@ function icShowDetail(id) {
     <div class="modsec">📋 ข้อมูลเบื้องต้น</div>
     <div class="modgr">
       <div class="modi"><div class="dlab">วันที่เกิดเหตุ</div><div class="dval">${icFmtDate(c.incidentDate)||'-'}</div></div>
+      <div class="modi"><div class="dlab">ประเภทเหตุ</div><div class="dval">${c.incidentType||'-'}</div></div>
       <div class="modi"><div class="dlab">ประกัน</div><div class="dval">${c.insurance||'-'}</div></div>
       <div class="modi"><div class="dlab">ลานจอด</div><div class="dval ca">${c.yard||'-'}</div></div>
       <div class="modi"><div class="dlab">เจ้าของรถ</div><div class="dval">${c.owner||'-'}</div></div>
@@ -493,7 +512,7 @@ function icUpdate() {
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════
 function icDownloadTemplate() {
-  const sample = ['1','2024-01-15','กข 1234 กรุงเทพ','วิริยะประกันภัย','ABC','บริษัท เอ','นายสมชาย ใจดี','TMS-001','สินค้าเสียหาย','ลูกค้า สมชาย','50000','2024-01-20','2024-01-25','PV-001','45000','2024-02-01','RC-001','5000','หมายเหตุ'];
+  const sample = ['1','2024-01-15','กข 1234 กรุงเทพ','สินค้าเสียหาย','วิริยะ','ABC','บริษัท เอ','นายสมชาย ใจดี','TMS-001','สินค้าเสียหายระหว่างขนส่ง','ลูกค้า สมชาย','50000','2024-01-20','2024-01-25','PV-001','45000','2024-02-01','RC-001','5000','หมายเหตุ'];
   icDownloadCSV([CSVH, sample], 'template_insurance_claim.csv');
   icToast('ดาวน์โหลด Template แล้ว ✓', 'ok');
 }
