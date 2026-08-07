@@ -338,6 +338,7 @@ function renderMasterData() {
   renderCustomersTable();
   updateCustomerDatalist();
   renderCategoriesTable();
+  if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
 }
 
 document.addEventListener('DOMContentLoaded', renderMasterData);

@@ -643,6 +643,34 @@
             </table>
           </div>
         </div>
+
+        <!-- Telegram Notifications -->
+        <div class="form-card" style="margin-top:24px;">
+          <div class="items-header">
+            <h3>🔔 แจ้งเตือน Telegram</h3>
+          </div>
+          <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+            1. เปิดแชทกับ <strong>@BotFather</strong> ใน Telegram → พิมพ์ <code>/newbot</code> → ตั้งชื่อ Bot → จะได้ <strong>Bot Token</strong><br>
+            2. เปิดแชทกับ <strong>@userinfobot</strong> เพื่อดู <strong>Chat ID</strong> ของคุณ (หรือ Chat ID ของกลุ่มที่อยากให้แจ้งเตือน)<br>
+            3. เพิ่ม Bot เข้ากลุ่ม (ถ้าจะแจ้งเตือนในกลุ่ม) แล้วส่งข้อความในกลุ่มสักครั้งก่อน เพื่อให้ Bot คุยกับกลุ่มได้<br>
+            ⚠️ ข้อควรระวัง: ค่านี้เก็บในเบราว์เซอร์นี้เท่านั้น (ไม่ sync ข้ามเครื่อง) และ Bot Token จะถูกเรียกใช้ตรงจากหน้าเว็บ ผู้ที่เข้าถึงเว็บนี้และเปิด developer tools อาจเห็น Token ได้
+          </p>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>Bot Token</label>
+              <input type="text" id="tg-bot-token" placeholder="123456789:AAExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+            </div>
+            <div class="form-group">
+              <label>Chat ID</label>
+              <input type="text" id="tg-chat-id" placeholder="เช่น 123456789 หรือ -1001234567890" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="saveTelegramSettings()">💾 บันทึก</button>
+            <button class="btn-secondary" onclick="testTelegramNotification()">📨 ทดสอบส่งข้อความ</button>
+            <button class="btn-danger" onclick="clearTelegramSettings()">🗑️ ลบการตั้งค่า</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1083,6 +1111,7 @@
   <script src="claims.js"></script>
   <script src="masterdata.js"></script>
   <script src="records-sync.js"></script>
+  <script src="telegram.js"></script>
 </body>
 
 </html>

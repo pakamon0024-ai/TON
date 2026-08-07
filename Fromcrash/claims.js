@@ -152,12 +152,22 @@ function icSaveCase() {
     const i = claims.findIndex(c => c.id === editId);
     if (i >= 0) claims[i] = { ...claims[i], ...d };
     icToast('อัปเดตสำเร็จ ✓', 'ok');
+    if (typeof sendTelegramNotification === 'function') {
+      sendTelegramNotification(
+        `🛡️ <b>แก้ไขเคสเคลมประกันภัย</b>\nเคส #${d.seq || claims[i]?.seq || '-'}\nทะเบียน: ${escapeHtml(d.plate)}\nลูกค้า: ${escapeHtml(d.customer || '-')}\nมูลค่าเรียกเก็บ: ${icFmtNum(d.claimAmount)} บาท`
+      );
+    }
   } else {
     d.id = 'CLM_' + Date.now();
     d.seq = icNextSeq();
     d.createdAt = new Date().toISOString();
     claims.push(d);
     icToast('บันทึกเคสใหม่สำเร็จ ✓', 'ok');
+    if (typeof sendTelegramNotification === 'function') {
+      sendTelegramNotification(
+        `🛡️ <b>เพิ่มเคสเคลมประกันภัยใหม่</b>\nเคส #${d.seq}\nทะเบียน: ${escapeHtml(d.plate)}\nลูกค้า: ${escapeHtml(d.customer || '-')}\nมูลค่าเรียกเก็บ: ${icFmtNum(d.claimAmount)} บาท`
+      );
+    }
   }
   icSave();
   icUpdate();

@@ -314,6 +314,11 @@ function savePettyCash() {
     records.unshift(record);
     showToast('✅ บันทึกรายการเงินสดย่อยแล้ว!', 'success');
     autoDocNo();
+    if (typeof sendTelegramNotification === 'function') {
+      sendTelegramNotification(
+        `💵 <b>บันทึกเงินสดย่อยใหม่</b>\nเลขที่: ${escapeHtml(record.docno)}\nผู้เบิก: ${escapeHtml(record.requester)}\nวัตถุประสงค์: ${escapeHtml(record.purpose || '-')}\nยอดรวม: ${formatMoney(record.total)}`
+      );
+    }
   }
   saveRecords();
   rsPushIfReady();
@@ -498,6 +503,11 @@ function saveApproval() {
     records.unshift(record);
     showToast('✅ บันทึกหนังสือขออนุมัติแล้ว!', 'success');
     autoDocNo();
+    if (typeof sendTelegramNotification === 'function') {
+      sendTelegramNotification(
+        `📝 <b>บันทึกขออนุมัติสำรองจ่ายใหม่</b>\nเลขที่: ${escapeHtml(record.docno)}\nลูกค้า: ${escapeHtml(record.dept || '-')}\nเรื่อง: ${escapeHtml(record.subject || '-')}\nยอดรวม: ${formatMoney(record.total)}`
+      );
+    }
   }
   saveRecords();
   rsPushIfReady();
