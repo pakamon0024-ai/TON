@@ -63,7 +63,8 @@ function showPage(page) {
     approval: 'หนังสือขออนุมัติสำรองจ่าย',
     history: 'ประวัติรายการ',
     claims: 'เคลมประกันภัย',
-    masterdata: 'ฐานข้อมูลหลัก'
+    masterdata: 'ฐานข้อมูลหลัก',
+    users: 'จัดการผู้ใช้'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
@@ -71,6 +72,7 @@ function showPage(page) {
   if (page === 'history') renderHistory();
   if (page === 'claims' && typeof icOnPageShown === 'function') icOnPageShown();
   if (page === 'masterdata' && typeof renderMasterData === 'function') renderMasterData();
+  if (page === 'users' && typeof renderUsersPage === 'function') renderUsersPage();
   if (page === 'petty-cash') refreshCategoryDropdowns('pc');
   if (page === 'approval') refreshCategoryDropdowns('ap');
 

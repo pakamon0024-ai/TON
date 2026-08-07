@@ -24,6 +24,51 @@
 </head>
 
 <body>
+  <!-- Auth Overlay (เข้าสู่ระบบ / สมัครสมาชิก) -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="logo-icon">💼</div>
+        <div>
+          <div class="auth-title">FinFlow</div>
+          <div class="auth-subtitle">ระบบการเงิน</div>
+        </div>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="auth-tab-login" onclick="authSwitchTab('login')">เข้าสู่ระบบ</button>
+        <button class="auth-tab" id="auth-tab-signup" onclick="authSwitchTab('signup')">สมัครสมาชิก</button>
+      </div>
+      <div class="auth-error" id="auth-error" style="display:none;"></div>
+      <div id="auth-form-login">
+        <div class="form-group">
+          <label>อีเมล</label>
+          <input type="email" id="auth-login-email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่าน</label>
+          <input type="password" id="auth-login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter') authSignIn()" />
+        </div>
+        <button class="btn-primary auth-submit" onclick="authSignIn()">เข้าสู่ระบบ</button>
+      </div>
+      <div id="auth-form-signup" style="display:none;">
+        <div class="form-group">
+          <label>อีเมล</label>
+          <input type="email" id="auth-signup-email" placeholder="you@example.com" />
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่าน</label>
+          <input type="password" id="auth-signup-password" placeholder="อย่างน้อย 6 ตัวอักษร" />
+        </div>
+        <div class="form-group">
+          <label>ยืนยันรหัสผ่าน</label>
+          <input type="password" id="auth-signup-password2" placeholder="••••••••" onkeydown="if(event.key==='Enter') authSignUp()" />
+        </div>
+        <button class="btn-primary auth-submit" onclick="authSignUp()">สมัครสมาชิก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="appRoot" style="visibility:hidden;">
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
@@ -58,6 +103,10 @@
       <a href="#" class="nav-item" data-page="masterdata" onclick="showPage('masterdata')">
         <span class="nav-icon">🗄️</span>
         <span>ฐานข้อมูลหลัก</span>
+      </a>
+      <a href="#" class="nav-item" data-page="users" id="nav-users" onclick="showPage('users')" style="display:none;">
+        <span class="nav-icon">👥</span>
+        <span>จัดการผู้ใช้</span>
       </a>
     </nav>
 
@@ -98,9 +147,15 @@
       </div>
       <div class="topbar-right">
         <div class="current-date" id="currentDate"></div>
-        <div class="user-badge">
+        <div class="user-badge" id="userBadge" onclick="authToggleUserMenu()">
           <span class="user-avatar">👤</span>
-          <span class="user-name">ผู้ใช้งาน</span>
+          <div>
+            <div class="user-name">-</div>
+            <div class="user-role" style="font-size:0.7rem;color:var(--text-muted);">-</div>
+          </div>
+          <div class="user-menu-dropdown" id="userMenuDropdown">
+            <button class="user-menu-item" onclick="authSignOut()">🚪 ออกจากระบบ</button>
+          </div>
         </div>
       </div>
     </header>
@@ -676,6 +731,36 @@
 
     <datalist id="customerNameList"></datalist>
 
+    <!-- USERS PAGE (จัดการผู้ใช้ — เฉพาะแอดมิน) -->
+    <div class="page" id="page-users">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">👥</div>
+          <div>
+            <h2>จัดการผู้ใช้</h2>
+            <p>ดูรายชื่อผู้ใช้ทั้งหมด กำหนดสิทธิ์แอดมิน/พนักงาน และระงับการใช้งาน</p>
+          </div>
+        </div>
+        <div class="form-card">
+          <div class="recent-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>อีเมล</th>
+                  <th>สิทธิ์</th>
+                  <th>สถานะ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <tr><td colspan="4" class="empty-state">กำลังโหลด...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- CLAIMS PAGE (เคลมประกันภัย) -->
     <div class="page" id="page-claims">
       <div id="ic-hdr" class="ic-toprow">
@@ -1107,11 +1192,14 @@
     </div>
   </div>
 
+  </div><!-- /appRoot -->
+
   <script src="app.js"></script>
   <script src="claims.js"></script>
   <script src="masterdata.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
+  <script src="auth.js"></script>
 </body>
 
 </html>

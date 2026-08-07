@@ -239,8 +239,51 @@ body {
   border-radius: 30px; border: 1px solid var(--border);
   font-size: 0.85rem; color: var(--text-secondary);
   cursor: pointer; transition: border-color var(--transition);
+  position: relative;
 }
 .user-badge:hover { border-color: var(--accent-primary); color: var(--text-primary); }
+.user-badge .user-name { font-weight: 600; color: var(--text-primary); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu-dropdown {
+  display: none; position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow); min-width: 160px; overflow: hidden; z-index: 50;
+}
+.user-menu-dropdown.open { display: block; }
+.user-menu-item {
+  display: block; width: 100%; text-align: left; padding: 10px 14px;
+  background: none; border: none; color: var(--text-secondary);
+  font-family: inherit; font-size: 0.85rem; cursor: pointer; transition: all var(--transition);
+}
+.user-menu-item:hover { background: var(--bg-hover); color: var(--accent-red); }
+
+/* ===== Auth Overlay ===== */
+.auth-overlay {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--bg-primary);
+  display: none; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.auth-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 32px;
+  width: 100%; max-width: 400px; box-shadow: var(--shadow);
+}
+.auth-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.auth-logo .logo-icon { font-size: 2rem; }
+.auth-title { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); }
+.auth-subtitle { font-size: 0.78rem; color: var(--text-muted); }
+.auth-tabs { display: flex; gap: 4px; background: var(--bg-input); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; }
+.auth-tab {
+  flex: 1; padding: 9px; border: none; background: none; border-radius: 6px;
+  color: var(--text-muted); font-family: inherit; font-size: 0.85rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition);
+}
+.auth-tab.active { background: var(--accent-primary); color: white; }
+.auth-error {
+  background: #f64f5911; border: 1px solid #f64f5933; color: var(--accent-red);
+  padding: 10px 14px; border-radius: var(--radius-sm); font-size: 0.8rem; margin-bottom: 16px;
+}
+.auth-submit { width: 100%; margin-top: 6px; justify-content: center; }
 
 /* ===== Pages ===== */
 .page { display: none; padding: 28px; animation: fadeIn 0.3s ease; }
