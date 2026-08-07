@@ -285,11 +285,59 @@ function updateCustomerDatalist() {
   dl.innerHTML = mdCustomers.map(c => `<option value="${escapeHtml(c.name)}"></option>`).join('');
 }
 
+// ===== หมวดหมู่ค่าใช้จ่าย =====
+// เก็บเป็น array ของชื่อ (string) ที่คีย์ 'finflow_categories_db' ใน localStorage
+// ฟอร์มเงินสดย่อย/ขออนุมัติ (app.js: categoryOptions()) จะอ่านจากคีย์นี้โดยตรงทุกครั้ง
+// ที่ render dropdown จึงไม่ต้อง sync ตัวแปรข้ามไฟล์
+function loadCategoriesDB() {
+  return JSON.parse(localStorage.getItem('finflow_categories_db') || '[]');
+}
+function saveCategoriesDB(cats) {
+  localStorage.setItem('finflow_categories_db', JSON.stringify(cats));
+}
+
+function addCategoryDB() {
+  const input = document.getElementById('md-category-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  const cats = loadCategoriesDB();
+  if (cats.includes(name)) { showToast('มีหมวดหมู่นี้อยู่แล้ว', 'warning'); return; }
+  cats.push(name);
+  saveCategoriesDB(cats);
+  input.value = '';
+  input.focus();
+  renderCategoriesTable();
+  showToast('เพิ่มหมวดหมู่แล้ว', 'success');
+}
+
+function deleteCategoryDB(name) {
+  saveCategoriesDB(loadCategoriesDB().filter(c => c !== name));
+  renderCategoriesTable();
+  showToast('ลบแล้ว', 'warning');
+}
+
+function renderCategoriesTable() {
+  const tbody = document.getElementById('md-category-body');
+  if (!tbody) return;
+  const cats = loadCategoriesDB();
+  if (cats.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีหมวดหมู่ — เพิ่มที่นี่เพื่อใช้ในฟอร์มเงินสดย่อย/ขออนุมัติ</td></tr>';
+    return;
+  }
+  tbody.innerHTML = cats.map(name => `
+    <tr>
+      <td>${escapeHtml(name)}</td>
+      <td><button class="action-btn action-delete" onclick="deleteCategoryDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td>
+    </tr>
+  `).join('');
+}
+
 function renderMasterData() {
   renderDriversTable();
   renderVehiclesTable();
   renderCustomersTable();
   updateCustomerDatalist();
+  renderCategoriesTable();
 }
 
 document.addEventListener('DOMContentLoaded', renderMasterData);

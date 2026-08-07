@@ -6,6 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบเงินสดย่อย & อนุมัติสำรองจ่าย | Fromcrash</title>
   <meta name="description" content="ระบบจัดการเงินสดย่อยและหนังสือขออนุมัติสำรองจ่ายออนไลน์ พร้อม Export PDF" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#6c63ff" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -572,7 +576,7 @@
         </div>
 
         <!-- Customers -->
-        <div class="form-card">
+        <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🏢 ชื่อลูกค้า</h3>
           </div>
@@ -602,6 +606,38 @@
               <tbody id="md-customer-body">
                 <tr>
                   <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Expense Categories -->
+        <div class="form-card">
+          <div class="items-header">
+            <h3>🏷️ หมวดหมู่ค่าใช้จ่าย</h3>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ชื่อหมวดหมู่</label>
+              <input type="text" id="md-category-name" placeholder="เช่น ค่าเดินทาง"
+                onkeydown="if(event.key==='Enter') addCategoryDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addCategoryDB()">+ เพิ่มหมวดหมู่</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>หมวดหมู่</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="md-category-body">
+                <tr>
+                  <td colspan="2" class="empty-state">ยังไม่มีหมวดหมู่ — เพิ่มที่นี่เพื่อใช้ในฟอร์มเงินสดย่อย/ขออนุมัติ</td>
                 </tr>
               </tbody>
             </table>

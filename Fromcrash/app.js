@@ -19,6 +19,13 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRequesters();
 });
 
+// ลงทะเบียน Service Worker เพื่อให้ Chrome เสนอปุ่ม "ติดตั้งแอป" (ต้อง serve ผ่าน HTTPS)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW register failed:', err));
+  });
+}
+
 function updateCurrentDate() {
   const el = document.getElementById('currentDate');
   const now = new Date();
@@ -64,6 +71,8 @@ function showPage(page) {
   if (page === 'history') renderHistory();
   if (page === 'claims' && typeof icOnPageShown === 'function') icOnPageShown();
   if (page === 'masterdata' && typeof renderMasterData === 'function') renderMasterData();
+  if (page === 'petty-cash') refreshCategoryDropdowns('pc');
+  if (page === 'approval') refreshCategoryDropdowns('ap');
 
   // close sidebar on mobile
   document.getElementById('sidebar').classList.remove('open');
@@ -180,36 +189,29 @@ function updateSignature(prefix) {
 
 
 // ===== Categories =====
-const categories = [
-  'ค่าเดินทาง', 'ค่าอาหาร/เครื่องดื่ม', 'ค่าวัสดุสำนักงาน',
-  'ค่าสื่อสาร/โทรศัพท์', 'ค่าจ้างแรงงาน', 'ค่าน้ำ/ไฟฟ้า',
-  'ค่าซ่อมแซม', 'ค่าประชาสัมพันธ์', 'อื่นๆ'
-];
+// หมวดหมู่ค่าใช้จ่ายจัดการได้เองที่เมนู "ฐานข้อมูลหลัก" (localStorage: finflow_categories_db)
+// อ่านสดทุกครั้งที่ render dropdown เพื่อให้เห็นหมวดหมู่ที่เพิ่ง เพิ่ม/ลบ ไว้ทันที
+function refreshCategoryDropdowns(prefix) {
+  document.querySelectorAll(`select[id^="${prefix}-cat-"]`).forEach(sel => {
+    sel.innerHTML = categoryOptions(sel.value);
+  });
+}
 
 function categoryOptions(selected = '') {
+  const categories = JSON.parse(localStorage.getItem('finflow_categories_db') || '[]');
+  if (categories.length === 0) {
+    return `<option value="">-- ยังไม่มีหมวดหมู่ (เพิ่มได้ที่ฐานข้อมูลหลัก) --</option>`;
+  }
   return categories.map(c =>
-    `<option value="${c}" ${c === selected ? 'selected' : ''}>${c}</option>`
+    `<option value="${escapeHtml(c)}" ${c === selected ? 'selected' : ''}>${escapeHtml(c)}</option>`
   ).join('');
 }
 
 // ===== Petty Cash =====
-function addPettyRow(item = '') {
-  const idx = pettyRows.length;
-  pettyRows.push({ id: Date.now() + idx });
-  renderPettyRows();
-}
-
-function removePettyRow(id) {
-  pettyRows = pettyRows.filter(r => r.id !== id);
-  renderPettyRows();
-  calcPettyTotal();
-}
-
-function renderPettyRows() {
-  const tbody = document.getElementById('pettyItemsBody');
-  tbody.innerHTML = pettyRows.map((row, i) => `
+function pettyRowHtml(row, index) {
+  return `
     <tr id="petty-row-${row.id}">
-      <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${i + 1}</td>
+      <td style="text-align:center;color:var(--text-muted);font-size:0.82rem" class="row-index">${index}</td>
       <td><input type="text" placeholder="รายการค่าใช้จ่าย" id="pc-item-${row.id}" oninput="calcPettyTotal()" /></td>
       <td>
         <select id="pc-cat-${row.id}">
@@ -224,7 +226,28 @@ function renderPettyRows() {
         <button class="btn-delete-row" onclick="removePettyRow(${row.id})" title="ลบรายการ">✕</button>
       </td>
     </tr>
-  `).join('');
+  `;
+}
+
+function addPettyRow(item = '') {
+  const idx = pettyRows.length;
+  const row = { id: Date.now() + idx };
+  pettyRows.push(row);
+  // เติมแถวใหม่ต่อท้ายเฉยๆ ไม่แตะแถวเดิม ป้องกันข้อมูลที่พิมพ์ไปแล้วหาย
+  document.getElementById('pettyItemsBody').insertAdjacentHTML('beforeend', pettyRowHtml(row, pettyRows.length));
+  calcPettyTotal();
+}
+
+function removePettyRow(id) {
+  pettyRows = pettyRows.filter(r => r.id !== id);
+  document.getElementById(`petty-row-${id}`)?.remove();
+  document.querySelectorAll('#pettyItemsBody .row-index').forEach((el, i) => { el.textContent = i + 1; });
+  calcPettyTotal();
+}
+
+function renderPettyRows() {
+  const tbody = document.getElementById('pettyItemsBody');
+  tbody.innerHTML = pettyRows.map((row, i) => pettyRowHtml(row, i + 1)).join('');
   calcPettyTotal();
 }
 
@@ -349,23 +372,10 @@ function cancelEditPetty() {
 }
 
 // ===== Approval =====
-function addApprovalRow() {
-  const idx = approvalRows.length;
-  approvalRows.push({ id: Date.now() + idx + 1000 });
-  renderApprovalRows();
-}
-
-function removeApprovalRow(id) {
-  approvalRows = approvalRows.filter(r => r.id !== id);
-  renderApprovalRows();
-  calcApprovalTotal();
-}
-
-function renderApprovalRows() {
-  const tbody = document.getElementById('approvalItemsBody');
-  tbody.innerHTML = approvalRows.map((row, i) => `
+function approvalRowHtml(row, index) {
+  return `
     <tr id="ap-row-${row.id}">
-      <td style="text-align:center;color:var(--text-muted);font-size:0.82rem">${i + 1}</td>
+      <td style="text-align:center;color:var(--text-muted);font-size:0.82rem" class="row-index">${index}</td>
       <td><input type="text" placeholder="รายการที่ขออนุมัติ" id="ap-item-${row.id}" oninput="calcApprovalTotal()" /></td>
       <td>
         <select id="ap-cat-${row.id}">
@@ -380,7 +390,27 @@ function renderApprovalRows() {
         <button class="btn-delete-row" onclick="removeApprovalRow(${row.id})" title="ลบรายการ">✕</button>
       </td>
     </tr>
-  `).join('');
+  `;
+}
+
+function addApprovalRow() {
+  const idx = approvalRows.length;
+  const row = { id: Date.now() + idx + 1000 };
+  approvalRows.push(row);
+  document.getElementById('approvalItemsBody').insertAdjacentHTML('beforeend', approvalRowHtml(row, approvalRows.length));
+  calcApprovalTotal();
+}
+
+function removeApprovalRow(id) {
+  approvalRows = approvalRows.filter(r => r.id !== id);
+  document.getElementById(`ap-row-${id}`)?.remove();
+  document.querySelectorAll('#approvalItemsBody .row-index').forEach((el, i) => { el.textContent = i + 1; });
+  calcApprovalTotal();
+}
+
+function renderApprovalRows() {
+  const tbody = document.getElementById('approvalItemsBody');
+  tbody.innerHTML = approvalRows.map((row, i) => approvalRowHtml(row, i + 1)).join('');
   calcApprovalTotal();
 }
 
