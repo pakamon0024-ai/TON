@@ -14,10 +14,13 @@ let authInstance = null;
 let currentUser = null;
 let currentUserProfile = null; // { email, role, disabled }
 
+// รอแค่ fbApp (สร้าง Firebase App instance แล้ว) — "ไม่" รอ fbReady เพราะ fbReady ต้องอ่าน
+// ข้อมูลจาก Realtime Database สำเร็จก่อน ซึ่งตอนนี้ Security Rules บังคับให้ login ก่อนถึงจะ
+// อ่านได้ ถ้ารอ fbReady ที่นี่จะกลายเป็นวนตายทั้งคู่ (ต้อง login ถึงจะเห็นหน้า login)
 function authWaitForFirebase() {
   return new Promise(resolve => {
     const check = () => {
-      if (typeof fbApp !== 'undefined' && fbApp && typeof fbReady !== 'undefined' && fbReady) resolve();
+      if (typeof fbApp !== 'undefined' && fbApp) resolve();
       else setTimeout(check, 300);
     };
     check();
@@ -32,6 +35,10 @@ async function authInit() {
   onAuthStateChanged(authInstance, async user => {
     currentUser = user;
     if (user) {
+      // ตอนโหลดหน้าเว็บครั้งแรก claims.js พยายามอ่านข้อมูลก่อน login เสร็จ (โดน permission
+      // denied เพราะ Security Rules) ทำให้ fbReady ค้างเป็น false — พอ login สำเร็จแล้วต้อง
+      // ลองอ่านใหม่อีกครั้ง ไม่งั้นข้อมูลเคลมประกัน/เงินสดย่อย/ฐานข้อมูลหลักจะไม่โหลดเลย
+      if (typeof icRetryAfterLogin === 'function') icRetryAfterLogin();
       currentUserProfile = await authLoadProfile(user.uid, user.email);
       if (currentUserProfile.disabled) {
         authShowError('บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ');

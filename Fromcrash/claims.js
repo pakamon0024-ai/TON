@@ -757,6 +757,32 @@ async function icConnectFB(cfg, testOnly = false) {
   }
 }
 
+// icConnectFB() ทำงานตอนโหลดหน้าเว็บ ก่อนที่ผู้ใช้จะ login เสร็จ — ถ้า Security Rules
+// บังคับ auth != null การ pull ข้อมูลครั้งแรกจะโดน permission-denied และ fbReady จะค้างเป็น
+// false ตลอดไป (โมดูลอื่นที่รอ fbReady เช่น auth.js ก็จะค้างตามไปด้วย) ฟังก์ชันนี้เรียกซ้ำ
+// หลัง login สำเร็จ โดยใช้ fbDb/fbRef เดิมที่ initializeApp ไว้แล้ว ไม่ต้องเชื่อมต่อใหม่
+async function icRetryAfterLogin() {
+  if (fbReady || !fbDb || !fbRef) return;
+  try {
+    const { onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    icAddLog('📡 ลองดึงข้อมูลอีกครั้งหลัง login...');
+    const snap = await get(fbRef);
+    if (snap.exists()) icApplyServerClaims(icObjToClaims(snap.val()));
+    fbReady = true;
+    fbOK = true;
+    icSetFbDot('on');
+    const pushBtn = document.getElementById('pushBtn'); if (pushBtn) pushBtn.style.display = '';
+    if (!fbListener) {
+      fbListener = onValue(fbRef, snap => {
+        if (!snap.exists()) return;
+        icApplyServerClaims(icObjToClaims(snap.val()));
+      }, err => { icAddLog('❌ Listener error: ' + err.message); icSetFbDot('err'); });
+    }
+  } catch (e) {
+    icAddLog('❌ Retry เชื่อมต่อล้มเหลว: ' + e.message);
+  }
+}
+
 function icApplyServerClaims(serverClaims) {
   claims = serverClaims;
   icSave();
