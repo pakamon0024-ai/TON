@@ -104,6 +104,10 @@
         <span class="nav-icon">🗄️</span>
         <span>ฐานข้อมูลหลัก</span>
       </a>
+      <a href="#" class="nav-item" data-page="incidents" onclick="showPage('incidents')">
+        <span class="nav-icon">🚧</span>
+        <span>บันทึกอุบัติเหตุ</span>
+      </a>
       <a href="#" class="nav-item" data-page="users" id="nav-users" onclick="showPage('users')" style="display:none;">
         <span class="nav-icon">👥</span>
         <span>จัดการผู้ใช้</span>
@@ -545,12 +549,54 @@
               <input type="text" id="md-driver-name" placeholder="ชื่อ-นามสกุล" />
             </div>
             <div class="form-group">
+              <label>ตำแหน่ง</label>
+              <select id="md-driver-position">
+                <option value="">-- เลือกตำแหน่ง --</option>
+                <option value="Driver">Driver</option>
+                <option value="Staff">Staff</option>
+                <option value="ช่าง">ช่าง</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>แผนก/หน่วยงาน</label>
+              <input type="text" id="md-driver-department" placeholder="เช่น Transport" />
+            </div>
+            <div class="form-group">
               <label>วันเกิด</label>
               <input type="date" id="md-driver-birth" />
             </div>
             <div class="form-group">
               <label>วันเริ่มงาน</label>
               <input type="date" id="md-driver-start" />
+            </div>
+            <div class="form-group">
+              <label>เบอร์โทร</label>
+              <input type="text" id="md-driver-phone" placeholder="08x-xxx-xxxx" />
+            </div>
+            <div class="form-group">
+              <label>ประเภทใบขับขี่</label>
+              <select id="md-driver-license-type">
+                <option value="">-- เลือกประเภท --</option>
+                <option value="ท.2">ท.2</option>
+                <option value="ท.3">ท.3</option>
+                <option value="ท.4">ท.4</option>
+                <option value="บ.1">บ.1</option>
+                <option value="บ.2">บ.2</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>วันหมดอายุใบขับขี่</label>
+              <input type="date" id="md-driver-license-expiry" />
+            </div>
+            <div class="form-group">
+              <label>สถานะ</label>
+              <select id="md-driver-status">
+                <option value="ทำงานอยู่">ทำงานอยู่</option>
+                <option value="ลาออก">ลาออก</option>
+                <option value="พักงาน">พักงาน</option>
+              </select>
             </div>
           </div>
           <div class="form-actions" style="justify-content:flex-start;">
@@ -561,16 +607,20 @@
               <thead>
                 <tr>
                   <th>ชื่อพนักงาน</th>
-                  <th>วันเกิด</th>
+                  <th>ตำแหน่ง</th>
+                  <th>แผนก</th>
                   <th>อายุ</th>
-                  <th>วันเริ่มงาน</th>
                   <th>อายุงาน</th>
+                  <th>เบอร์โทร</th>
+                  <th>ใบขับขี่</th>
+                  <th>หมดอายุใบขับขี่</th>
+                  <th>สถานะ</th>
                   <th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="md-driver-body">
                 <tr>
-                  <td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td>
+                  <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
                 </tr>
               </tbody>
             </table>
@@ -596,15 +646,64 @@
               <label>ประเภทรถ</label>
               <select id="md-vehicle-type">
                 <option value="">-- เลือกประเภท --</option>
-                <option value="4W">4W</option>
-                <option value="6W">6W</option>
-                <option value="7W">7W</option>
-                <option value="หัวลาก">หัวลาก</option>
+                <option value="4ล้อ">4ล้อ</option>
+                <option value="6ล้อ">6ล้อ</option>
+                <option value="10ล้อ">10ล้อ</option>
+                <option value="18ล้อ">18ล้อ</option>
+                <option value="หัว">หัว</option>
+                <option value="Trailer">Trailer</option>
               </select>
+            </div>
+            <div class="form-group">
+              <label>เจ้าของรถ</label>
+              <select id="md-vehicle-owner">
+                <option value="">-- เลือก --</option>
+                <option value="AP">AP</option>
+                <option value="Subcontractor">Subcontractor</option>
+                <option value="อื่นๆ">อื่นๆ</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>หน่วยธุรกิจ</label>
+              <input type="text" id="md-vehicle-business-unit" placeholder="เช่น AAT, Trailer" />
+            </div>
+            <div class="form-group">
+              <label>ลานจอด</label>
+              <select id="md-vehicle-yard">
+                <option value="">-- เลือกลาน --</option>
+                <option value="ABC">ABC</option>
+                <option value="ARC">ARC</option>
+                <option value="APC">APC</option>
+                <option value="TTK">TTK</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>บริษัทประกัน</label>
+              <input type="text" id="md-vehicle-insurance" placeholder="บริษัทประกันภัย" />
+            </div>
+            <div class="form-group">
+              <label>วันหมดอายุประกัน</label>
+              <input type="date" id="md-vehicle-insurance-expiry" />
             </div>
             <div class="form-group">
               <label>วันที่จดทะเบียน</label>
               <input type="date" id="md-vehicle-date" />
+            </div>
+            <div class="form-group">
+              <label>วันหมดอายุทะเบียน</label>
+              <input type="date" id="md-vehicle-registration-expiry" />
+            </div>
+            <div class="form-group">
+              <label>พนักงานขับประจำ (ถ้ามี)</label>
+              <input type="text" id="md-vehicle-driver" placeholder="ชื่อพนักงาน" list="driverNameList" />
+            </div>
+            <div class="form-group">
+              <label>สถานะ</label>
+              <select id="md-vehicle-status">
+                <option value="พร้อมใช้">พร้อมใช้</option>
+                <option value="ซ่อม">ซ่อม</option>
+                <option value="พักระวาง">พักระวาง</option>
+              </select>
             </div>
           </div>
           <div class="form-actions" style="justify-content:flex-start;">
@@ -616,14 +715,20 @@
                 <tr>
                   <th>ทะเบียนรถ</th>
                   <th>ประเภทรถ</th>
-                  <th>วันที่จดทะเบียน</th>
-                  <th>อายุการใช้งาน</th>
+                  <th>เจ้าของรถ</th>
+                  <th>หน่วยธุรกิจ</th>
+                  <th>ลานจอด</th>
+                  <th>ประกัน</th>
+                  <th>หมดอายุประกัน</th>
+                  <th>หมดอายุทะเบียน</th>
+                  <th>พนักงานขับประจำ</th>
+                  <th>สถานะ</th>
                   <th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="md-vehicle-body">
                 <tr>
-                  <td colspan="5" class="empty-state">ยังไม่มีข้อมูล</td>
+                  <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
                 </tr>
               </tbody>
             </table>
@@ -730,6 +835,8 @@
     </div>
 
     <datalist id="customerNameList"></datalist>
+    <datalist id="driverNameList"></datalist>
+    <datalist id="plateNoList"></datalist>
 
     <!-- USERS PAGE (จัดการผู้ใช้ — เฉพาะแอดมิน) -->
     <div class="page" id="page-users">
@@ -756,6 +863,246 @@
                 <tr><td colspan="4" class="empty-state">กำลังโหลด...</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INCIDENTS PAGE (บันทึกอุบัติเหตุ/ความเสียหาย) -->
+    <div class="page" id="page-incidents">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">🚧</div>
+          <div>
+            <h2>ระบบบันทึกอุบัติเหตุ/ความเสียหายประจำปี</h2>
+            <p>บันทึกเหตุการณ์ ดึงข้อมูลพนักงาน/รถอัตโนมัติ พร้อมแดชบอร์ดสรุปภาพรวม</p>
+          </div>
+        </div>
+
+        <div class="subtabs">
+          <button class="subtab active" id="inc-tab-dashboard" onclick="incSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+          <button class="subtab" id="inc-tab-list" onclick="incSwitchTab('list')">📋 รายการทั้งหมด</button>
+          <button class="subtab" id="inc-tab-add" onclick="incSwitchTab('add')">➕ เพิ่มบันทึก</button>
+        </div>
+
+        <!-- DASHBOARD SUBPAGE -->
+        <div class="subpage active" id="inc-subpage-dashboard">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>ประเภทความเสียหาย</label>
+              <select id="inc-f-damagetype" onchange="incRenderDashboard()">
+                <option value="">ทั้งหมด</option>
+                <option value="Accident">Accident</option>
+                <option value="Part damage">Part damage</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>สถานะถูก-ผิด</label>
+              <select id="inc-f-fault" onchange="incRenderDashboard()">
+                <option value="">ทั้งหมด</option>
+                <option value="ผิด">ผิด</option>
+                <option value="ถูก">ถูก</option>
+                <option value="สิทธิ์เสียหาย">สิทธิ์เสียหาย</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>ลานจอด</label>
+              <select id="inc-f-yard" onchange="incRenderDashboard()">
+                <option value="">ทั้งหมด</option>
+                <option value="ARC">ARC</option>
+                <option value="APC">APC</option>
+                <option value="ABC">ABC</option>
+                <option value="TTK">TTK</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>หน่วยธุรกิจ</label>
+              <select id="inc-f-bu" onchange="incRenderDashboard()">
+                <option value="">ทั้งหมด</option>
+                <option value="Trailer">Trailer</option>
+                <option value="FTM">FTM</option>
+                <option value="AAT">AAT</option>
+                <option value="SBG">SBG</option>
+                <option value="FOT">FOT</option>
+              </select>
+            </div>
+            <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้างตัวกรอง</button>
+          </div>
+
+          <div class="dashboard-grid" style="margin-bottom:20px;">
+            <div class="kpi-card"><div class="kpi-label">มูลค่าความเสียหายสะสม</div><div class="kpi-value" id="inc-kpi-total">฿0.00</div></div>
+            <div class="kpi-card"><div class="kpi-label">จำนวนเหตุการณ์ทั้งหมด</div><div class="kpi-value" id="inc-kpi-count">0</div></div>
+            <div class="kpi-card"><div class="kpi-label">พนักงานที่เกิดเหตุบ่อยสุด</div><div class="kpi-value" id="inc-kpi-top-emp" style="font-size:0.95rem;">-</div></div>
+            <div class="kpi-card"><div class="kpi-label">รถที่เกิดเหตุบ่อยสุด</div><div class="kpi-value" id="inc-kpi-top-veh" style="font-size:0.95rem;">-</div></div>
+          </div>
+
+          <div class="chart-grid">
+            <div class="chart-card"><div class="chart-title">สถิติรายเดือน</div><div class="chart-box"><canvas id="inc-chart-month"></canvas></div></div>
+            <div class="chart-card"><div class="chart-title">ตามลานจอด</div><div class="chart-box"><canvas id="inc-chart-yard"></canvas></div></div>
+            <div class="chart-card span-2"><div class="chart-title">ลักษณะการเกิดเหตุ</div><div class="chart-box"><canvas id="inc-chart-pattern"></canvas></div></div>
+            <div class="chart-card"><div class="chart-title">ตามหน่วยธุรกิจ</div><div class="chart-box"><canvas id="inc-chart-bu"></canvas></div></div>
+            <div class="chart-card"><div class="chart-title">สถานะอุบัติเหตุ (พื้นที่)</div><div class="chart-box"><canvas id="inc-chart-area"></canvas></div></div>
+          </div>
+        </div>
+
+        <!-- LIST SUBPAGE -->
+        <div class="subpage" id="inc-subpage-list">
+          <div class="filter-bar">
+            <div class="filter-group"><label>ช่วงวันที่ (เริ่ม)</label><input type="date" class="fc" id="inc-lf-datefrom" onchange="incRenderList()" /></div>
+            <div class="filter-group"><label>ช่วงวันที่ (ถึง)</label><input type="date" class="fc" id="inc-lf-dateto" onchange="incRenderList()" /></div>
+            <div class="filter-group">
+              <label>ลานจอด</label>
+              <select id="inc-lf-yard" onchange="incRenderList()">
+                <option value="">ทั้งหมด</option><option value="ARC">ARC</option><option value="APC">APC</option><option value="ABC">ABC</option><option value="TTK">TTK</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>สถานะเคส</label>
+              <select id="inc-lf-status" onchange="incRenderList()">
+                <option value="">ทั้งหมด</option><option value="Open">Open</option><option value="Closed">Closed</option>
+              </select>
+            </div>
+            <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="inc-lf-search" placeholder="ทะเบียน / ชื่อพนักงาน..." oninput="incRenderList()" /></div>
+            <button class="btn-secondary" onclick="incClearListFilters()">🔄 ล้าง</button>
+          </div>
+          <div class="filter-bar">
+            <button class="btn-secondary" onclick="incExportExcel()">📊 Export Excel</button>
+            <button class="btn-secondary" onclick="incDownloadTemplate()">📄 Template Excel</button>
+            <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls" style="display:none" onchange="incImportExcel(event)"></label>
+          </div>
+          <div class="ctxt" id="inc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+          <div class="recent-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เลขที่</th><th>วันที่</th><th>ประเภท</th><th>พนักงาน</th><th>ทะเบียน</th>
+                  <th>ลานจอด</th><th>ถูก-ผิด</th><th>มูลค่ารวม</th><th>สถานะเคส</th><th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="inc-list-body">
+                <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ADD SUBPAGE -->
+        <div class="subpage" id="inc-subpage-add">
+          <div class="edit-banner" id="inc-edit-banner" style="display:none;">
+            <span>✏️ กำลังแก้ไขบันทึก <strong id="inc-edit-no"></strong></span>
+            <button class="btn-secondary" onclick="incCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+          </div>
+          <div class="form-card">
+            <div class="fieldset-title">ข้อมูลพื้นฐาน</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>สถานะ TMS</label>
+                <select id="inc-tms-status"><option value="OK">OK</option><option value="NG">NG</option></select>
+              </div>
+              <div class="form-group"><label>ประเภทความเสียหาย</label>
+                <select id="inc-damage-type"><option value="Accident">Accident</option><option value="Part damage">Part damage</option></select>
+              </div>
+              <div class="form-group"><label>วันที่เกิดเหตุ <span class="req">*</span></label><input type="date" id="inc-date" onchange="incUpdateAutoDate()" /></div>
+              <div class="form-group"><label>เวลา</label><input type="time" id="inc-time" /></div>
+              <div class="form-group"><label>วัน (คำนวณอัตโนมัติ)</label><input type="text" id="inc-day-of-week" readonly /></div>
+              <div class="form-group"><label>เดือน (คำนวณอัตโนมัติ)</label><input type="text" id="inc-month-label" readonly /></div>
+            </div>
+
+            <div class="fieldset-title">พนักงาน (ดึงข้อมูลอัตโนมัติ)</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>ชื่อพนักงาน <span class="req">*</span></label>
+                <input type="text" id="inc-employee-name" list="driverNameList" placeholder="พิมพ์ชื่อพนักงาน..." oninput="incLookupEmployee()" />
+              </div>
+              <div class="form-group"><label>อายุ (auto)</label><input type="text" id="inc-employee-age" readonly /></div>
+              <div class="form-group"><label>อายุงาน (auto)</label><input type="text" id="inc-employee-tenure" readonly /></div>
+            </div>
+
+            <div class="fieldset-title">รถ (ดึงข้อมูลอัตโนมัติ)</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                <input type="text" id="inc-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="incLookupVehicle()" />
+              </div>
+              <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="inc-owner" readonly /></div>
+              <div class="form-group"><label>หน่วยธุรกิจ (auto)</label><input type="text" id="inc-bu" readonly /></div>
+              <div class="form-group"><label>ลานจอด (auto)</label><input type="text" id="inc-yard-auto" readonly /></div>
+              <div class="form-group"><label>บริษัทประกัน (auto)</label><input type="text" id="inc-insurance-auto" readonly /></div>
+            </div>
+
+            <div class="fieldset-title">รายละเอียดเหตุการณ์</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>สถานที่เกิดเหตุ</label><input type="text" id="inc-location" /></div>
+              <div class="form-group"><label>สถานะถูก-ผิด</label>
+                <select id="inc-fault"><option value="">-- เลือก --</option><option value="ผิด">ผิด</option><option value="ถูก">ถูก</option><option value="สิทธิ์เสียหาย">สิทธิ์เสียหาย</option></select>
+              </div>
+              <div class="form-group"><label>พื้นที่เกิดเหตุ</label>
+                <select id="inc-area"><option value="">-- เลือก --</option><option value="On the way">On the way</option><option value="In Plant">In Plant</option><option value="In yard">In yard</option></select>
+              </div>
+              <div class="form-group"><label>ลักษณะการเกิดเหตุ</label>
+                <select id="inc-pattern">
+                  <option value="">-- เลือก --</option>
+                  <option value="เฉี่ยวชน">เฉี่ยวชน</option><option value="ตกหลุม">ตกหลุม</option>
+                  <option value="หลังชน">หลังชน</option><option value="พลิกคว่ำ">พลิกคว่ำ</option><option value="อื่นๆ">อื่นๆ</option>
+                </select>
+              </div>
+              <div class="form-group"><label>ความรุนแรง</label>
+                <select id="inc-severity"><option value="">-- เลือก --</option><option value="ทั่วไป">ทั่วไป</option><option value="ปานกลาง">ปานกลาง</option><option value="รุนแรง">รุนแรง</option></select>
+              </div>
+              <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดเหตุการณ์</label><textarea class="fta" id="inc-description" rows="2"></textarea></div>
+            </div>
+
+            <div class="fieldset-title">การซ่อม</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>อู่/ศูนย์ซ่อม</label><input type="text" id="inc-repair-shop" /></div>
+              <div class="form-group"><label>วันที่เข้าซ่อม</label><input type="date" id="inc-repair-in" onchange="incCalcRepairDays()" /></div>
+              <div class="form-group"><label>วันที่ซ่อมเสร็จ</label><input type="date" id="inc-repair-out" onchange="incCalcRepairDays()" /></div>
+              <div class="form-group"><label>จำนวนวันซ่อม (auto)</label><input type="text" id="inc-repair-days" readonly /></div>
+            </div>
+
+            <div class="fieldset-title">คะแนน / เคลม</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>คะแนน</label><input type="number" id="inc-score" /></div>
+              <div class="form-group"><label>เลขที่เคลม</label><input type="text" id="inc-claim-no" /></div>
+              <div class="form-group"><label>โซน</label><input type="text" id="inc-zone" /></div>
+            </div>
+
+            <div class="fieldset-title">การเงิน</div>
+            <div class="readonly-hint">กรอกเฉพาะช่องที่เกี่ยวข้อง ระบบจะรวมยอด "มูลค่าความเสียหายรวม" ให้อัตโนมัติ</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>ค่าเสียหายบริษัท</label><input type="number" step="0.01" class="inc-cost" id="inc-company-damage-cost" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>บริษัทจ่ายจริง</label><input type="number" step="0.01" class="inc-cost" id="inc-company-paid" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>ค่าลาก/ค่าเทา</label><input type="number" step="0.01" class="inc-cost" id="inc-towing-cost" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>เรียกเก็บจากลูกค้า</label><input type="number" step="0.01" class="inc-cost" id="inc-charged-customer" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>เรียกเก็บจากพนักงาน</label><input type="number" step="0.01" class="inc-cost" id="inc-charged-employee" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>เงินทดรองจ่าย</label><input type="number" step="0.01" class="inc-cost" id="inc-advance-amount" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>ประกันจ่าย</label><input type="number" step="0.01" class="inc-cost" id="inc-insurance-paid" oninput="incCalcTotal()" /></div>
+              <div class="form-group"><label>ยอดที่แจ้งประกัน</label><input type="number" step="0.01" id="inc-insurance-reported" /></div>
+              <div class="form-group"><label>สถานะเคลมประกัน</label><input type="text" id="inc-insurance-claim-status" placeholder="เช่น รออนุมัติ" /></div>
+              <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุค่าใช้จ่าย/ประกัน</label><input type="text" id="inc-remark-cost" /></div>
+            </div>
+            <div class="kpi-card" style="max-width:320px;margin-bottom:10px;">
+              <div class="kpi-label">มูลค่าความเสียหายรวม</div>
+              <div class="kpi-value" id="inc-total-display">฿0.00</div>
+            </div>
+
+            <div class="fieldset-title">คู่กรณี / การบาดเจ็บ</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>สถานะการบาดเจ็บ</label><input type="text" id="inc-injury-status" placeholder="ไม่มี / บาดเจ็บเล็กน้อย / ฯลฯ" /></div>
+              <div class="form-group"><label>ชื่อคู่กรณี</label><input type="text" id="inc-other-name" /></div>
+              <div class="form-group"><label>เบอร์โทรคู่กรณี</label><input type="text" id="inc-other-phone" /></div>
+              <div class="form-group"><label>ทะเบียนคู่กรณี</label><input type="text" id="inc-other-plate" /></div>
+            </div>
+
+            <div class="fieldset-title">สถานะเคส</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>สถานะเคส</label>
+                <select id="inc-case-status"><option value="Open">Open</option><option value="Closed">Closed</option></select>
+              </div>
+              <div class="form-group"><label>วันหยุดงาน (ถ้ามี)</label><input type="number" id="inc-suspension-days" /></div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="incClearForm()">🗑️ ล้างข้อมูล</button>
+              <button class="btn-primary" onclick="incSaveCase()">💾 บันทึกข้อมูล</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1197,6 +1544,8 @@
   <script src="app.js"></script>
   <script src="claims.js"></script>
   <script src="masterdata.js"></script>
+  <script src="masterdata-sync.js"></script>
+  <script src="incidents.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
   <script src="auth.js"></script>

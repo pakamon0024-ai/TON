@@ -67,12 +67,26 @@ function addDriverDB() {
   const birth = document.getElementById('md-driver-birth').value;
   const start = document.getElementById('md-driver-start').value;
   if (!name) { showToast('กรุณากรอกชื่อพนักงาน', 'error'); return; }
-  mdDrivers.push({ id: Date.now(), name, birthDate: birth, startDate: start });
+  mdDrivers.push({
+    id: Date.now(),
+    name,
+    position: document.getElementById('md-driver-position').value,
+    department: document.getElementById('md-driver-department').value.trim(),
+    birthDate: birth,
+    startDate: start,
+    phone: document.getElementById('md-driver-phone').value.trim(),
+    licenseType: document.getElementById('md-driver-license-type').value,
+    licenseExpiry: document.getElementById('md-driver-license-expiry').value,
+    status: document.getElementById('md-driver-status').value || 'ทำงานอยู่',
+  });
   saveDriversDB();
-  document.getElementById('md-driver-name').value = '';
-  document.getElementById('md-driver-birth').value = '';
-  document.getElementById('md-driver-start').value = '';
+  ['md-driver-name','md-driver-department','md-driver-birth','md-driver-start','md-driver-phone','md-driver-license-expiry'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('md-driver-position').value = '';
+  document.getElementById('md-driver-license-type').value = '';
+  document.getElementById('md-driver-status').value = 'ทำงานอยู่';
   renderDriversTable();
+  updateDriverDatalist();
+  mdPushIfReady();
   showToast('เพิ่มพนักงานแล้ว', 'success');
 }
 
@@ -81,6 +95,8 @@ function deleteDriverDB(id) {
   mdDrivers = mdDrivers.filter(d => d.id !== id);
   saveDriversDB();
   renderDriversTable();
+  updateDriverDatalist();
+  mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
 
@@ -88,16 +104,20 @@ function renderDriversTable() {
   const tbody = document.getElementById('md-driver-body');
   if (!tbody) return;
   if (mdDrivers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = mdDrivers.map(d => `
     <tr>
       <td>${escapeHtml(d.name)}</td>
-      <td>${formatDate(d.birthDate)}</td>
+      <td>${escapeHtml(d.position || '-')}</td>
+      <td>${escapeHtml(d.department || '-')}</td>
       <td>${formatDuration(d.birthDate)}</td>
-      <td>${formatDate(d.startDate)}</td>
       <td>${formatDuration(d.startDate)}</td>
+      <td>${escapeHtml(d.phone || '-')}</td>
+      <td>${escapeHtml(d.licenseType || '-')}</td>
+      <td>${formatDate(d.licenseExpiry)}</td>
+      <td>${d.status === 'ลาออก' ? '<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ลาออก</span>' : d.status === 'พักงาน' ? '<span class="badge badge-orange">พักงาน</span>' : '<span class="badge badge-green">ทำงานอยู่</span>'}</td>
       <td><button class="action-btn action-delete" onclick="deleteDriverDB(${d.id})">ลบ</button></td>
     </tr>
   `).join('');
@@ -105,8 +125,8 @@ function renderDriversTable() {
 
 function downloadDriverTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ชื่อพนักงาน', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)'],
-    ['นายสมชาย ใจดี', '1990-05-12', '2020-01-15'],
+    ['ชื่อพนักงาน', 'ตำแหน่ง', 'แผนก', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)', 'เบอร์โทร', 'ประเภทใบขับขี่', 'วันหมดอายุใบขับขี่ (YYYY-MM-DD)', 'สถานะ'],
+    ['นายสมชาย ใจดี', 'Driver', 'Transport', '1990-05-12', '2020-01-15', '0812345678', 'ท.2', '2027-05-12', 'ทำงานอยู่'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'พนักงานขับรถ');
@@ -124,31 +144,61 @@ function importDriverExcel(event) {
       mdDrivers.push({
         id: Date.now() + i,
         name,
-        birthDate: normalizeImportDate(row[1]),
-        startDate: normalizeImportDate(row[2]),
+        position: String(row[1] || '').trim(),
+        department: String(row[2] || '').trim(),
+        birthDate: normalizeImportDate(row[3]),
+        startDate: normalizeImportDate(row[4]),
+        phone: String(row[5] || '').trim(),
+        licenseType: String(row[6] || '').trim(),
+        licenseExpiry: normalizeImportDate(row[7]),
+        status: String(row[8] || '').trim() || 'ทำงานอยู่',
       });
       added++;
     });
     saveDriversDB();
     renderDriversTable();
+    updateDriverDatalist();
+    mdPushIfReady();
     showToast(`นำเข้าพนักงาน ${added} รายการ`, 'success');
     event.target.value = '';
   });
+}
+
+function updateDriverDatalist() {
+  const dl = document.getElementById('driverNameList');
+  if (!dl) return;
+  dl.innerHTML = mdDrivers.map(d => `<option value="${escapeHtml(d.name)}"></option>`).join('');
 }
 
 // ===== ทะเบียนรถ =====
 function addVehicleDB() {
   const plate = document.getElementById('md-vehicle-plate').value.trim();
   const type = document.getElementById('md-vehicle-type').value;
-  const date = document.getElementById('md-vehicle-date').value;
   if (!plate) { showToast('กรุณากรอกทะเบียนรถ', 'error'); return; }
   if (!type) { showToast('กรุณาเลือกประเภทรถ', 'error'); return; }
-  mdVehicles.push({ id: Date.now(), plate, vehicleType: type, registerDate: date });
+  mdVehicles.push({
+    id: Date.now(),
+    plate,
+    vehicleType: type,
+    owner: document.getElementById('md-vehicle-owner').value,
+    businessUnit: document.getElementById('md-vehicle-business-unit').value.trim(),
+    yard: document.getElementById('md-vehicle-yard').value,
+    insuranceCompany: document.getElementById('md-vehicle-insurance').value.trim(),
+    insuranceExpiry: document.getElementById('md-vehicle-insurance-expiry').value,
+    registerDate: document.getElementById('md-vehicle-date').value,
+    registrationExpiry: document.getElementById('md-vehicle-registration-expiry').value,
+    assignedDriver: document.getElementById('md-vehicle-driver').value.trim(),
+    status: document.getElementById('md-vehicle-status').value || 'พร้อมใช้',
+  });
   saveVehiclesDB();
-  document.getElementById('md-vehicle-plate').value = '';
+  ['md-vehicle-plate','md-vehicle-business-unit','md-vehicle-insurance','md-vehicle-insurance-expiry','md-vehicle-date','md-vehicle-registration-expiry','md-vehicle-driver'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('md-vehicle-type').value = '';
-  document.getElementById('md-vehicle-date').value = '';
+  document.getElementById('md-vehicle-owner').value = '';
+  document.getElementById('md-vehicle-yard').value = '';
+  document.getElementById('md-vehicle-status').value = 'พร้อมใช้';
   renderVehiclesTable();
+  updatePlateDatalist();
+  mdPushIfReady();
   showToast('เพิ่มรถแล้ว', 'success');
 }
 
@@ -157,6 +207,8 @@ function deleteVehicleDB(id) {
   mdVehicles = mdVehicles.filter(v => v.id !== id);
   saveVehiclesDB();
   renderVehiclesTable();
+  updatePlateDatalist();
+  mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
 
@@ -164,15 +216,21 @@ function renderVehiclesTable() {
   const tbody = document.getElementById('md-vehicle-body');
   if (!tbody) return;
   if (mdVehicles.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = mdVehicles.map(v => `
     <tr>
       <td style="font-family:monospace">${escapeHtml(v.plate)}</td>
-      <td><span class="badge badge-blue">${escapeHtml(v.vehicleType)}</span></td>
-      <td>${formatDate(v.registerDate)}</td>
-      <td>${formatDuration(v.registerDate)}</td>
+      <td><span class="badge badge-blue">${escapeHtml(v.vehicleType || '-')}</span></td>
+      <td>${escapeHtml(v.owner || '-')}</td>
+      <td>${escapeHtml(v.businessUnit || '-')}</td>
+      <td>${escapeHtml(v.yard || '-')}</td>
+      <td>${escapeHtml(v.insuranceCompany || '-')}</td>
+      <td>${formatDate(v.insuranceExpiry)}</td>
+      <td>${formatDate(v.registrationExpiry)}</td>
+      <td>${escapeHtml(v.assignedDriver || '-')}</td>
+      <td>${v.status === 'ซ่อม' ? '<span class="badge badge-orange">ซ่อม</span>' : v.status === 'พักระวาง' ? '<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">พักระวาง</span>' : '<span class="badge badge-green">พร้อมใช้</span>'}</td>
       <td><button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button></td>
     </tr>
   `).join('');
@@ -180,8 +238,8 @@ function renderVehiclesTable() {
 
 function downloadVehicleTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'ประเภทรถ (4W/6W/7W/หัวลาก)', 'วันที่จดทะเบียน (YYYY-MM-DD)'],
-    ['70-1234', '6W', '2018-03-01'],
+    ['ทะเบียนรถ', 'ประเภทรถ', 'เจ้าของรถ (AP/Subcontractor)', 'หน่วยธุรกิจ', 'ลานจอด', 'บริษัทประกัน', 'วันหมดอายุประกัน (YYYY-MM-DD)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'วันหมดอายุทะเบียน (YYYY-MM-DD)', 'พนักงานขับประจำ', 'สถานะ'],
+    ['70-1234', '6ล้อ', 'AP', 'AAT', 'ABC', 'วิริยะ', '2027-03-01', '2018-03-01', '2027-03-01', 'นายสมชาย ใจดี', 'พร้อมใช้'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
@@ -200,15 +258,31 @@ function importVehicleExcel(event) {
         id: Date.now() + i,
         plate,
         vehicleType: String(row[1] || '').trim(),
-        registerDate: normalizeImportDate(row[2]),
+        owner: String(row[2] || '').trim(),
+        businessUnit: String(row[3] || '').trim(),
+        yard: String(row[4] || '').trim(),
+        insuranceCompany: String(row[5] || '').trim(),
+        insuranceExpiry: normalizeImportDate(row[6]),
+        registerDate: normalizeImportDate(row[7]),
+        registrationExpiry: normalizeImportDate(row[8]),
+        assignedDriver: String(row[9] || '').trim(),
+        status: String(row[10] || '').trim() || 'พร้อมใช้',
       });
       added++;
     });
     saveVehiclesDB();
     renderVehiclesTable();
+    updatePlateDatalist();
+    mdPushIfReady();
     showToast(`นำเข้ารถ ${added} รายการ`, 'success');
     event.target.value = '';
   });
+}
+
+function updatePlateDatalist() {
+  const dl = document.getElementById('plateNoList');
+  if (!dl) return;
+  dl.innerHTML = mdVehicles.map(v => `<option value="${escapeHtml(v.plate)}"></option>`).join('');
 }
 
 // ===== ลูกค้า =====
@@ -337,6 +411,8 @@ function renderMasterData() {
   renderVehiclesTable();
   renderCustomersTable();
   updateCustomerDatalist();
+  updateDriverDatalist();
+  updatePlateDatalist();
   renderCategoriesTable();
   if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
 }
