@@ -67,23 +67,11 @@ function addDriverDB() {
   const birth = document.getElementById('md-driver-birth').value;
   const start = document.getElementById('md-driver-start').value;
   if (!name) { showToast('กรุณากรอกชื่อพนักงาน', 'error'); return; }
-  mdDrivers.push({
-    id: Date.now(),
-    name,
-    position: document.getElementById('md-driver-position').value,
-    department: document.getElementById('md-driver-department').value.trim(),
-    birthDate: birth,
-    startDate: start,
-    phone: document.getElementById('md-driver-phone').value.trim(),
-    licenseType: document.getElementById('md-driver-license-type').value,
-    licenseExpiry: document.getElementById('md-driver-license-expiry').value,
-    status: document.getElementById('md-driver-status').value || 'ทำงานอยู่',
-  });
+  mdDrivers.push({ id: Date.now(), name, birthDate: birth, startDate: start });
   saveDriversDB();
-  ['md-driver-name','md-driver-department','md-driver-birth','md-driver-start','md-driver-phone','md-driver-license-expiry'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('md-driver-position').value = '';
-  document.getElementById('md-driver-license-type').value = '';
-  document.getElementById('md-driver-status').value = 'ทำงานอยู่';
+  document.getElementById('md-driver-name').value = '';
+  document.getElementById('md-driver-birth').value = '';
+  document.getElementById('md-driver-start').value = '';
   renderDriversTable();
   updateDriverDatalist();
   mdPushIfReady();
@@ -104,20 +92,16 @@ function renderDriversTable() {
   const tbody = document.getElementById('md-driver-body');
   if (!tbody) return;
   if (mdDrivers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = mdDrivers.map(d => `
     <tr>
       <td>${escapeHtml(d.name)}</td>
-      <td>${escapeHtml(d.position || '-')}</td>
-      <td>${escapeHtml(d.department || '-')}</td>
+      <td>${formatDate(d.birthDate)}</td>
       <td>${formatDuration(d.birthDate)}</td>
+      <td>${formatDate(d.startDate)}</td>
       <td>${formatDuration(d.startDate)}</td>
-      <td>${escapeHtml(d.phone || '-')}</td>
-      <td>${escapeHtml(d.licenseType || '-')}</td>
-      <td>${formatDate(d.licenseExpiry)}</td>
-      <td>${d.status === 'ลาออก' ? '<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ลาออก</span>' : d.status === 'พักงาน' ? '<span class="badge badge-orange">พักงาน</span>' : '<span class="badge badge-green">ทำงานอยู่</span>'}</td>
       <td><button class="action-btn action-delete" onclick="deleteDriverDB(${d.id})">ลบ</button></td>
     </tr>
   `).join('');
@@ -125,8 +109,8 @@ function renderDriversTable() {
 
 function downloadDriverTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ชื่อพนักงาน', 'ตำแหน่ง', 'แผนก', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)', 'เบอร์โทร', 'ประเภทใบขับขี่', 'วันหมดอายุใบขับขี่ (YYYY-MM-DD)', 'สถานะ'],
-    ['นายสมชาย ใจดี', 'Driver', 'Transport', '1990-05-12', '2020-01-15', '0812345678', 'ท.2', '2027-05-12', 'ทำงานอยู่'],
+    ['ชื่อพนักงาน', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)'],
+    ['นายสมชาย ใจดี', '1990-05-12', '2020-01-15'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'พนักงานขับรถ');
@@ -144,14 +128,8 @@ function importDriverExcel(event) {
       mdDrivers.push({
         id: Date.now() + i,
         name,
-        position: String(row[1] || '').trim(),
-        department: String(row[2] || '').trim(),
-        birthDate: normalizeImportDate(row[3]),
-        startDate: normalizeImportDate(row[4]),
-        phone: String(row[5] || '').trim(),
-        licenseType: String(row[6] || '').trim(),
-        licenseExpiry: normalizeImportDate(row[7]),
-        status: String(row[8] || '').trim() || 'ทำงานอยู่',
+        birthDate: normalizeImportDate(row[1]),
+        startDate: normalizeImportDate(row[2]),
       });
       added++;
     });
@@ -173,29 +151,17 @@ function updateDriverDatalist() {
 // ===== ทะเบียนรถ =====
 function addVehicleDB() {
   const plate = document.getElementById('md-vehicle-plate').value.trim();
-  const type = document.getElementById('md-vehicle-type').value;
   if (!plate) { showToast('กรุณากรอกทะเบียนรถ', 'error'); return; }
-  if (!type) { showToast('กรุณาเลือกประเภทรถ', 'error'); return; }
   mdVehicles.push({
     id: Date.now(),
     plate,
-    vehicleType: type,
     owner: document.getElementById('md-vehicle-owner').value,
-    businessUnit: document.getElementById('md-vehicle-business-unit').value.trim(),
-    yard: document.getElementById('md-vehicle-yard').value,
-    insuranceCompany: document.getElementById('md-vehicle-insurance').value.trim(),
-    insuranceExpiry: document.getElementById('md-vehicle-insurance-expiry').value,
     registerDate: document.getElementById('md-vehicle-date').value,
-    registrationExpiry: document.getElementById('md-vehicle-registration-expiry').value,
-    assignedDriver: document.getElementById('md-vehicle-driver').value.trim(),
-    status: document.getElementById('md-vehicle-status').value || 'พร้อมใช้',
   });
   saveVehiclesDB();
-  ['md-vehicle-plate','md-vehicle-business-unit','md-vehicle-insurance','md-vehicle-insurance-expiry','md-vehicle-date','md-vehicle-registration-expiry','md-vehicle-driver'].forEach(id => { document.getElementById(id).value = ''; });
-  document.getElementById('md-vehicle-type').value = '';
+  document.getElementById('md-vehicle-plate').value = '';
   document.getElementById('md-vehicle-owner').value = '';
-  document.getElementById('md-vehicle-yard').value = '';
-  document.getElementById('md-vehicle-status').value = 'พร้อมใช้';
+  document.getElementById('md-vehicle-date').value = '';
   renderVehiclesTable();
   updatePlateDatalist();
   mdPushIfReady();
@@ -216,21 +182,15 @@ function renderVehiclesTable() {
   const tbody = document.getElementById('md-vehicle-body');
   if (!tbody) return;
   if (mdVehicles.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = mdVehicles.map(v => `
     <tr>
       <td style="font-family:monospace">${escapeHtml(v.plate)}</td>
-      <td><span class="badge badge-blue">${escapeHtml(v.vehicleType || '-')}</span></td>
       <td>${escapeHtml(v.owner || '-')}</td>
-      <td>${escapeHtml(v.businessUnit || '-')}</td>
-      <td>${escapeHtml(v.yard || '-')}</td>
-      <td>${escapeHtml(v.insuranceCompany || '-')}</td>
-      <td>${formatDate(v.insuranceExpiry)}</td>
-      <td>${formatDate(v.registrationExpiry)}</td>
-      <td>${escapeHtml(v.assignedDriver || '-')}</td>
-      <td>${v.status === 'ซ่อม' ? '<span class="badge badge-orange">ซ่อม</span>' : v.status === 'พักระวาง' ? '<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">พักระวาง</span>' : '<span class="badge badge-green">พร้อมใช้</span>'}</td>
+      <td>${formatDate(v.registerDate)}</td>
+      <td>${formatDuration(v.registerDate)}</td>
       <td><button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button></td>
     </tr>
   `).join('');
@@ -238,8 +198,8 @@ function renderVehiclesTable() {
 
 function downloadVehicleTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'ประเภทรถ', 'เจ้าของรถ (AP/Subcontractor)', 'หน่วยธุรกิจ', 'ลานจอด', 'บริษัทประกัน', 'วันหมดอายุประกัน (YYYY-MM-DD)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'วันหมดอายุทะเบียน (YYYY-MM-DD)', 'พนักงานขับประจำ', 'สถานะ'],
-    ['70-1234', '6ล้อ', 'AP', 'AAT', 'ABC', 'วิริยะ', '2027-03-01', '2018-03-01', '2027-03-01', 'นายสมชาย ใจดี', 'พร้อมใช้'],
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)'],
+    ['70-1234', 'AP', '2018-03-01'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
@@ -257,16 +217,8 @@ function importVehicleExcel(event) {
       mdVehicles.push({
         id: Date.now() + i,
         plate,
-        vehicleType: String(row[1] || '').trim(),
-        owner: String(row[2] || '').trim(),
-        businessUnit: String(row[3] || '').trim(),
-        yard: String(row[4] || '').trim(),
-        insuranceCompany: String(row[5] || '').trim(),
-        insuranceExpiry: normalizeImportDate(row[6]),
-        registerDate: normalizeImportDate(row[7]),
-        registrationExpiry: normalizeImportDate(row[8]),
-        assignedDriver: String(row[9] || '').trim(),
-        status: String(row[10] || '').trim() || 'พร้อมใช้',
+        owner: String(row[1] || '').trim(),
+        registerDate: normalizeImportDate(row[2]),
       });
       added++;
     });
@@ -359,6 +311,139 @@ function updateCustomerDatalist() {
   dl.innerHTML = mdCustomers.map(c => `<option value="${escapeHtml(c.name)}"></option>`).join('');
 }
 
+// ===== หน่วยงาน / บริษัทประกัน / ลานจอด / ลักษณะการเกิดเหตุ =====
+// รายการอ้างอิงสำหรับฟอร์ม "บันทึกอุบัติเหตุ" (incidents.js) เพิ่ม/ลบเองได้ที่นี่
+// เก็บเป็น array ของชื่อ (string) และ sync กับ Firebase ผ่าน masterdata-sync.js
+let mdBusinessUnits = JSON.parse(localStorage.getItem('finflow_business_units_db') || '[]');
+let mdInsurers = JSON.parse(localStorage.getItem('finflow_insurers_db') || '[]');
+let mdYards = JSON.parse(localStorage.getItem('finflow_yards_db') || '[]');
+let mdIncidentPatterns = JSON.parse(localStorage.getItem('finflow_patterns_db') || '[]');
+
+function saveBusinessUnitsDB() { localStorage.setItem('finflow_business_units_db', JSON.stringify(mdBusinessUnits)); }
+function saveInsurersDB() { localStorage.setItem('finflow_insurers_db', JSON.stringify(mdInsurers)); }
+function saveYardsDB() { localStorage.setItem('finflow_yards_db', JSON.stringify(mdYards)); }
+function savePatternsDB() { localStorage.setItem('finflow_patterns_db', JSON.stringify(mdIncidentPatterns)); }
+
+function addBusinessUnitDB() {
+  const input = document.getElementById('md-bu-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdBusinessUnits.includes(name)) { showToast('มีหน่วยงานนี้อยู่แล้ว', 'warning'); return; }
+  mdBusinessUnits.push(name);
+  saveBusinessUnitsDB();
+  input.value = ''; input.focus();
+  renderBusinessUnitsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มหน่วยงานแล้ว', 'success');
+}
+function deleteBusinessUnitDB(name) {
+  mdBusinessUnits = mdBusinessUnits.filter(n => n !== name);
+  saveBusinessUnitsDB();
+  renderBusinessUnitsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function renderBusinessUnitsTable() {
+  const tbody = document.getElementById('md-bu-body');
+  if (!tbody) return;
+  if (mdBusinessUnits.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdBusinessUnits.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteBusinessUnitDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
+function addInsurerDB() {
+  const input = document.getElementById('md-insurer-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdInsurers.includes(name)) { showToast('มีบริษัทประกันนี้อยู่แล้ว', 'warning'); return; }
+  mdInsurers.push(name);
+  saveInsurersDB();
+  input.value = ''; input.focus();
+  renderInsurersTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มบริษัทประกันแล้ว', 'success');
+}
+function deleteInsurerDB(name) {
+  mdInsurers = mdInsurers.filter(n => n !== name);
+  saveInsurersDB();
+  renderInsurersTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function renderInsurersTable() {
+  const tbody = document.getElementById('md-insurer-body');
+  if (!tbody) return;
+  if (mdInsurers.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdInsurers.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteInsurerDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
+function addYardDB() {
+  const input = document.getElementById('md-yard-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdYards.includes(name)) { showToast('มีลานจอดนี้อยู่แล้ว', 'warning'); return; }
+  mdYards.push(name);
+  saveYardsDB();
+  input.value = ''; input.focus();
+  renderYardsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มลานจอดแล้ว', 'success');
+}
+function deleteYardDB(name) {
+  mdYards = mdYards.filter(n => n !== name);
+  saveYardsDB();
+  renderYardsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function renderYardsTable() {
+  const tbody = document.getElementById('md-yard-body');
+  if (!tbody) return;
+  if (mdYards.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdYards.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteYardDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
+function addIncidentPatternDB() {
+  const input = document.getElementById('md-pattern-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdIncidentPatterns.includes(name)) { showToast('มีลักษณะนี้อยู่แล้ว', 'warning'); return; }
+  mdIncidentPatterns.push(name);
+  savePatternsDB();
+  input.value = ''; input.focus();
+  renderIncidentPatternsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มลักษณะการเกิดเหตุแล้ว', 'success');
+}
+function deleteIncidentPatternDB(name) {
+  mdIncidentPatterns = mdIncidentPatterns.filter(n => n !== name);
+  savePatternsDB();
+  renderIncidentPatternsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function renderIncidentPatternsTable() {
+  const tbody = document.getElementById('md-pattern-body');
+  if (!tbody) return;
+  if (mdIncidentPatterns.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdIncidentPatterns.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteIncidentPatternDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
 // ===== หมวดหมู่ค่าใช้จ่าย =====
 // เก็บเป็น array ของชื่อ (string) ที่คีย์ 'finflow_categories_db' ใน localStorage
 // ฟอร์มเงินสดย่อย/ขออนุมัติ (app.js: categoryOptions()) จะอ่านจากคีย์นี้โดยตรงทุกครั้ง
@@ -413,8 +498,13 @@ function renderMasterData() {
   updateCustomerDatalist();
   updateDriverDatalist();
   updatePlateDatalist();
+  renderBusinessUnitsTable();
+  renderInsurersTable();
+  renderYardsTable();
+  renderIncidentPatternsTable();
   renderCategoriesTable();
   if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
 }
 
 document.addEventListener('DOMContentLoaded', renderMasterData);

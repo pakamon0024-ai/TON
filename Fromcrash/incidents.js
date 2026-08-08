@@ -81,21 +81,31 @@ function incLookupEmployee() {
   document.getElementById('inc-employee-tenure').value = typeof formatDuration === 'function' ? formatDuration(emp.startDate) : '-';
 }
 
-// ===== Lookup: รถ =====
+// ===== Lookup: รถ (ดึงมาแค่ "เจ้าของรถ" — หน่วยงาน/ลานจอด/ประกัน เลือกเองต่อเคส) =====
 function incLookupVehicle() {
   const plate = document.getElementById('inc-plate').value.trim();
   const veh = mdVehicles.find(v => v.plate === plate);
-  if (!veh) {
-    document.getElementById('inc-owner').value = '';
-    document.getElementById('inc-bu').value = '';
-    document.getElementById('inc-yard-auto').value = '';
-    document.getElementById('inc-insurance-auto').value = '';
-    return;
-  }
-  document.getElementById('inc-owner').value = veh.owner || '';
-  document.getElementById('inc-bu').value = veh.businessUnit || '';
-  document.getElementById('inc-yard-auto').value = veh.yard || '';
-  document.getElementById('inc-insurance-auto').value = veh.insuranceCompany || '';
+  document.getElementById('inc-owner').value = veh?.owner || '';
+}
+
+// ===== เติมตัวเลือกใน dropdown หน่วยงาน/ประกัน/ลานจอด/ลักษณะการเกิดเหตุ จากฐานข้อมูลหลัก =====
+function incFillSelect(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  const placeholder = el.options[0]?.outerHTML || '<option value="">-- เลือก --</option>';
+  el.innerHTML = placeholder + (list || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+  if (list && list.includes(current)) el.value = current;
+}
+
+function incRefreshLookupDropdowns() {
+  incFillSelect('inc-bu', mdBusinessUnits);
+  incFillSelect('inc-yard-auto', mdYards);
+  incFillSelect('inc-insurance-auto', mdInsurers);
+  incFillSelect('inc-pattern', mdIncidentPatterns);
+  incFillSelect('inc-f-bu', mdBusinessUnits);
+  incFillSelect('inc-f-yard', mdYards);
+  incFillSelect('inc-lf-yard', mdYards);
 }
 
 // ===== Save / Clear / Edit =====
@@ -215,14 +225,17 @@ function incEditCase(id) {
   document.getElementById('inc-employee-name').value = rec.employeeName || '';
   document.getElementById('inc-plate').value = rec.plate || '';
   document.getElementById('inc-owner').value = rec.owner || '';
-  document.getElementById('inc-bu').value = rec.businessUnit || '';
-  document.getElementById('inc-yard-auto').value = rec.yard || '';
-  document.getElementById('inc-insurance-auto').value = rec.insuranceCompany || '';
+  incRefreshLookupDropdowns();
+  if (typeof setSelectValueSafe === 'function') {
+    setSelectValueSafe('inc-bu', rec.businessUnit || '');
+    setSelectValueSafe('inc-yard-auto', rec.yard || '');
+    setSelectValueSafe('inc-insurance-auto', rec.insuranceCompany || '');
+    setSelectValueSafe('inc-pattern', rec.incidentPattern || '');
+  }
   document.getElementById('inc-location').value = rec.location || '';
   document.getElementById('inc-description').value = rec.description || '';
   document.getElementById('inc-fault').value = rec.faultStatus || '';
   document.getElementById('inc-area').value = rec.area || '';
-  document.getElementById('inc-pattern').value = rec.incidentPattern || '';
   document.getElementById('inc-severity').value = rec.severity || '';
   document.getElementById('inc-repair-shop').value = rec.repairShop || '';
   document.getElementById('inc-repair-in').value = rec.repairInDate || '';
@@ -537,6 +550,7 @@ async function incInit() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  incRefreshLookupDropdowns();
   incClearForm();
   incRenderList();
   incInit();

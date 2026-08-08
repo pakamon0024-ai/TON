@@ -1,8 +1,9 @@
-// ===== Sync ฐานข้อมูลพนักงาน (employees) และรถบรรทุก (vehicles) กับ Firebase =====
+// ===== Sync ฐานข้อมูลพนักงาน/รถบรรทุก/รายการอ้างอิง กับ Firebase =====
 // ใช้ Firebase connection เดียวกับที่ claims.js เชื่อมต่อไว้แล้ว (fbDb/fbReady)
-// เก็บที่ path แยกต่างหาก "/employees" และ "/vehicles"
+// employees/vehicles เก็บเป็น object คีย์ id ส่วนหน่วยงาน/ประกัน/ลานจอด/ลักษณะเหตุ
+// เป็นแค่ array ของชื่อ (string) เก็บง่ายๆ ตรงๆ ที่ path ของตัวเอง
 
-let mdEmpRef = null, mdVehRef = null;
+let mdEmpRef = null, mdVehRef = null, mdBuRef = null, mdInsRef = null, mdYardRef = null, mdPatRef = null;
 let mdReady = false;
 
 function mdRecordsToObj(arr) {
@@ -47,10 +48,22 @@ async function mdWriteVehicles() {
   } catch (e) { console.warn('mdWriteVehicles error', e); }
 }
 
+async function mdWriteSimpleList(ref, arr) {
+  if (!ref) return;
+  try {
+    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref, arr || []);
+  } catch (e) { console.warn('mdWriteSimpleList error', e); }
+}
+
 function mdPushIfReady() {
   if (!mdReady) return;
   mdWriteEmployees();
   mdWriteVehicles();
+  mdWriteSimpleList(mdBuRef, mdBusinessUnits);
+  mdWriteSimpleList(mdInsRef, mdInsurers);
+  mdWriteSimpleList(mdYardRef, mdYards);
+  mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
 }
 
 function mdWaitForFirebase() {
@@ -63,24 +76,50 @@ function mdWaitForFirebase() {
   });
 }
 
+function mdApplySimpleList(kind, arr) {
+  if (kind === 'bu') { mdBusinessUnits = arr; saveBusinessUnitsDB(); renderBusinessUnitsTable(); }
+  if (kind === 'ins') { mdInsurers = arr; saveInsurersDB(); renderInsurersTable(); }
+  if (kind === 'yard') { mdYards = arr; saveYardsDB(); renderYardsTable(); }
+  if (kind === 'pattern') { mdIncidentPatterns = arr; savePatternsDB(); renderIncidentPatternsTable(); }
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+}
+
 async function mdInit() {
   await mdWaitForFirebase();
   try {
     const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     mdEmpRef = ref(fbDb, '/employees');
     mdVehRef = ref(fbDb, '/vehicles');
+    mdBuRef = ref(fbDb, '/businessUnits');
+    mdInsRef = ref(fbDb, '/insurers');
+    mdYardRef = ref(fbDb, '/yards');
+    mdPatRef = ref(fbDb, '/incidentPatterns');
 
-    const [empSnap, vehSnap] = await Promise.all([get(mdEmpRef), get(mdVehRef)]);
+    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap] = await Promise.all([
+      get(mdEmpRef), get(mdVehRef), get(mdBuRef), get(mdInsRef), get(mdYardRef), get(mdPatRef),
+    ]);
 
     if (empSnap.exists()) mdApplyServerDrivers(mdObjToRecords(empSnap.val()));
     if (vehSnap.exists()) mdApplyServerVehicles(mdObjToRecords(vehSnap.val()));
+    if (buSnap.exists()) mdApplySimpleList('bu', buSnap.val() || []);
+    if (insSnap.exists()) mdApplySimpleList('ins', insSnap.val() || []);
+    if (yardSnap.exists()) mdApplySimpleList('yard', yardSnap.val() || []);
+    if (patSnap.exists()) mdApplySimpleList('pattern', patSnap.val() || []);
     mdReady = true;
 
     if (!empSnap.exists() && mdDrivers.length > 0) await mdWriteEmployees();
     if (!vehSnap.exists() && mdVehicles.length > 0) await mdWriteVehicles();
+    if (!buSnap.exists() && mdBusinessUnits.length > 0) await mdWriteSimpleList(mdBuRef, mdBusinessUnits);
+    if (!insSnap.exists() && mdInsurers.length > 0) await mdWriteSimpleList(mdInsRef, mdInsurers);
+    if (!yardSnap.exists() && mdYards.length > 0) await mdWriteSimpleList(mdYardRef, mdYards);
+    if (!patSnap.exists() && mdIncidentPatterns.length > 0) await mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
 
     onValue(mdEmpRef, snap => { if (snap.exists()) mdApplyServerDrivers(mdObjToRecords(snap.val())); });
     onValue(mdVehRef, snap => { if (snap.exists()) mdApplyServerVehicles(mdObjToRecords(snap.val())); });
+    onValue(mdBuRef, snap => { if (snap.exists()) mdApplySimpleList('bu', snap.val() || []); });
+    onValue(mdInsRef, snap => { if (snap.exists()) mdApplySimpleList('ins', snap.val() || []); });
+    onValue(mdYardRef, snap => { if (snap.exists()) mdApplySimpleList('yard', snap.val() || []); });
+    onValue(mdPatRef, snap => { if (snap.exists()) mdApplySimpleList('pattern', snap.val() || []); });
   } catch (e) {
     console.warn('mdInit error', e);
   }

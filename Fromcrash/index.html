@@ -549,54 +549,12 @@
               <input type="text" id="md-driver-name" placeholder="ชื่อ-นามสกุล" />
             </div>
             <div class="form-group">
-              <label>ตำแหน่ง</label>
-              <select id="md-driver-position">
-                <option value="">-- เลือกตำแหน่ง --</option>
-                <option value="Driver">Driver</option>
-                <option value="Staff">Staff</option>
-                <option value="ช่าง">ช่าง</option>
-                <option value="อื่นๆ">อื่นๆ</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>แผนก/หน่วยงาน</label>
-              <input type="text" id="md-driver-department" placeholder="เช่น Transport" />
-            </div>
-            <div class="form-group">
               <label>วันเกิด</label>
               <input type="date" id="md-driver-birth" />
             </div>
             <div class="form-group">
               <label>วันเริ่มงาน</label>
               <input type="date" id="md-driver-start" />
-            </div>
-            <div class="form-group">
-              <label>เบอร์โทร</label>
-              <input type="text" id="md-driver-phone" placeholder="08x-xxx-xxxx" />
-            </div>
-            <div class="form-group">
-              <label>ประเภทใบขับขี่</label>
-              <select id="md-driver-license-type">
-                <option value="">-- เลือกประเภท --</option>
-                <option value="ท.2">ท.2</option>
-                <option value="ท.3">ท.3</option>
-                <option value="ท.4">ท.4</option>
-                <option value="บ.1">บ.1</option>
-                <option value="บ.2">บ.2</option>
-                <option value="อื่นๆ">อื่นๆ</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>วันหมดอายุใบขับขี่</label>
-              <input type="date" id="md-driver-license-expiry" />
-            </div>
-            <div class="form-group">
-              <label>สถานะ</label>
-              <select id="md-driver-status">
-                <option value="ทำงานอยู่">ทำงานอยู่</option>
-                <option value="ลาออก">ลาออก</option>
-                <option value="พักงาน">พักงาน</option>
-              </select>
             </div>
           </div>
           <div class="form-actions" style="justify-content:flex-start;">
@@ -607,20 +565,16 @@
               <thead>
                 <tr>
                   <th>ชื่อพนักงาน</th>
-                  <th>ตำแหน่ง</th>
-                  <th>แผนก</th>
+                  <th>วันเกิด</th>
                   <th>อายุ</th>
+                  <th>วันเริ่มงาน</th>
                   <th>อายุงาน</th>
-                  <th>เบอร์โทร</th>
-                  <th>ใบขับขี่</th>
-                  <th>หมดอายุใบขับขี่</th>
-                  <th>สถานะ</th>
                   <th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="md-driver-body">
                 <tr>
-                  <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                  <td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td>
                 </tr>
               </tbody>
             </table>
@@ -643,18 +597,6 @@
               <input type="text" id="md-vehicle-plate" placeholder="เช่น 70-1234" />
             </div>
             <div class="form-group">
-              <label>ประเภทรถ</label>
-              <select id="md-vehicle-type">
-                <option value="">-- เลือกประเภท --</option>
-                <option value="4ล้อ">4ล้อ</option>
-                <option value="6ล้อ">6ล้อ</option>
-                <option value="10ล้อ">10ล้อ</option>
-                <option value="18ล้อ">18ล้อ</option>
-                <option value="หัว">หัว</option>
-                <option value="Trailer">Trailer</option>
-              </select>
-            </div>
-            <div class="form-group">
               <label>เจ้าของรถ</label>
               <select id="md-vehicle-owner">
                 <option value="">-- เลือก --</option>
@@ -664,46 +606,8 @@
               </select>
             </div>
             <div class="form-group">
-              <label>หน่วยธุรกิจ</label>
-              <input type="text" id="md-vehicle-business-unit" placeholder="เช่น AAT, Trailer" />
-            </div>
-            <div class="form-group">
-              <label>ลานจอด</label>
-              <select id="md-vehicle-yard">
-                <option value="">-- เลือกลาน --</option>
-                <option value="ABC">ABC</option>
-                <option value="ARC">ARC</option>
-                <option value="APC">APC</option>
-                <option value="TTK">TTK</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>บริษัทประกัน</label>
-              <input type="text" id="md-vehicle-insurance" placeholder="บริษัทประกันภัย" />
-            </div>
-            <div class="form-group">
-              <label>วันหมดอายุประกัน</label>
-              <input type="date" id="md-vehicle-insurance-expiry" />
-            </div>
-            <div class="form-group">
               <label>วันที่จดทะเบียน</label>
               <input type="date" id="md-vehicle-date" />
-            </div>
-            <div class="form-group">
-              <label>วันหมดอายุทะเบียน</label>
-              <input type="date" id="md-vehicle-registration-expiry" />
-            </div>
-            <div class="form-group">
-              <label>พนักงานขับประจำ (ถ้ามี)</label>
-              <input type="text" id="md-vehicle-driver" placeholder="ชื่อพนักงาน" list="driverNameList" />
-            </div>
-            <div class="form-group">
-              <label>สถานะ</label>
-              <select id="md-vehicle-status">
-                <option value="พร้อมใช้">พร้อมใช้</option>
-                <option value="ซ่อม">ซ่อม</option>
-                <option value="พักระวาง">พักระวาง</option>
-              </select>
             </div>
           </div>
           <div class="form-actions" style="justify-content:flex-start;">
@@ -714,22 +618,112 @@
               <thead>
                 <tr>
                   <th>ทะเบียนรถ</th>
-                  <th>ประเภทรถ</th>
                   <th>เจ้าของรถ</th>
-                  <th>หน่วยธุรกิจ</th>
-                  <th>ลานจอด</th>
-                  <th>ประกัน</th>
-                  <th>หมดอายุประกัน</th>
-                  <th>หมดอายุทะเบียน</th>
-                  <th>พนักงานขับประจำ</th>
-                  <th>สถานะ</th>
+                  <th>วันที่จดทะเบียน</th>
+                  <th>อายุรถ</th>
                   <th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="md-vehicle-body">
                 <tr>
-                  <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
+                  <td colspan="5" class="empty-state">ยังไม่มีข้อมูล</td>
                 </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Business Units -->
+        <div class="form-card" style="margin-bottom:24px;">
+          <div class="items-header">
+            <h3>🏭 หน่วยงาน</h3>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ชื่อหน่วยงาน</label>
+              <input type="text" id="md-bu-name" placeholder="เช่น AAT, Trailer" onkeydown="if(event.key==='Enter') addBusinessUnitDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addBusinessUnitDB()">+ เพิ่มหน่วยงาน</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead><tr><th>หน่วยงาน</th><th>จัดการ</th></tr></thead>
+              <tbody id="md-bu-body">
+                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Insurers -->
+        <div class="form-card" style="margin-bottom:24px;">
+          <div class="items-header">
+            <h3>🛡️ บริษัทประกัน</h3>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ชื่อบริษัทประกัน</label>
+              <input type="text" id="md-insurer-name" placeholder="เช่น วิริยะ" onkeydown="if(event.key==='Enter') addInsurerDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addInsurerDB()">+ เพิ่มบริษัทประกัน</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead><tr><th>บริษัทประกัน</th><th>จัดการ</th></tr></thead>
+              <tbody id="md-insurer-body">
+                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Yards -->
+        <div class="form-card" style="margin-bottom:24px;">
+          <div class="items-header">
+            <h3>🅿️ ลานจอด</h3>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ชื่อลานจอด</label>
+              <input type="text" id="md-yard-name" placeholder="เช่น ABC" onkeydown="if(event.key==='Enter') addYardDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addYardDB()">+ เพิ่มลานจอด</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead><tr><th>ลานจอด</th><th>จัดการ</th></tr></thead>
+              <tbody id="md-yard-body">
+                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Incident Patterns -->
+        <div class="form-card" style="margin-bottom:24px;">
+          <div class="items-header">
+            <h3>💥 ลักษณะการเกิดเหตุ</h3>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ลักษณะการเกิดเหตุ</label>
+              <input type="text" id="md-pattern-name" placeholder="เช่น เฉี่ยวชน" onkeydown="if(event.key==='Enter') addIncidentPatternDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addIncidentPatternDB()">+ เพิ่มลักษณะการเกิดเหตุ</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead><tr><th>ลักษณะการเกิดเหตุ</th><th>จัดการ</th></tr></thead>
+              <tbody id="md-pattern-body">
+                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
               </tbody>
             </table>
           </div>
@@ -907,24 +901,11 @@
             </div>
             <div class="filter-group">
               <label>ลานจอด</label>
-              <select id="inc-f-yard" onchange="incRenderDashboard()">
-                <option value="">ทั้งหมด</option>
-                <option value="ARC">ARC</option>
-                <option value="APC">APC</option>
-                <option value="ABC">ABC</option>
-                <option value="TTK">TTK</option>
-              </select>
+              <select id="inc-f-yard" onchange="incRenderDashboard()"><option value="">ทั้งหมด</option></select>
             </div>
             <div class="filter-group">
-              <label>หน่วยธุรกิจ</label>
-              <select id="inc-f-bu" onchange="incRenderDashboard()">
-                <option value="">ทั้งหมด</option>
-                <option value="Trailer">Trailer</option>
-                <option value="FTM">FTM</option>
-                <option value="AAT">AAT</option>
-                <option value="SBG">SBG</option>
-                <option value="FOT">FOT</option>
-              </select>
+              <label>หน่วยงาน</label>
+              <select id="inc-f-bu" onchange="incRenderDashboard()"><option value="">ทั้งหมด</option></select>
             </div>
             <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้างตัวกรอง</button>
           </div>
@@ -952,9 +933,7 @@
             <div class="filter-group"><label>ช่วงวันที่ (ถึง)</label><input type="date" class="fc" id="inc-lf-dateto" onchange="incRenderList()" /></div>
             <div class="filter-group">
               <label>ลานจอด</label>
-              <select id="inc-lf-yard" onchange="incRenderList()">
-                <option value="">ทั้งหมด</option><option value="ARC">ARC</option><option value="APC">APC</option><option value="ABC">ABC</option><option value="TTK">TTK</option>
-              </select>
+              <select id="inc-lf-yard" onchange="incRenderList()"><option value="">ทั้งหมด</option></select>
             </div>
             <div class="filter-group">
               <label>สถานะเคส</label>
@@ -1016,15 +995,15 @@
               <div class="form-group"><label>อายุงาน (auto)</label><input type="text" id="inc-employee-tenure" readonly /></div>
             </div>
 
-            <div class="fieldset-title">รถ (ดึงข้อมูลอัตโนมัติ)</div>
+            <div class="fieldset-title">รถ</div>
             <div class="form-row-3">
               <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
                 <input type="text" id="inc-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="incLookupVehicle()" />
               </div>
               <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="inc-owner" readonly /></div>
-              <div class="form-group"><label>หน่วยธุรกิจ (auto)</label><input type="text" id="inc-bu" readonly /></div>
-              <div class="form-group"><label>ลานจอด (auto)</label><input type="text" id="inc-yard-auto" readonly /></div>
-              <div class="form-group"><label>บริษัทประกัน (auto)</label><input type="text" id="inc-insurance-auto" readonly /></div>
+              <div class="form-group"><label>หน่วยงาน</label><select id="inc-bu"><option value="">-- เลือก --</option></select></div>
+              <div class="form-group"><label>ลานจอด</label><select id="inc-yard-auto"><option value="">-- เลือก --</option></select></div>
+              <div class="form-group"><label>บริษัทประกัน</label><select id="inc-insurance-auto"><option value="">-- เลือก --</option></select></div>
             </div>
 
             <div class="fieldset-title">รายละเอียดเหตุการณ์</div>
@@ -1037,11 +1016,7 @@
                 <select id="inc-area"><option value="">-- เลือก --</option><option value="On the way">On the way</option><option value="In Plant">In Plant</option><option value="In yard">In yard</option></select>
               </div>
               <div class="form-group"><label>ลักษณะการเกิดเหตุ</label>
-                <select id="inc-pattern">
-                  <option value="">-- เลือก --</option>
-                  <option value="เฉี่ยวชน">เฉี่ยวชน</option><option value="ตกหลุม">ตกหลุม</option>
-                  <option value="หลังชน">หลังชน</option><option value="พลิกคว่ำ">พลิกคว่ำ</option><option value="อื่นๆ">อื่นๆ</option>
-                </select>
+                <select id="inc-pattern"><option value="">-- เลือก --</option></select>
               </div>
               <div class="form-group"><label>ความรุนแรง</label>
                 <select id="inc-severity"><option value="">-- เลือก --</option><option value="ทั่วไป">ทั่วไป</option><option value="ปานกลาง">ปานกลาง</option><option value="รุนแรง">รุนแรง</option></select>
