@@ -49,7 +49,7 @@ function incUpdateAutoDate() {
   if (!val) { dowEl.value = ''; monEl.value = ''; return; }
   const d = new Date(val);
   dowEl.value = DOW_LABELS_TH[d.getDay()];
-  monEl.value = MONTH_LABELS_TH[d.getMonth()] + ' ' + (d.getFullYear() + 543);
+  monEl.value = MONTH_LABELS_TH[d.getMonth()] + ' ' + (d.getFullYear());
 }
 
 function incCalcRepairDays() {
@@ -131,7 +131,7 @@ function incSaveCase() {
     incidentDate,
     incidentTime: document.getElementById('inc-time').value,
     dayOfWeek: DOW_LABELS_TH[d.getDay()],
-    monthLabel: MONTH_LABELS_TH[d.getMonth()] + ' ' + (d.getFullYear() + 543),
+    monthLabel: MONTH_LABELS_TH[d.getMonth()] + ' ' + (d.getFullYear()),
     employeeName,
     employeeBirthDate: emp?.birthDate || '',
     employeeStartDate: emp?.startDate || '',
@@ -467,7 +467,7 @@ function incImportExcel(event) {
           runningNo: incNextRunningNo(),
           tmsStatus: String(row[1]||'').trim(), damageType: String(row[2]||'').trim() || 'Accident',
           incidentDate, incidentTime: String(row[4]||'').trim(),
-          dayOfWeek: d ? DOW_LABELS_TH[d.getDay()] : '', monthLabel: d ? MONTH_LABELS_TH[d.getMonth()]+' '+(d.getFullYear()+543) : '',
+          dayOfWeek: d ? DOW_LABELS_TH[d.getDay()] : '', monthLabel: d ? MONTH_LABELS_TH[d.getMonth()]+' '+(d.getFullYear()) : '',
           employeeName, employeeBirthDate: emp?.birthDate||'', employeeStartDate: emp?.startDate||'',
           plate, owner: veh?.owner||'', businessUnit: veh?.businessUnit||'', yard: veh?.yard||'', insuranceCompany: veh?.insuranceCompany||'',
           location: String(row[7]||'').trim(), description: String(row[8]||'').trim(),

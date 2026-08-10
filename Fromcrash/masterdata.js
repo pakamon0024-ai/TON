@@ -444,6 +444,40 @@ function renderIncidentPatternsTable() {
   `).join('');
 }
 
+// ===== หัวข้อปัญหา (สำหรับ "บันทึกปัญหาการทำงาน" - issues.js) =====
+let mdIssueTopics = JSON.parse(localStorage.getItem('finflow_issue_topics_db') || '[]');
+function saveIssueTopicsDB() { localStorage.setItem('finflow_issue_topics_db', JSON.stringify(mdIssueTopics)); }
+
+function addIssueTopicDB() {
+  const input = document.getElementById('md-topic-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdIssueTopics.includes(name)) { showToast('มีหัวข้อนี้อยู่แล้ว', 'warning'); return; }
+  mdIssueTopics.push(name);
+  saveIssueTopicsDB();
+  input.value = ''; input.focus();
+  renderIssueTopicsTable();
+  if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มหัวข้อปัญหาแล้ว', 'success');
+}
+function deleteIssueTopicDB(name) {
+  mdIssueTopics = mdIssueTopics.filter(n => n !== name);
+  saveIssueTopicsDB();
+  renderIssueTopicsTable();
+  if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function renderIssueTopicsTable() {
+  const tbody = document.getElementById('md-topic-body');
+  if (!tbody) return;
+  if (mdIssueTopics.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdIssueTopics.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteIssueTopicDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
 // ===== หมวดหมู่ค่าใช้จ่าย =====
 // เก็บเป็น array ของชื่อ (string) ที่คีย์ 'finflow_categories_db' ใน localStorage
 // ฟอร์มเงินสดย่อย/ขออนุมัติ (app.js: categoryOptions()) จะอ่านจากคีย์นี้โดยตรงทุกครั้ง
@@ -491,6 +525,15 @@ function renderCategoriesTable() {
   `).join('');
 }
 
+// ===== เลือกหัวข้อที่จะบันทึก (แสดงเฉพาะส่วนที่เลือก) =====
+const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'customer', 'category', 'telegram'];
+function mdSwitchTopic(topic) {
+  MD_TOPICS.forEach(t => {
+    document.getElementById(`md-tab-${t}`).classList.toggle('active', t === topic);
+    document.getElementById(`md-subpage-${t}`).classList.toggle('active', t === topic);
+  });
+}
+
 function renderMasterData() {
   renderDriversTable();
   renderVehiclesTable();
@@ -502,9 +545,11 @@ function renderMasterData() {
   renderInsurersTable();
   renderYardsTable();
   renderIncidentPatternsTable();
+  renderIssueTopicsTable();
   renderCategoriesTable();
   if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
 }
 
 document.addEventListener('DOMContentLoaded', renderMasterData);

@@ -17,7 +17,30 @@ document.addEventListener('DOMContentLoaded', () => {
   updateCurrentDate();
   autoDocNo();
   loadRequesters();
+  updateThemeToggleIcon();
 });
+
+// ===== Theme (Dark / White) =====
+// data-theme ถูกตั้งค่าไว้ล่วงหน้าแล้วด้วย inline script ใน <head> ก่อนวาดหน้าจอ
+// (กันการกระพริบธีม) ฟังก์ชันนี้แค่สลับค่าและอัปเดตปุ่ม
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('finflow_theme', next);
+  updateThemeToggleIcon();
+  // สีกราฟ Chart.js ฝังไว้ตรงๆ ไม่ได้อ่านจาก CSS variable ต้องสั่ง redraw เอง
+  if (typeof icRenderDash === 'function' && document.getElementById('page-claims')?.classList.contains('active')) icRenderDash();
+  if (typeof incRenderDashboard === 'function' && document.getElementById('page-incidents')?.classList.contains('active')) incRenderDashboard();
+}
+
+function updateThemeToggleIcon() {
+  const btn = document.getElementById('themeToggle');
+  if (!btn) return;
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  btn.textContent = current === 'dark' ? '🌙' : '☀️';
+  btn.title = current === 'dark' ? 'สลับเป็นธีมสว่าง' : 'สลับเป็นธีมมืด';
+}
 
 // ลงทะเบียน Service Worker เพื่อให้ Chrome เสนอปุ่ม "ติดตั้งแอป" (ต้อง serve ผ่าน HTTPS)
 if ('serviceWorker' in navigator) {
@@ -29,7 +52,7 @@ if ('serviceWorker' in navigator) {
 function updateCurrentDate() {
   const el = document.getElementById('currentDate');
   const now = new Date();
-  el.textContent = now.toLocaleDateString('th-TH', {
+  el.textContent = now.toLocaleDateString('th-TH-u-ca-gregory', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
 }
@@ -42,7 +65,7 @@ function setToday() {
 
 function autoDocNo() {
   const now = new Date();
-  const yr = now.getFullYear() + 543;
+  const yr = now.getFullYear();
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const pettyCnt = records.filter(r => r.type === 'petty').length + 1;
   const apCnt = records.filter(r => r.type === 'approval').length + 1;
@@ -65,7 +88,8 @@ function showPage(page) {
     claims: 'เคลมประกันภัย',
     masterdata: 'ฐานข้อมูลหลัก',
     users: 'จัดการผู้ใช้',
-    incidents: 'บันทึกอุบัติเหตุ'
+    incidents: 'บันทึกอุบัติเหตุ',
+    issues: 'บันทึกปัญหาการทำงาน'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
@@ -75,6 +99,7 @@ function showPage(page) {
   if (page === 'masterdata' && typeof renderMasterData === 'function') renderMasterData();
   if (page === 'users' && typeof renderUsersPage === 'function') renderUsersPage();
   if (page === 'incidents' && typeof incOnPageShown === 'function') incOnPageShown();
+  if (page === 'issues' && typeof wiOnPageShown === 'function') wiOnPageShown();
   if (page === 'petty-cash') refreshCategoryDropdowns('pc');
   if (page === 'approval') refreshCategoryDropdowns('ap');
 
@@ -181,7 +206,7 @@ function updateSignature(prefix) {
     const now = new Date();
     const day   = String(now.getDate()).padStart(2, '0');
     const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year  = now.getFullYear() + 543;
+    const year  = now.getFullYear();
     sigDate.textContent = `วันที่ ${day}/${month}/${year}`;
     sigName.style.opacity = '1';
   } else {
@@ -278,6 +303,7 @@ function getPettyData() {
     date: document.getElementById('pc-date').value,
     requester: document.getElementById('pc-requester').value,
     purpose: document.getElementById('pc-purpose').value,
+    detail: document.getElementById('pc-detail').value,
     items, total
   };
 }
@@ -296,7 +322,7 @@ function savePettyCash() {
       records[idx] = {
         ...records[idx],
         docno: data.docno, dept: data.dept, requester: data.requester,
-        purpose: data.purpose, date: data.date, items: data.items, total: data.total,
+        purpose: data.purpose, detail: data.detail, date: data.date, items: data.items, total: data.total,
       };
     }
     showToast('✅ แก้ไขรายการเงินสดย่อยแล้ว!', 'success');
@@ -309,6 +335,7 @@ function savePettyCash() {
       dept: data.dept,
       requester: data.requester,
       purpose: data.purpose,
+      detail: data.detail,
       date: data.date,
       items: data.items,
       total: data.total,
@@ -336,6 +363,7 @@ function clearPettyCash() {
   addPettyRow();
   setToday();
   autoDocNo();
+  document.getElementById('pc-detail').value = '';
   showToast('ล้างข้อมูลแล้ว', 'warning');
 }
 
@@ -353,6 +381,7 @@ function loadPettyCashForEdit(rec) {
   document.getElementById('pc-docno').value = rec.docno || '';
   document.getElementById('pc-date').value = rec.date || '';
   document.getElementById('pc-purpose').value = rec.purpose || '';
+  document.getElementById('pc-detail').value = rec.detail || '';
 
   pettyRows = (rec.items || []).map((item, i) => ({ id: Date.now() + i }));
   if (pettyRows.length === 0) pettyRows = [{ id: Date.now() }];
@@ -743,6 +772,7 @@ function buildPettyCashDoc(data) {
         <div class="print-info-row"><span class="print-label">ผู้เบิก:</span><span>${escapeHtml(data.requester)}</span></div>
         <div class="print-info-row"><span class="print-label">วันที่:</span><span>${formatDate(data.date)}</span></div>
         <div class="print-info-row" style="grid-column:1/-1"><span class="print-label">วัตถุประสงค์:</span><span>${escapeHtml(data.purpose)}</span></div>
+        ${data.detail ? `<div class="print-info-row" style="grid-column:1/-1"><span class="print-label">รายละเอียด:</span><span>${escapeHtml(data.detail)}</span></div>` : ''}
       </div>
       <table>
         <thead><tr><th style="width:40px">ลำดับ</th><th>รายการ</th><th>หมวดหมู่</th><th style="text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
@@ -826,7 +856,7 @@ function exportHistoryPDF() {
     <div class="print-doc">
       ${companyLetterhead()}
       <h1>รายงานประวัติรายการทั้งหมด</h1>
-      <p class="print-subtitle">สร้างเมื่อ: ${new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <p class="print-subtitle">สร้างเมื่อ: ${new Date().toLocaleDateString('th-TH-u-ca-gregory', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
       <hr class="print-divider" />
       <table>
         <thead>
@@ -881,7 +911,7 @@ function formatDate(val) {
   if (!val) return '-';
   const d = new Date(val);
   if (isNaN(d)) return val;
-  return d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString('th-TH-u-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 // แปลงตัวเลขเป็นข้อความจำนวนเงินภาษาไทย เช่น 23000 -> "สองหมื่นสามพันบาทถ้วน"
@@ -929,7 +959,7 @@ function thaiBahtText(amount) {
 }
 
 function todayThaiDate() {
-  return new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+  return new Date().toLocaleDateString('th-TH-u-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function statusBadge(status) {

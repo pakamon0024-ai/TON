@@ -27,6 +27,29 @@
   --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ===== Theme: White (light) — สลับได้จากปุ่มบน topbar ===== */
+:root[data-theme="light"] {
+  --bg-primary: #f4f5fa;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-hover: #eef0f7;
+  --bg-input: #f4f5fa;
+  --border: #dde1ee;
+  --border-light: #c8cee2;
+  --text-primary: #1c2033;
+  --text-secondary: #4d5570;
+  --text-muted: #8790a8;
+  --shadow: 0 4px 24px rgba(30,40,80,0.08);
+  --shadow-card: 0 2px 16px rgba(30,40,80,0.06);
+}
+
+/* หน้าเคลมประกันภัย (#page-claims) ใช้ชุดสีของตัวเอง (--ic-*) แยกต่างหาก
+   ต้อง override เป็นชุดสว่างด้วย ไม่งั้นการ์ด/ตารางในหน้านี้จะยังมืดอยู่ */
+:root[data-theme="light"] #page-claims {
+  --ic-bg2: #ffffff; --ic-bg3: #f4f5fa; --ic-border: #dde1ee;
+  --ic-text: #1c2033; --ic-muted: #6b7280;
+}
+
 /* ===== Reset ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { font-size: 15px; scroll-behavior: smooth; }
@@ -238,6 +261,12 @@ body {
 .menu-toggle:hover { color: var(--text-primary); }
 .page-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
 .topbar-right { display: flex; align-items: center; gap: 16px; }
+.theme-toggle {
+  background: var(--bg-card); border: 1px solid var(--border); color: var(--text-secondary);
+  font-size: 1rem; line-height: 1; cursor: pointer; padding: 7px 10px; border-radius: 30px;
+  transition: all var(--transition);
+}
+.theme-toggle:hover { border-color: var(--accent-primary); color: var(--text-primary); }
 .current-date { font-size: 0.82rem; color: var(--text-muted); }
 .user-badge {
   display: flex; align-items: center; gap: 8px;

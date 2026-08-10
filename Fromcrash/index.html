@@ -16,6 +16,13 @@
     href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap"
     rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // ตั้งค่า theme ก่อนวาดหน้าจอ เพื่อไม่ให้กระพริบธีมเดิมก่อนสลับ
+    (function () {
+      var t = localStorage.getItem('finflow_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script
@@ -108,6 +115,10 @@
         <span class="nav-icon">🚧</span>
         <span>บันทึกอุบัติเหตุ</span>
       </a>
+      <a href="#" class="nav-item" data-page="issues" onclick="showPage('issues')">
+        <span class="nav-icon">🛠️</span>
+        <span>บันทึกปัญหาการทำงาน</span>
+      </a>
       <a href="#" class="nav-item" data-page="users" id="nav-users" onclick="showPage('users')" style="display:none;">
         <span class="nav-icon">👥</span>
         <span>จัดการผู้ใช้</span>
@@ -150,6 +161,7 @@
         <div class="page-title" id="pageTitle">ภาพรวมระบบ</div>
       </div>
       <div class="topbar-right">
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
         <div class="current-date" id="currentDate"></div>
         <div class="user-badge" id="userBadge" onclick="authToggleUserMenu()">
           <span class="user-avatar">👤</span>
@@ -275,6 +287,11 @@
               <label>วัตถุประสงค์</label>
               <input type="text" id="pc-purpose" value="ค่าใช้จ่ายในการดำเนินงาน" placeholder="วัตถุประสงค์" />
             </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:18px;">
+            <label>รายละเอียด</label>
+            <textarea id="pc-detail" rows="2" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
           </div>
 
           <!-- Items Table -->
@@ -533,7 +550,21 @@
           </div>
         </div>
 
+        <div class="subtabs">
+          <button class="subtab active" id="md-tab-driver" onclick="mdSwitchTopic('driver')">🧑‍✈️ พนักงานขับรถ</button>
+          <button class="subtab" id="md-tab-vehicle" onclick="mdSwitchTopic('vehicle')">🚚 ทะเบียนรถ</button>
+          <button class="subtab" id="md-tab-bu" onclick="mdSwitchTopic('bu')">🏭 หน่วยงาน</button>
+          <button class="subtab" id="md-tab-insurer" onclick="mdSwitchTopic('insurer')">🛡️ บริษัทประกัน</button>
+          <button class="subtab" id="md-tab-yard" onclick="mdSwitchTopic('yard')">🅿️ ลานจอด</button>
+          <button class="subtab" id="md-tab-pattern" onclick="mdSwitchTopic('pattern')">💥 ลักษณะการเกิดเหตุ</button>
+          <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
+          <button class="subtab" id="md-tab-customer" onclick="mdSwitchTopic('customer')">🏢 ชื่อลูกค้า</button>
+          <button class="subtab" id="md-tab-category" onclick="mdSwitchTopic('category')">🏷️ หมวดหมู่ค่าใช้จ่าย</button>
+          <button class="subtab" id="md-tab-telegram" onclick="mdSwitchTopic('telegram')">🔔 แจ้งเตือน Telegram</button>
+        </div>
+
         <!-- Drivers -->
+        <div class="subpage active" id="md-subpage-driver">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🧑‍✈️ พนักงานขับรถ</h3>
@@ -580,8 +611,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Vehicles -->
+        <div class="subpage" id="md-subpage-vehicle">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🚚 ทะเบียนรถ</h3>
@@ -632,8 +665,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Business Units -->
+        <div class="subpage" id="md-subpage-bu">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🏭 หน่วยงาน</h3>
@@ -656,8 +691,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Insurers -->
+        <div class="subpage" id="md-subpage-insurer">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🛡️ บริษัทประกัน</h3>
@@ -680,8 +717,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Yards -->
+        <div class="subpage" id="md-subpage-yard">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🅿️ ลานจอด</h3>
@@ -704,8 +743,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Incident Patterns -->
+        <div class="subpage" id="md-subpage-pattern">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>💥 ลักษณะการเกิดเหตุ</h3>
@@ -728,8 +769,36 @@
             </table>
           </div>
         </div>
+        </div>
+
+        <!-- Issue Topics -->
+        <div class="subpage" id="md-subpage-topic">
+        <div class="form-card" style="margin-bottom:24px;">
+          <div class="items-header">
+            <h3>🛠️ หัวข้อปัญหาการทำงาน</h3>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>หัวข้อปัญหา</label>
+              <input type="text" id="md-topic-name" placeholder="เช่น ระบบ GPS ขัดข้อง" onkeydown="if(event.key==='Enter') addIssueTopicDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addIssueTopicDB()">+ เพิ่มหัวข้อปัญหา</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead><tr><th>หัวข้อปัญหา</th><th>จัดการ</th></tr></thead>
+              <tbody id="md-topic-body">
+                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
 
         <!-- Customers -->
+        <div class="subpage" id="md-subpage-customer">
         <div class="form-card" style="margin-bottom:24px;">
           <div class="items-header">
             <h3>🏢 ชื่อลูกค้า</h3>
@@ -765,8 +834,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Expense Categories -->
+        <div class="subpage" id="md-subpage-category">
         <div class="form-card">
           <div class="items-header">
             <h3>🏷️ หมวดหมู่ค่าใช้จ่าย</h3>
@@ -797,8 +868,10 @@
             </table>
           </div>
         </div>
+        </div>
 
         <!-- Telegram Notifications -->
+        <div class="subpage" id="md-subpage-telegram">
         <div class="form-card" style="margin-top:24px;">
           <div class="items-header">
             <h3>🔔 แจ้งเตือน Telegram</h3>
@@ -824,6 +897,7 @@
             <button class="btn-secondary" onclick="testTelegramNotification()">📨 ทดสอบส่งข้อความ</button>
             <button class="btn-danger" onclick="clearTelegramSettings()">🗑️ ลบการตั้งค่า</button>
           </div>
+        </div>
         </div>
       </div>
     </div>
@@ -1077,6 +1151,107 @@
             <div class="form-actions">
               <button class="btn-secondary" onclick="incClearForm()">🗑️ ล้างข้อมูล</button>
               <button class="btn-primary" onclick="incSaveCase()">💾 บันทึกข้อมูล</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ISSUES PAGE (บันทึกปัญหาการทำงาน) -->
+    <div class="page" id="page-issues">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">🛠️</div>
+          <div>
+            <h2>บันทึกปัญหาการทำงาน</h2>
+            <p>บันทึกและติดตามปัญหาที่เกิดขึ้นระหว่างการทำงาน พร้อมหัวข้อปัญหาที่เพิ่มเองได้</p>
+          </div>
+        </div>
+
+        <div class="subtabs">
+          <button class="subtab active" id="wi-tab-list" onclick="wiSwitchTab('list')">📋 รายการทั้งหมด</button>
+          <button class="subtab" id="wi-tab-add" onclick="wiSwitchTab('add')">➕ เพิ่มบันทึก</button>
+        </div>
+
+        <!-- LIST SUBPAGE -->
+        <div class="subpage active" id="wi-subpage-list">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>หัวข้อปัญหา</label>
+              <select id="wi-f-topic" onchange="wiRenderList()"><option value="">ทั้งหมด</option></select>
+            </div>
+            <div class="filter-group">
+              <label>สถานะ</label>
+              <select id="wi-f-status" onchange="wiRenderList()">
+                <option value="">ทั้งหมด</option>
+                <option value="รอดำเนินการ">รอดำเนินการ</option>
+                <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+              </select>
+            </div>
+            <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="wi-f-search" placeholder="หัวข้อ / ผู้แจ้ง / รายละเอียด..." oninput="wiRenderList()" /></div>
+            <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้างตัวกรอง</button>
+          </div>
+          <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+          <div class="recent-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เลขที่</th><th>วันที่แจ้ง</th><th>หัวข้อปัญหา</th><th>ผู้แจ้ง</th><th>รายละเอียด</th><th>สถานะ</th><th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="wi-list-body">
+                <tr><td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ADD SUBPAGE -->
+        <div class="subpage" id="wi-subpage-add">
+          <div class="edit-banner" id="wi-edit-banner" style="display:none;">
+            <span>✏️ กำลังแก้ไขบันทึก <strong id="wi-edit-no"></strong></span>
+            <button class="btn-secondary" onclick="wiCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+          </div>
+          <div class="form-card">
+            <div class="fieldset-title">ข้อมูลปัญหา</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>วันที่แจ้งปัญหา <span class="req">*</span></label><input type="date" id="wi-date" /></div>
+              <div class="form-group">
+                <label>หัวข้อปัญหา <span class="req">*</span></label>
+                <div style="display:flex; gap:6px;">
+                  <select id="wi-topic" style="flex:1;"><option value="">-- เลือก --</option></select>
+                  <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่" onclick="wiQuickAddTopic()">+</button>
+                </div>
+              </div>
+              <div class="form-group"><label>ผู้แจ้ง</label><input type="text" id="wi-reporter" placeholder="ชื่อผู้แจ้ง" /></div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span class="req">*</span></label>
+                <textarea class="fta" id="wi-detail" rows="3" placeholder="อธิบายรายละเอียดปัญหาที่พบ..."></textarea>
+              </div>
+            </div>
+
+            <div class="fieldset-title">การติดตามแก้ไข</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>สถานะ</label>
+                <select id="wi-status">
+                  <option value="รอดำเนินการ">รอดำเนินการ</option>
+                  <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                  <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+                </select>
+              </div>
+              <div class="form-group"><label>วันที่แก้ไขเสร็จ</label><input type="date" id="wi-resolved-date" /></div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group full" style="grid-column:1/-1;"><label>แนวทางแก้ไข / ผลการแก้ไข</label>
+                <textarea class="fta" id="wi-solution" rows="3" placeholder="บันทึกแนวทางหรือผลการแก้ไขปัญหา..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="wiClearForm()">🗑️ ล้างข้อมูล</button>
+              <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
             </div>
           </div>
         </div>
@@ -1521,6 +1696,7 @@
   <script src="masterdata.js"></script>
   <script src="masterdata-sync.js"></script>
   <script src="incidents.js"></script>
+  <script src="issues.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
   <script src="auth.js"></script>

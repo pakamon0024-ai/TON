@@ -187,9 +187,21 @@ function icDestroyChart(id) {
   if (charts[id]) { charts[id].destroy(); delete charts[id]; }
 }
 
+// สีกราฟปรับตามธีมสว่าง/มืดที่เลือกไว้ (data-theme บน <html>)
+function icChartColors() {
+  const light = document.documentElement.getAttribute('data-theme') === 'light';
+  return {
+    muted: light ? '#57606a' : '#8b949e',
+    text: light ? '#1c2033' : '#e6edf3',
+    grid: light ? '#d0d7de' : '#30363d',
+    gridDim: light ? '#d0d7de80' : '#30363d30',
+  };
+}
+
 function icRenderDash() {
   const n = claims.length, sc = [0,0,0,0,0];
   let tC = 0, tI = 0;
+  const CC = icChartColors();
   claims.forEach(c => { sc[icGetStatus(c)]++; tC += c.claimAmount || 0; tI += c.insAmount || 0; });
 
   document.getElementById('statGrid').innerHTML = `
@@ -200,7 +212,7 @@ function icRenderDash() {
     <div class="sc cp"><div class="sc-l">ประกันจ่ายรวม</div><div class="sc-v" style="font-size:19px;">${icFmtNum(tI)}</div><div class="sc-u">บาท</div></div>
     <div class="sc co"><div class="sc-l">ส่วนต่างรวม</div><div class="sc-v" style="font-size:19px;">${icFmtNum(tC - tI)}</div><div class="sc-u">บาท</div></div>
   `;
-  document.getElementById('dashUp').textContent = 'อัปเดต: ' + new Date().toLocaleString('th-TH');
+  document.getElementById('dashUp').textContent = 'อัปเดต: ' + new Date().toLocaleString('th-TH-u-ca-gregory');
 
   // Status doughnut
   icDestroyChart('cStatus');
@@ -217,7 +229,7 @@ function icRenderDash() {
     options: {
       cutout: '55%', responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'right', labels: { color:'#8b949e', font:{ family:'Sarabun', size:11 }, padding:8, boxWidth:11 } },
+        legend: { position: 'right', labels: { color:CC.muted, font:{ family:'Sarabun', size:11 }, padding:8, boxWidth:11 } },
         datalabels: {
           display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
           color: '#e6edf3', font: { family:'Sarabun', size:13, weight:'700' },
@@ -237,7 +249,7 @@ function icRenderDash() {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: { legend:{display:false}, datalabels:{ anchor:'end', align:'top', color:'#f59e0b', font:DLF, formatter:v=>v+' เคส' } },
-      scales: { x:{ticks:{color:'#8b949e',font:{family:'Sarabun'}},grid:{color:'#30363d30'}}, y:{ticks:{color:'#8b949e',font:{family:'Sarabun'}},grid:{color:'#30363d'},beginAtZero:true} },
+      scales: { x:{ticks:{color:CC.muted,font:{family:'Sarabun'}},grid:{color:CC.gridDim}}, y:{ticks:{color:CC.muted,font:{family:'Sarabun'}},grid:{color:CC.grid},beginAtZero:true} },
       layout: { padding: { top: 26 } }
     }
   });
@@ -254,7 +266,7 @@ function icRenderDash() {
   charts['cMonth'] = new Chart(document.getElementById('cMonth'), {
     type: 'bar',
     data: {
-      labels: mks.map(m => { const [y,mo] = m.split('-'); return mo + '/' + (+y + 543); }),
+      labels: mks.map(m => { const [y,mo] = m.split('-'); return mo + '/' + (+y); }),
       datasets: [
         { label:'เรียกเก็บ', data: mks.map(m => mm[m].c), backgroundColor:'#ef444422', borderColor:'#ef4444', borderWidth:2, borderRadius:4 },
         { label:'ประกันจ่าย', data: mks.map(m => mm[m].i), backgroundColor:'#22c55e22', borderColor:'#22c55e', borderWidth:2, borderRadius:4 },
@@ -263,10 +275,10 @@ function icRenderDash() {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend: { labels: { color:'#8b949e', font:{ family:'Sarabun', size:11 } } },
+        legend: { labels: { color:CC.muted, font:{ family:'Sarabun', size:11 } } },
         datalabels: { anchor:'end', align:'top', color:ctx=>ctx.datasetIndex===0?'#ef4444':'#22c55e', font:{family:'Sarabun',size:9,weight:'700'}, formatter:v=>v>0?'฿'+icShortNum(v):'' }
       },
-      scales: { x:{ticks:{color:'#8b949e',font:{family:'Sarabun'}},grid:{color:'#30363d30'}}, y:{ticks:{color:'#8b949e',font:{family:'Sarabun'},callback:v=>'฿'+icShortNum(v)},grid:{color:'#30363d'},beginAtZero:true} },
+      scales: { x:{ticks:{color:CC.muted,font:{family:'Sarabun'}},grid:{color:CC.gridDim}}, y:{ticks:{color:CC.muted,font:{family:'Sarabun'},callback:v=>'฿'+icShortNum(v)},grid:{color:CC.grid},beginAtZero:true} },
       layout: { padding: { top: 28 } }
     }
   });
@@ -282,7 +294,7 @@ function icRenderDash() {
     options: {
       indexAxis: 'y', responsive:true, maintainAspectRatio:false,
       plugins: { legend:{display:false}, datalabels:{ anchor:'end', align:'right', color:'#a855f7', font:DLF, formatter:v=>v+' เคส' } },
-      scales: { x:{ticks:{color:'#8b949e',font:{family:'Sarabun'}},grid:{color:'#30363d'},beginAtZero:true}, y:{ticks:{color:'#e6edf3',font:{family:'Sarabun',size:12}},grid:{color:'#30363d30'}} },
+      scales: { x:{ticks:{color:CC.muted,font:{family:'Sarabun'}},grid:{color:CC.grid},beginAtZero:true}, y:{ticks:{color:CC.text,font:{family:'Sarabun',size:12}},grid:{color:CC.gridDim}} },
       layout: { padding: { right: 64 } }
     }
   });
@@ -550,7 +562,7 @@ function icExportSummaryCSV() {
     if (c.insurance) im[c.insurance] = (im[c.insurance]||0)+1;
   });
   const rows = [
-    ['รายงานสรุปการเคลมประกันสินค้า'], ['สร้างเมื่อ', new Date().toLocaleString('th-TH')], [],
+    ['รายงานสรุปการเคลมประกันสินค้า'], ['สร้างเมื่อ', new Date().toLocaleString('th-TH-u-ca-gregory')], [],
     ['=== ภาพรวม ==='], ['เคสทั้งหมด',n], ['มูลค่าเรียกเก็บรวม (บาท)',tC], ['ประกันจ่ายรวม (บาท)',tI], ['ส่วนต่างรวม (บาท)',tC-tI], [],
     ['=== ตามสถานะ ==='], ['สถานะ','จำนวนเคส'], ...SIF.map((s,i) => [s.l, sc[i]]), [],
     ['=== ตามลานจอด ==='], ['ลานจอด','จำนวนเคส'], ...Object.entries(ym).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v]), [],
@@ -848,7 +860,7 @@ function icClearFbConfig() {
 // ═══════════════════════════════════════════
 function icFmtNum(n) { return (n||0).toLocaleString('th-TH', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 function icShortNum(n) { if (n>=1000000) return (n/1000000).toFixed(1)+'M'; if (n>=1000) return (n/1000).toFixed(1)+'K'; return n.toFixed(0); }
-function icFmtDate(d) { if (!d) return ''; try { const [y,m,day] = d.substring(0,10).split('-'); return `${day}/${m}/${+y+543}`; } catch { return d; } }
+function icFmtDate(d) { if (!d) return ''; try { const [y,m,day] = d.substring(0,10).split('-'); return `${day}/${m}/${+y}`; } catch { return d; } }
 function icTodayISO() { return new Date().toISOString().substring(0,10); }
 function icDownloadCSV(rows, filename) {
   const bom = '﻿';
