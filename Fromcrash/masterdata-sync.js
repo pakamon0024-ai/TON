@@ -3,7 +3,7 @@
 // employees/vehicles เก็บเป็น object คีย์ id ส่วนหน่วยงาน/ประกัน/ลานจอด/ลักษณะเหตุ
 // เป็นแค่ array ของชื่อ (string) เก็บง่ายๆ ตรงๆ ที่ path ของตัวเอง
 
-let mdEmpRef = null, mdVehRef = null, mdBuRef = null, mdInsRef = null, mdYardRef = null, mdPatRef = null, mdTopicRef = null;
+let mdEmpRef = null, mdVehRef = null, mdBuRef = null, mdInsRef = null, mdYardRef = null, mdPatRef = null, mdTopicRef = null, mdAbcRef = null;
 let mdReady = false;
 
 function mdRecordsToObj(arr) {
@@ -65,6 +65,7 @@ function mdPushIfReady() {
   mdWriteSimpleList(mdYardRef, mdYards);
   mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
   mdWriteSimpleList(mdTopicRef, mdIssueTopics);
+  mdWriteSimpleList(mdAbcRef, mdAbcStaff);
 }
 
 function mdWaitForFirebase() {
@@ -83,8 +84,10 @@ function mdApplySimpleList(kind, arr) {
   if (kind === 'yard') { mdYards = arr; saveYardsDB(); renderYardsTable(); }
   if (kind === 'pattern') { mdIncidentPatterns = arr; savePatternsDB(); renderIncidentPatternsTable(); }
   if (kind === 'topic') { mdIssueTopics = arr; saveIssueTopicsDB(); renderIssueTopicsTable(); }
+  if (kind === 'abcstaff') { mdAbcStaff = arr; saveAbcStaffDB(); renderAbcStaffTable(); }
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
 }
 
 async function mdInit() {
@@ -98,9 +101,10 @@ async function mdInit() {
     mdYardRef = ref(fbDb, '/yards');
     mdPatRef = ref(fbDb, '/incidentPatterns');
     mdTopicRef = ref(fbDb, '/issueTopics');
+    mdAbcRef = ref(fbDb, '/abcStaff');
 
-    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap, topicSnap] = await Promise.all([
-      get(mdEmpRef), get(mdVehRef), get(mdBuRef), get(mdInsRef), get(mdYardRef), get(mdPatRef), get(mdTopicRef),
+    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap, topicSnap, abcSnap] = await Promise.all([
+      get(mdEmpRef), get(mdVehRef), get(mdBuRef), get(mdInsRef), get(mdYardRef), get(mdPatRef), get(mdTopicRef), get(mdAbcRef),
     ]);
 
     if (empSnap.exists()) mdApplyServerDrivers(mdObjToRecords(empSnap.val()));
@@ -110,6 +114,7 @@ async function mdInit() {
     if (yardSnap.exists()) mdApplySimpleList('yard', yardSnap.val() || []);
     if (patSnap.exists()) mdApplySimpleList('pattern', patSnap.val() || []);
     if (topicSnap.exists()) mdApplySimpleList('topic', topicSnap.val() || []);
+    if (abcSnap.exists()) mdApplySimpleList('abcstaff', abcSnap.val() || []);
     mdReady = true;
 
     if (!empSnap.exists() && mdDrivers.length > 0) await mdWriteEmployees();
@@ -119,6 +124,7 @@ async function mdInit() {
     if (!yardSnap.exists() && mdYards.length > 0) await mdWriteSimpleList(mdYardRef, mdYards);
     if (!patSnap.exists() && mdIncidentPatterns.length > 0) await mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
     if (!topicSnap.exists() && mdIssueTopics.length > 0) await mdWriteSimpleList(mdTopicRef, mdIssueTopics);
+    if (!abcSnap.exists() && mdAbcStaff.length > 0) await mdWriteSimpleList(mdAbcRef, mdAbcStaff);
 
     onValue(mdEmpRef, snap => { if (snap.exists()) mdApplyServerDrivers(mdObjToRecords(snap.val())); });
     onValue(mdVehRef, snap => { if (snap.exists()) mdApplyServerVehicles(mdObjToRecords(snap.val())); });
@@ -127,6 +133,7 @@ async function mdInit() {
     onValue(mdYardRef, snap => { if (snap.exists()) mdApplySimpleList('yard', snap.val() || []); });
     onValue(mdPatRef, snap => { if (snap.exists()) mdApplySimpleList('pattern', snap.val() || []); });
     onValue(mdTopicRef, snap => { if (snap.exists()) mdApplySimpleList('topic', snap.val() || []); });
+    onValue(mdAbcRef, snap => { if (snap.exists()) mdApplySimpleList('abcstaff', snap.val() || []); });
   } catch (e) {
     console.warn('mdInit error', e);
   }

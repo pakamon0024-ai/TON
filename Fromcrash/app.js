@@ -89,7 +89,8 @@ function showPage(page) {
     masterdata: 'ฐานข้อมูลหลัก',
     users: 'จัดการผู้ใช้',
     incidents: 'บันทึกอุบัติเหตุ',
-    issues: 'บันทึกปัญหาการทำงาน'
+    issues: 'บันทึกปัญหาการทำงาน',
+    alcohol: 'บันทึกการเป่าวัดแอลกอฮอล์'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
@@ -100,6 +101,7 @@ function showPage(page) {
   if (page === 'users' && typeof renderUsersPage === 'function') renderUsersPage();
   if (page === 'incidents' && typeof incOnPageShown === 'function') incOnPageShown();
   if (page === 'issues' && typeof wiOnPageShown === 'function') wiOnPageShown();
+  if (page === 'alcohol' && typeof alcOnPageShown === 'function') alcOnPageShown();
   if (page === 'petty-cash') refreshCategoryDropdowns('pc');
   if (page === 'approval') refreshCategoryDropdowns('ap');
 

@@ -478,6 +478,42 @@ function renderIssueTopicsTable() {
   `).join('');
 }
 
+// ===== พนักงานลาน ABC (สำหรับ "บันทึกการเป่าวัดแอลกอฮอล์" - alcohol.js) =====
+// แยกรายชื่อออกจากพนักงานขับรถหลัก เพราะบันทึกเฉพาะพนักงานลาน ABC ลานเดียว
+// (เมนูบันทึกอื่นๆ เช่น อุบัติเหตุ ใช้รายชื่อพนักงานขับรถทุกลาน)
+let mdAbcStaff = JSON.parse(localStorage.getItem('finflow_abc_staff_db') || '[]');
+function saveAbcStaffDB() { localStorage.setItem('finflow_abc_staff_db', JSON.stringify(mdAbcStaff)); }
+
+function addAbcStaffDB() {
+  const input = document.getElementById('md-abcstaff-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdAbcStaff.includes(name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
+  mdAbcStaff.push(name);
+  saveAbcStaffDB();
+  input.value = ''; input.focus();
+  renderAbcStaffTable();
+  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มพนักงานแล้ว', 'success');
+}
+function deleteAbcStaffDB(name) {
+  mdAbcStaff = mdAbcStaff.filter(n => n !== name);
+  saveAbcStaffDB();
+  renderAbcStaffTable();
+  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function renderAbcStaffTable() {
+  const tbody = document.getElementById('md-abcstaff-body');
+  if (!tbody) return;
+  if (mdAbcStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdAbcStaff.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteAbcStaffDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
 // ===== หมวดหมู่ค่าใช้จ่าย =====
 // เก็บเป็น array ของชื่อ (string) ที่คีย์ 'finflow_categories_db' ใน localStorage
 // ฟอร์มเงินสดย่อย/ขออนุมัติ (app.js: categoryOptions()) จะอ่านจากคีย์นี้โดยตรงทุกครั้ง
@@ -526,7 +562,7 @@ function renderCategoriesTable() {
 }
 
 // ===== เลือกหัวข้อที่จะบันทึก (แสดงเฉพาะส่วนที่เลือก) =====
-const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'customer', 'category', 'telegram'];
+const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'abcstaff', 'customer', 'category', 'telegram'];
 function mdSwitchTopic(topic) {
   MD_TOPICS.forEach(t => {
     document.getElementById(`md-tab-${t}`).classList.toggle('active', t === topic);
@@ -546,10 +582,12 @@ function renderMasterData() {
   renderYardsTable();
   renderIncidentPatternsTable();
   renderIssueTopicsTable();
+  renderAbcStaffTable();
   renderCategoriesTable();
   if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
 }
 
 document.addEventListener('DOMContentLoaded', renderMasterData);

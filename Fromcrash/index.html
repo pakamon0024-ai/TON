@@ -119,6 +119,10 @@
         <span class="nav-icon">🛠️</span>
         <span>บันทึกปัญหาการทำงาน</span>
       </a>
+      <a href="#" class="nav-item" data-page="alcohol" onclick="showPage('alcohol')">
+        <span class="nav-icon">🍃</span>
+        <span>เป่าวัดแอลกอฮอล์</span>
+      </a>
       <a href="#" class="nav-item" data-page="users" id="nav-users" onclick="showPage('users')" style="display:none;">
         <span class="nav-icon">👥</span>
         <span>จัดการผู้ใช้</span>
@@ -558,6 +562,7 @@
           <button class="subtab" id="md-tab-yard" onclick="mdSwitchTopic('yard')">🅿️ ลานจอด</button>
           <button class="subtab" id="md-tab-pattern" onclick="mdSwitchTopic('pattern')">💥 ลักษณะการเกิดเหตุ</button>
           <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
+          <button class="subtab" id="md-tab-abcstaff" onclick="mdSwitchTopic('abcstaff')">🍃 พนักงานลาน ABC</button>
           <button class="subtab" id="md-tab-customer" onclick="mdSwitchTopic('customer')">🏢 ชื่อลูกค้า</button>
           <button class="subtab" id="md-tab-category" onclick="mdSwitchTopic('category')">🏷️ หมวดหมู่ค่าใช้จ่าย</button>
           <button class="subtab" id="md-tab-telegram" onclick="mdSwitchTopic('telegram')">🔔 แจ้งเตือน Telegram</button>
@@ -790,6 +795,33 @@
             <table class="data-table">
               <thead><tr><th>หัวข้อปัญหา</th><th>จัดการ</th></tr></thead>
               <tbody id="md-topic-body">
+                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        </div>
+
+        <!-- ABC Yard Staff (สำหรับเมนูเป่าวัดแอลกอฮอล์ - แยกจากพนักงานขับรถหลัก) -->
+        <div class="subpage" id="md-subpage-abcstaff">
+        <div class="form-card" style="margin-bottom:24px;">
+          <div class="items-header">
+            <h3>🍃 พนักงานลาน ABC</h3>
+          </div>
+          <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;">รายชื่อนี้ใช้เฉพาะเมนู "เป่าวัดแอลกอฮอล์" แยกต่างหากจากรายชื่อพนักงานขับรถหลัก เพราะบันทึกเฉพาะพนักงานลาน ABC ลานเดียว</p>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>ชื่อพนักงาน</label>
+              <input type="text" id="md-abcstaff-name" placeholder="ชื่อ-นามสกุล" onkeydown="if(event.key==='Enter') addAbcStaffDB()" />
+            </div>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start;">
+            <button class="btn-primary" onclick="addAbcStaffDB()">+ เพิ่มพนักงาน</button>
+          </div>
+          <div class="recent-table-wrap" style="margin-top:16px;">
+            <table class="data-table">
+              <thead><tr><th>ชื่อพนักงาน</th><th>จัดการ</th></tr></thead>
+              <tbody id="md-abcstaff-body">
                 <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
               </tbody>
             </table>
@@ -1258,6 +1290,100 @@
       </div>
     </div>
 
+    <!-- ALCOHOL TEST PAGE (บันทึกการเป่าวัดแอลกอฮอล์ - เฉพาะพนักงานลาน ABC) -->
+    <div class="page" id="page-alcohol">
+      <div class="form-section">
+        <div class="form-header">
+          <div class="form-header-icon">🍃</div>
+          <div>
+            <h2>บันทึกการเป่าวัดแอลกอฮอล์</h2>
+            <p>บันทึกผลการตรวจวัดแอลกอฮอล์ของพนักงานลาน ABC (รายชื่อแยกต่างหากจากลานอื่น)</p>
+          </div>
+        </div>
+
+        <div class="subtabs">
+          <button class="subtab active" id="alc-tab-list" onclick="alcSwitchTab('list')">📋 รายการทั้งหมด</button>
+          <button class="subtab" id="alc-tab-add" onclick="alcSwitchTab('add')">➕ เพิ่มบันทึก</button>
+        </div>
+
+        <!-- LIST SUBPAGE -->
+        <div class="subpage active" id="alc-subpage-list">
+          <div class="filter-bar">
+            <div class="filter-group"><label>ช่วงวันที่ (เริ่ม)</label><input type="date" class="fc" id="alc-f-datefrom" onchange="alcRenderList()" /></div>
+            <div class="filter-group"><label>ช่วงวันที่ (ถึง)</label><input type="date" class="fc" id="alc-f-dateto" onchange="alcRenderList()" /></div>
+            <div class="filter-group">
+              <label>พนักงาน</label>
+              <select id="alc-f-employee" onchange="alcRenderList()"><option value="">ทั้งหมด</option></select>
+            </div>
+            <div class="filter-group">
+              <label>ผลการตรวจ</label>
+              <select id="alc-f-result" onchange="alcRenderList()">
+                <option value="">ทั้งหมด</option>
+                <option value="ผ่าน">ผ่าน</option>
+                <option value="ไม่ผ่าน">ไม่ผ่าน</option>
+              </select>
+            </div>
+            <button class="btn-secondary" onclick="alcClearListFilters()">🔄 ล้างตัวกรอง</button>
+          </div>
+          <div class="ctxt" id="alc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+          <div class="recent-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>ค่าที่วัดได้ (mg%)</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="alc-list-body">
+                <tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ADD SUBPAGE -->
+        <div class="subpage" id="alc-subpage-add">
+          <div class="edit-banner" id="alc-edit-banner" style="display:none;">
+            <span>✏️ กำลังแก้ไขบันทึก <strong id="alc-edit-no"></strong></span>
+            <button class="btn-secondary" onclick="alcCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+          </div>
+          <div class="form-card">
+            <div class="fieldset-title">ข้อมูลการตรวจ</div>
+            <div class="form-row-3">
+              <div class="form-group"><label>วันที่ตรวจ <span class="req">*</span></label><input type="date" id="alc-date" /></div>
+              <div class="form-group"><label>เวลา</label><input type="time" id="alc-time" /></div>
+              <div class="form-group">
+                <label>ชื่อพนักงาน (ลาน ABC) <span class="req">*</span></label>
+                <div style="display:flex; gap:6px;">
+                  <select id="alc-employee" style="flex:1;"><option value="">-- เลือก --</option></select>
+                  <button type="button" class="btn-secondary" title="เพิ่มพนักงานใหม่" onclick="alcQuickAddEmployee()">+</button>
+                </div>
+              </div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group"><label>ค่าที่วัดได้ (mg%)</label><input type="number" step="0.01" min="0" id="alc-level" placeholder="0.00" /></div>
+              <div class="form-group"><label>ผลการตรวจ</label>
+                <select id="alc-result">
+                  <option value="ผ่าน">ผ่าน</option>
+                  <option value="ไม่ผ่าน">ไม่ผ่าน</option>
+                </select>
+              </div>
+              <div class="form-group"><label>ผู้ตรวจ</label><input type="text" id="alc-tester" placeholder="ชื่อผู้ตรวจ" /></div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
+                <textarea class="fta" id="alc-note" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="alcClearForm()">🗑️ ล้างข้อมูล</button>
+              <button class="btn-primary" onclick="alcSaveCase()">💾 บันทึกข้อมูล</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- CLAIMS PAGE (เคลมประกันภัย) -->
     <div class="page" id="page-claims">
       <div id="ic-hdr" class="ic-toprow">
@@ -1697,6 +1823,7 @@
   <script src="masterdata-sync.js"></script>
   <script src="incidents.js"></script>
   <script src="issues.js"></script>
+  <script src="alcohol.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
   <script src="auth.js"></script>
