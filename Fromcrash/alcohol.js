@@ -11,6 +11,8 @@ const ALC_FIXED_LEVEL = 0; // ค่าตั้งต้นของช่อ�
 // ลำดับแรก (ยังไม่เป่า) ถูก fix ไว้เป็นค่าเริ่มต้นของทั้ง 2 รอบ (ขา / ขากลับ)
 const ALC_RESULT_OPTIONS = ['ยังไม่เป่า', 'ผ่าน', 'ไม่ผ่าน', 'ขาด/ลา', 'ต่อเนื่อง'];
 const ALC_DOW_SHORT_TH = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
+const ALC_MONTH_SHORT_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+const ALC_MONTH_FULL_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
 let alcTests = JSON.parse(localStorage.getItem('finflow_alcohol_tests') || '[]');
 let alcRef = null;
@@ -20,7 +22,7 @@ function alcSave() { localStorage.setItem('finflow_alcohol_tests', JSON.stringif
 
 // ===== Sub-tabs =====
 function alcSwitchTab(tab) {
-  ['list', 'add', 'summary'].forEach(t => {
+  ['list', 'add', 'summary', 'daily'].forEach(t => {
     document.getElementById(`alc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`alc-subpage-${t}`).classList.toggle('active', t === tab);
   });
@@ -34,6 +36,11 @@ function alcSwitchTab(tab) {
     const monthEl = document.getElementById('alc-summary-month');
     if (monthEl && !monthEl.value) monthEl.value = new Date().toISOString().substring(0, 7);
     alcRenderSummary();
+  }
+  if (tab === 'daily') {
+    const monthEl = document.getElementById('alc-daily-month');
+    if (monthEl && !monthEl.value) monthEl.value = new Date().toISOString().substring(0, 7);
+    alcRenderDailyReport();
   }
 }
 
@@ -172,6 +179,7 @@ function alcSaveRoster() {
   alcRenderList();
   alcRenderRoster();
   alcRenderSummary();
+  alcRenderDailyReport();
   showToast(`✅ บันทึกผลตรวจ ${rows.length} คนแล้ว`, 'success');
   if (typeof sendTelegramNotification === 'function') {
     sendTelegramNotification(
@@ -198,6 +206,7 @@ function alcDeleteCase(id) {
   alcRenderList();
   alcRenderRoster();
   alcRenderSummary();
+  alcRenderDailyReport();
   showToast('ลบแล้ว', 'warning');
 }
 
@@ -376,6 +385,105 @@ function alcExportSummaryExcel() {
   XLSX.writeFile(wb, `สรุปเป่าแอลกอฮอล์_${monthVal}.xlsx`);
 }
 
+// ===== รายงานตัวประจำวัน (จำนวนพนักงาน/มาทำงาน/ตรวจแล้ว/% ฯลฯ นับจากผลตรวจรอบ "ขาไป" ของทุกคนต่อวัน) =====
+function alcDailyMonthValue() {
+  return document.getElementById('alc-daily-month')?.value || new Date().toISOString().substring(0, 7);
+}
+
+function alcDailyReportData(monthVal) {
+  const [y, m] = monthVal.split('-').map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const totalStaff = (mdAbcStaff || []).length;
+
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const day = i + 1;
+    const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const dow = new Date(y, m - 1, day).getDay();
+    const dayRecords = alcTests.filter(t => t.date === dateStr);
+
+    const countOf = result => dayRecords.filter(r => (r.resultOut || r.result) === result).length;
+    const leaveAbsent = countOf('ขาด/ลา');
+    const continuous = countOf('ต่อเนื่อง');
+    const passed = countOf('ผ่าน');
+    const failed = countOf('ไม่ผ่าน');
+    const checked = passed + failed;
+    const atWork = totalStaff - leaveAbsent;
+    const notChecked = Math.max(0, atWork - checked - continuous);
+    const pct = atWork > 0 ? Math.round((checked + continuous) / atWork * 100) : 0;
+
+    return {
+      day, dow, dateStr, hasData: dayRecords.length > 0,
+      totalStaff, atWork, checked, pct, notChecked, continuous, leaveAbsent, passed, failed,
+    };
+  });
+}
+
+function alcRenderDailyReport() {
+  const wrap = document.getElementById('alc-daily-table-wrap');
+  if (!wrap) return;
+  const monthVal = alcDailyMonthValue();
+  const [y, m] = monthVal.split('-').map(Number);
+  const rows = alcDailyReportData(monthVal);
+
+  if (!mdAbcStaff || mdAbcStaff.length === 0) {
+    wrap.innerHTML = '<p class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่หน้า "เพิ่มบันทึก"</p>';
+    return;
+  }
+
+  const bodyRows = rows.map(r => {
+    if (!r.hasData) {
+      return `<tr class="alc-daily-empty"><td>${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}</td><td colspan="9"></td></tr>`;
+    }
+    return `
+      <tr>
+        <td>${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}</td>
+        <td>${r.totalStaff}</td>
+        <td>${r.atWork}</td>
+        <td class="alc-daily-checked">${r.checked}</td>
+        <td><span class="alc-daily-pct">${r.pct}%</span></td>
+        <td>${r.notChecked}</td>
+        <td>${r.continuous}</td>
+        <td>${r.leaveAbsent}</td>
+        <td>${r.passed}</td>
+        <td>${r.failed}</td>
+      </tr>
+    `;
+  }).join('');
+
+  wrap.innerHTML = `
+    <table class="data-table alc-daily-table">
+      <caption>รายงานการตรวจสอบแอลกอฮอล์ รายงานตัวประจำวัน ${ALC_MONTH_FULL_TH[m - 1]} ${y}</caption>
+      <thead>
+        <tr>
+          <th>วันที่</th><th>จำนวน<br>พนักงาน</th><th>พนักงานมา<br>ทำงาน</th><th>ตรวจแล้ว</th><th>%</th>
+          <th>ไม่ได้<br>ตรวจ</th><th>ต่อเนื่อง</th><th>ขาด/ลา</th><th>ผ่าน</th><th>ไม่ผ่าน</th>
+        </tr>
+      </thead>
+      <tbody>${bodyRows}</tbody>
+    </table>
+  `;
+}
+
+function alcExportDailyReportExcel() {
+  const monthVal = alcDailyMonthValue();
+  const [y, m] = monthVal.split('-').map(Number);
+  const rows = alcDailyReportData(monthVal);
+  if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
+
+  const sheetRows = [
+    [`รายงานการตรวจสอบแอลกอฮอล์ รายงานตัวประจำวัน ${ALC_MONTH_FULL_TH[m - 1]} ${y}`],
+    ['วันที่', 'จำนวนพนักงาน', 'พนักงานมาทำงาน', 'ตรวจแล้ว', '%', 'ไม่ได้ตรวจ', 'ต่อเนื่อง', 'ขาด/ลา', 'ผ่าน', 'ไม่ผ่าน'],
+    ...rows.map(r => r.hasData
+      ? [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, r.totalStaff, r.atWork, r.checked, `${r.pct}%`, r.notChecked, r.continuous, r.leaveAbsent, r.passed, r.failed]
+      : [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, '', '', '', '', '', '', '', '', '']),
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(sheetRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'รายงานประจำวัน');
+  XLSX.writeFile(wb, `รายงานประจำวันแอลกอฮอล์_${monthVal}.xlsx`);
+}
+
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function alcRecordsToObj(arr) {
   const o = {};
@@ -393,6 +501,7 @@ function alcApplyServer(serverTests) {
   alcRenderList();
   alcRenderRoster();
   alcRenderSummary();
+  alcRenderDailyReport();
 }
 async function alcWriteFB() {
   if (!alcRef) return;
