@@ -809,10 +809,19 @@
             <h3>🍃 พนักงานลาน ABC</h3>
           </div>
           <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;">รายชื่อนี้ใช้เฉพาะเมนู "เป่าวัดแอลกอฮอล์" แยกต่างหากจากรายชื่อพนักงานขับรถหลัก เพราะบันทึกเฉพาะพนักงานลาน ABC ลานเดียว</p>
+          <div class="filter-bar" style="margin-bottom:14px;">
+            <button class="btn-secondary" onclick="downloadAbcStaffTemplate()">📄 Template Excel</button>
+            <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                style="display:none" onchange="importAbcStaffExcel(event)"></label>
+          </div>
           <div class="form-row-2">
             <div class="form-group">
               <label>ชื่อพนักงาน</label>
               <input type="text" id="md-abcstaff-name" placeholder="ชื่อ-นามสกุล" onkeydown="if(event.key==='Enter') addAbcStaffDB()" />
+            </div>
+            <div class="form-group">
+              <label>หน่วยงาน</label>
+              <input type="text" id="md-abcstaff-bu" placeholder="เช่น ABC" onkeydown="if(event.key==='Enter') addAbcStaffDB()" />
             </div>
           </div>
           <div class="form-actions" style="justify-content:flex-start;">
@@ -820,9 +829,9 @@
           </div>
           <div class="recent-table-wrap" style="margin-top:16px;">
             <table class="data-table">
-              <thead><tr><th>ชื่อพนักงาน</th><th>จัดการ</th></tr></thead>
+              <thead><tr><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th>จัดการ</th></tr></thead>
               <tbody id="md-abcstaff-body">
-                <tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                <tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>
               </tbody>
             </table>
           </div>
@@ -1330,7 +1339,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>ค่าที่วัดได้ (mg%)</th><th>ผลการตรวจ</th><th>ผู้ตรวจ</th><th>จัดการ</th>
+                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>หน่วยงาน</th><th>ค่าที่วัดได้ (มก.)</th><th>ผลการตรวจ</th><th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="alc-list-body">
@@ -1340,44 +1349,40 @@
           </div>
         </div>
 
-        <!-- ADD SUBPAGE -->
+        <!-- ADD SUBPAGE: บันทึกผลตรวจรายวัน — แสดงพนักงานลาน ABC ทุกคนให้เลือกผลทีละคน -->
         <div class="subpage" id="alc-subpage-add">
-          <div class="edit-banner" id="alc-edit-banner" style="display:none;">
-            <span>✏️ กำลังแก้ไขบันทึก <strong id="alc-edit-no"></strong></span>
-            <button class="btn-secondary" onclick="alcCancelEdit()">✕ ยกเลิกการแก้ไข</button>
-          </div>
           <div class="form-card">
-            <div class="fieldset-title">ข้อมูลการตรวจ</div>
+            <div class="fieldset-title">บันทึกผลตรวจประจำวัน</div>
             <div class="form-row-3">
-              <div class="form-group"><label>วันที่ตรวจ <span class="req">*</span></label><input type="date" id="alc-date" /></div>
-              <div class="form-group"><label>เวลา</label><input type="time" id="alc-time" /></div>
               <div class="form-group">
-                <label>ชื่อพนักงาน (ลาน ABC) <span class="req">*</span></label>
-                <div style="display:flex; gap:6px;">
-                  <select id="alc-employee" style="flex:1;"><option value="">-- เลือก --</option></select>
-                  <button type="button" class="btn-secondary" title="เพิ่มพนักงานใหม่" onclick="alcQuickAddEmployee()">+</button>
-                </div>
+                <label>วันที่ตรวจ <span class="req">*</span></label>
+                <input type="date" id="alc-roster-date" onchange="alcRenderRoster()" />
+              </div>
+              <div class="form-group">
+                <label>ค้นหาพนักงาน</label>
+                <input type="text" id="alc-roster-search" placeholder="พิมพ์ชื่อพนักงาน..." oninput="alcFilterRosterRows()" />
+              </div>
+              <div class="form-group">
+                <label>&nbsp;</label>
+                <button type="button" class="btn-secondary" style="align-self:flex-start;" onclick="alcQuickAddEmployee()">+ เพิ่มพนักงานใหม่</button>
               </div>
             </div>
-            <div class="form-row-3">
-              <div class="form-group"><label>ค่าที่วัดได้ (mg%)</label><input type="number" step="0.01" min="0" id="alc-level" placeholder="0.00" /></div>
-              <div class="form-group"><label>ผลการตรวจ</label>
-                <select id="alc-result">
-                  <option value="ผ่าน">ผ่าน</option>
-                  <option value="ไม่ผ่าน">ไม่ผ่าน</option>
-                </select>
-              </div>
-              <div class="form-group"><label>ผู้ตรวจ</label><input type="text" id="alc-tester" placeholder="ชื่อผู้ตรวจ" /></div>
-            </div>
-            <div class="form-row-3">
-              <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
-                <textarea class="fta" id="alc-note" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
-              </div>
+            <p class="readonly-hint">เวลาบันทึกจะลงอัตโนมัติตามเวลาจริงตอนกดบันทึก ไม่ต้องเลือกเอง · ค่าที่วัดได้ตั้งไว้คงที่ 0 มก. · หมายเหตุแก้ไขได้ทีละคน</p>
+            <div class="recent-table-wrap" style="margin-top:10px;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width:40px">ลำดับ</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th style="width:140px">ผลการตรวจ</th><th style="width:110px">ค่าที่วัดได้ (มก.)</th><th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+                <tbody id="alc-roster-body">
+                  <tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                </tbody>
+              </table>
             </div>
 
             <div class="form-actions">
-              <button class="btn-secondary" onclick="alcClearForm()">🗑️ ล้างข้อมูล</button>
-              <button class="btn-primary" onclick="alcSaveCase()">💾 บันทึกข้อมูล</button>
+              <button class="btn-primary" onclick="alcSaveRoster()">💾 บันทึกผลตรวจทั้งหมด</button>
             </div>
           </div>
         </div>

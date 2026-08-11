@@ -32,6 +32,14 @@ function mdApplyServerVehicles(serverVehicles) {
   updatePlateDatalist();
 }
 
+function mdApplyServerAbcStaff(serverAbcStaff) {
+  // ข้อมูลเก่าบน Firebase อาจยังเป็น array ของชื่อ string เฉยๆ (ก่อนเพิ่มฟิลด์หน่วยงาน) แปลงให้เป็น record
+  mdAbcStaff = (serverAbcStaff || []).map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
+  saveAbcStaffDB();
+  renderAbcStaffTable();
+  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+}
+
 async function mdWriteEmployees() {
   if (!mdEmpRef) return;
   try {
@@ -48,6 +56,14 @@ async function mdWriteVehicles() {
   } catch (e) { console.warn('mdWriteVehicles error', e); }
 }
 
+async function mdWriteAbcStaff() {
+  if (!mdAbcRef) return;
+  try {
+    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(mdAbcRef, mdRecordsToObj(mdAbcStaff));
+  } catch (e) { console.warn('mdWriteAbcStaff error', e); }
+}
+
 async function mdWriteSimpleList(ref, arr) {
   if (!ref) return;
   try {
@@ -60,12 +76,12 @@ function mdPushIfReady() {
   if (!mdReady) return;
   mdWriteEmployees();
   mdWriteVehicles();
+  mdWriteAbcStaff();
   mdWriteSimpleList(mdBuRef, mdBusinessUnits);
   mdWriteSimpleList(mdInsRef, mdInsurers);
   mdWriteSimpleList(mdYardRef, mdYards);
   mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
   mdWriteSimpleList(mdTopicRef, mdIssueTopics);
-  mdWriteSimpleList(mdAbcRef, mdAbcStaff);
 }
 
 function mdWaitForFirebase() {
@@ -84,10 +100,8 @@ function mdApplySimpleList(kind, arr) {
   if (kind === 'yard') { mdYards = arr; saveYardsDB(); renderYardsTable(); }
   if (kind === 'pattern') { mdIncidentPatterns = arr; savePatternsDB(); renderIncidentPatternsTable(); }
   if (kind === 'topic') { mdIssueTopics = arr; saveIssueTopicsDB(); renderIssueTopicsTable(); }
-  if (kind === 'abcstaff') { mdAbcStaff = arr; saveAbcStaffDB(); renderAbcStaffTable(); }
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
-  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
 }
 
 async function mdInit() {
@@ -114,7 +128,7 @@ async function mdInit() {
     if (yardSnap.exists()) mdApplySimpleList('yard', yardSnap.val() || []);
     if (patSnap.exists()) mdApplySimpleList('pattern', patSnap.val() || []);
     if (topicSnap.exists()) mdApplySimpleList('topic', topicSnap.val() || []);
-    if (abcSnap.exists()) mdApplySimpleList('abcstaff', abcSnap.val() || []);
+    if (abcSnap.exists()) mdApplyServerAbcStaff(mdObjToRecords(abcSnap.val()));
     mdReady = true;
 
     if (!empSnap.exists() && mdDrivers.length > 0) await mdWriteEmployees();
@@ -124,7 +138,7 @@ async function mdInit() {
     if (!yardSnap.exists() && mdYards.length > 0) await mdWriteSimpleList(mdYardRef, mdYards);
     if (!patSnap.exists() && mdIncidentPatterns.length > 0) await mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
     if (!topicSnap.exists() && mdIssueTopics.length > 0) await mdWriteSimpleList(mdTopicRef, mdIssueTopics);
-    if (!abcSnap.exists() && mdAbcStaff.length > 0) await mdWriteSimpleList(mdAbcRef, mdAbcStaff);
+    if (!abcSnap.exists() && mdAbcStaff.length > 0) await mdWriteAbcStaff();
 
     onValue(mdEmpRef, snap => { if (snap.exists()) mdApplyServerDrivers(mdObjToRecords(snap.val())); });
     onValue(mdVehRef, snap => { if (snap.exists()) mdApplyServerVehicles(mdObjToRecords(snap.val())); });
@@ -133,7 +147,7 @@ async function mdInit() {
     onValue(mdYardRef, snap => { if (snap.exists()) mdApplySimpleList('yard', snap.val() || []); });
     onValue(mdPatRef, snap => { if (snap.exists()) mdApplySimpleList('pattern', snap.val() || []); });
     onValue(mdTopicRef, snap => { if (snap.exists()) mdApplySimpleList('topic', snap.val() || []); });
-    onValue(mdAbcRef, snap => { if (snap.exists()) mdApplySimpleList('abcstaff', snap.val() || []); });
+    onValue(mdAbcRef, snap => { if (snap.exists()) mdApplyServerAbcStaff(mdObjToRecords(snap.val())); });
   } catch (e) {
     console.warn('mdInit error', e);
   }

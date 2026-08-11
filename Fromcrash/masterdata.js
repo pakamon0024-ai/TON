@@ -481,24 +481,30 @@ function renderIssueTopicsTable() {
 // ===== พนักงานลาน ABC (สำหรับ "บันทึกการเป่าวัดแอลกอฮอล์" - alcohol.js) =====
 // แยกรายชื่อออกจากพนักงานขับรถหลัก เพราะบันทึกเฉพาะพนักงานลาน ABC ลานเดียว
 // (เมนูบันทึกอื่นๆ เช่น อุบัติเหตุ ใช้รายชื่อพนักงานขับรถทุกลาน)
-let mdAbcStaff = JSON.parse(localStorage.getItem('finflow_abc_staff_db') || '[]');
+// เก็บเป็น record { id, name, businessUnit } เพื่อรองรับ Template/Import Excel (ชื่อ + หน่วยงาน)
+// (แปลงข้อมูลเก่าที่เคยเก็บเป็น array ของชื่อ string เฉยๆ ให้เป็น record อัตโนมัติ)
+let mdAbcStaff = JSON.parse(localStorage.getItem('finflow_abc_staff_db') || '[]')
+  .map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
 function saveAbcStaffDB() { localStorage.setItem('finflow_abc_staff_db', JSON.stringify(mdAbcStaff)); }
 
 function addAbcStaffDB() {
-  const input = document.getElementById('md-abcstaff-name');
-  const name = input.value.trim();
-  if (!name) { input.focus(); return; }
-  if (mdAbcStaff.includes(name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
-  mdAbcStaff.push(name);
+  const nameInput = document.getElementById('md-abcstaff-name');
+  const buInput = document.getElementById('md-abcstaff-bu');
+  const name = nameInput.value.trim();
+  const businessUnit = buInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+  if (mdAbcStaff.some(s => s.name === name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
+  mdAbcStaff.push({ id: Date.now(), name, businessUnit });
   saveAbcStaffDB();
-  input.value = ''; input.focus();
+  nameInput.value = ''; buInput.value = ''; nameInput.focus();
   renderAbcStaffTable();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
   mdPushIfReady();
   showToast('เพิ่มพนักงานแล้ว', 'success');
 }
-function deleteAbcStaffDB(name) {
-  mdAbcStaff = mdAbcStaff.filter(n => n !== name);
+function deleteAbcStaffDB(id) {
+  if (!confirm('ยืนยันการลบพนักงานคนนี้?')) return;
+  mdAbcStaff = mdAbcStaff.filter(s => s.id !== id);
   saveAbcStaffDB();
   renderAbcStaffTable();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
@@ -508,10 +514,49 @@ function deleteAbcStaffDB(name) {
 function renderAbcStaffTable() {
   const tbody = document.getElementById('md-abcstaff-body');
   if (!tbody) return;
-  if (mdAbcStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdAbcStaff.map(name => `
-    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteAbcStaffDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  if (mdAbcStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdAbcStaff.map(s => `
+    <tr>
+      <td>${escapeHtml(s.name)}</td>
+      <td>${escapeHtml(s.businessUnit || '-')}</td>
+      <td><button class="action-btn action-delete" onclick="deleteAbcStaffDB(${s.id})">ลบ</button></td>
+    </tr>
   `).join('');
+}
+
+function downloadAbcStaffTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['ชื่อพนักงาน', 'หน่วยงาน'],
+    ['นายสมชาย ใจดี', 'ABC'],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'พนักงานลาน ABC');
+  XLSX.writeFile(wb, 'template_พนักงานลาน_ABC.xlsx');
+}
+
+function importAbcStaffExcel(event) {
+  const file = event.target.files[0]; if (!file) return;
+  readExcelRows(file, (err, rows) => {
+    if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
+    let added = 0;
+    rows.forEach((row, i) => {
+      const name = String(row[0] || '').trim();
+      if (!name) return;
+      if (mdAbcStaff.some(s => s.name === name)) return;
+      mdAbcStaff.push({
+        id: Date.now() + i,
+        name,
+        businessUnit: String(row[1] || '').trim(),
+      });
+      added++;
+    });
+    saveAbcStaffDB();
+    renderAbcStaffTable();
+    if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+    mdPushIfReady();
+    showToast(`นำเข้าพนักงาน ${added} รายการ`, 'success');
+    event.target.value = '';
+  });
 }
 
 // ===== หมวดหมู่ค่าใช้จ่าย =====
