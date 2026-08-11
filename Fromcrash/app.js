@@ -42,6 +42,29 @@ function updateThemeToggleIcon() {
   btn.title = current === 'dark' ? 'สลับเป็นธีมสว่าง' : 'สลับเป็นธีมมืด';
 }
 
+// ===== Force sync ข้อมูลในเครื่องนี้ขึ้น Firebase =====
+// กู้คืนข้อมูลที่เคยบันทึกได้แค่ในเครื่อง (ตอนที่ Security Rules ยังบล็อกอยู่) ให้ push
+// ขึ้น Firebase จริงๆ โดยไม่ต้องพิมพ์ใหม่ — แต่ละโมดูลมีฟังก์ชัน push ของตัวเองอยู่แล้ว
+// (เรียกทุกครั้งหลัง add/edit/delete ตามปกติ) ปุ่มนี้แค่เรียกทั้งหมดพร้อมกันแบบ manual
+async function forceSyncAllToFirebase() {
+  if (typeof fbReady === 'undefined' || !fbReady) {
+    showToast('ยังไม่ได้เชื่อมต่อ Firebase หรือยังไม่ได้ login ลองรีเฟรชหน้าแล้วลองใหม่', 'error');
+    return;
+  }
+  showToast('🔄 กำลังซิงค์ข้อมูลในเครื่องนี้ขึ้น Firebase...', 'success');
+  try {
+    if (typeof rsPushIfReady === 'function') rsPushIfReady();
+    if (typeof icWriteFB === 'function') await icWriteFB();
+    if (typeof mdPushIfReady === 'function') mdPushIfReady();
+    if (typeof incPushIfReady === 'function') incPushIfReady();
+    if (typeof wiPushIfReady === 'function') wiPushIfReady();
+    if (typeof alcPushIfReady === 'function') alcPushIfReady();
+    setTimeout(() => showToast('✅ ซิงค์เสร็จแล้ว ให้คนอื่นลองรีเฟรชหน้าเว็บดู', 'success'), 700);
+  } catch (e) {
+    showToast('เกิดข้อผิดพลาดระหว่างซิงค์: ' + e.message, 'error');
+  }
+}
+
 // ลงทะเบียน Service Worker เพื่อให้ Chrome เสนอปุ่ม "ติดตั้งแอป" (ต้อง serve ผ่าน HTTPS)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

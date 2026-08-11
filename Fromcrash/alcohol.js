@@ -9,6 +9,8 @@
 
 const ALC_FIXED_LEVEL = 0;
 const ALC_DEFAULT_NOTE = '0 มก.';
+// ลำดับแรก (ยังไม่เป่า) ถูก fix ไว้เป็นค่าเริ่มต้นของทั้ง 2 รอบ (ขา / ขากลับ)
+const ALC_RESULT_OPTIONS = ['ยังไม่เป่า', 'ผ่าน', 'ไม่ผ่าน', 'ขาด/ลา', 'ต่อเนื่อง'];
 
 let alcTests = JSON.parse(localStorage.getItem('finflow_alcohol_tests') || '[]');
 let alcRef = null;
@@ -80,25 +82,25 @@ function alcRenderRoster() {
   if (!tbody) return;
   const date = document.getElementById('alc-roster-date')?.value || '';
   if (!mdAbcStaff || mdAbcStaff.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่ปุ่ม "+ เพิ่มพนักงานใหม่" ด้านบน</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่ปุ่ม "+ เพิ่มพนักงานใหม่" ด้านบน</td></tr>';
     return;
   }
   tbody.innerHTML = mdAbcStaff.map((emp, i) => {
     const name = emp.name;
     const existing = date ? alcTests.find(t => t.date === date && t.employee === name) : null;
-    const result = existing?.result || 'ผ่าน';
+    const resultOut = existing?.resultOut || existing?.result || ALC_RESULT_OPTIONS[0];
+    const resultReturn = existing?.resultReturn || ALC_RESULT_OPTIONS[0];
     const note = existing?.note ?? ALC_DEFAULT_NOTE;
+    const optsHtml = (selected) => ALC_RESULT_OPTIONS.map(o =>
+      `<option value="${escapeHtml(o)}" ${o === selected ? 'selected' : ''}>${escapeHtml(o)}</option>`
+    ).join('');
     return `
       <tr data-name="${escapeHtml(name)}">
         <td>${i + 1}</td>
         <td>${escapeHtml(name)}</td>
         <td>${escapeHtml(emp.businessUnit || '-')}</td>
-        <td>
-          <select class="alc-roster-result">
-            <option value="ผ่าน" ${result === 'ผ่าน' ? 'selected' : ''}>ผ่าน</option>
-            <option value="ไม่ผ่าน" ${result === 'ไม่ผ่าน' ? 'selected' : ''}>ไม่ผ่าน</option>
-          </select>
-        </td>
+        <td><select class="alc-roster-result-out">${optsHtml(resultOut)}</select></td>
+        <td><select class="alc-roster-result-return">${optsHtml(resultReturn)}</select></td>
         <td style="text-align:center;color:var(--text-muted);">${ALC_FIXED_LEVEL}</td>
         <td><input type="text" class="alc-roster-note" value="${escapeHtml(note)}" /></td>
       </tr>
@@ -129,13 +131,15 @@ function alcSaveRoster() {
   rows.forEach(row => {
     const name = row.dataset.name;
     const businessUnit = mdAbcStaff.find(s => s.name === name)?.businessUnit || '';
-    const result = row.querySelector('.alc-roster-result').value;
+    const resultOut = row.querySelector('.alc-roster-result-out').value;
+    const resultReturn = row.querySelector('.alc-roster-result-return').value;
     const note = row.querySelector('.alc-roster-note').value.trim();
-    if (result === 'ไม่ผ่าน') failCount++;
+    if (resultOut === 'ไม่ผ่าน' || resultReturn === 'ไม่ผ่าน') failCount++;
 
     const idx = alcTests.findIndex(t => t.date === date && t.employee === name);
     if (idx >= 0) {
-      alcTests[idx] = { ...alcTests[idx], time: timeStr, level: ALC_FIXED_LEVEL, result, note, businessUnit, updatedAt: now.toISOString() };
+      alcTests[idx] = { ...alcTests[idx], time: timeStr, level: ALC_FIXED_LEVEL, resultOut, resultReturn, note, businessUnit, updatedAt: now.toISOString() };
+      delete alcTests[idx].result; // เลิกใช้ฟิลด์เดี่ยวเดิม แยกเป็น 2 รอบแล้ว
     } else {
       alcTests.unshift({
         id: 'ALC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
@@ -144,7 +148,7 @@ function alcSaveRoster() {
         employee: name,
         businessUnit,
         level: ALC_FIXED_LEVEL,
-        result, note,
+        resultOut, resultReturn, note,
         createdAt: now.toISOString(),
       });
     }
@@ -157,7 +161,7 @@ function alcSaveRoster() {
   showToast(`✅ บันทึกผลตรวจ ${rows.length} คนแล้ว`, 'success');
   if (typeof sendTelegramNotification === 'function') {
     sendTelegramNotification(
-      `🍃 <b>บันทึกผลเป่าวัดแอลกอฮอล์ (ลาน ABC)</b>\nวันที่: ${formatDate(date)}\nจำนวนตรวจ: ${rows.length} คน${failCount > 0 ? `\n🚨 ไม่ผ่าน: ${failCount} คน` : ''}`
+      `🍃 <b>บันทึกผลเป่าวัดแอลกอฮอล์ (ลาน ABC)</b>\nวันที่: ${formatDate(date)}\nจำนวนตรวจ: ${rows.length} คน (ขา + ขากลับ)${failCount > 0 ? `\n🚨 ไม่ผ่าน: ${failCount} คน` : ''}`
     );
   }
 }
@@ -185,12 +189,14 @@ function alcDeleteCase(id) {
 // ===== List / Filter =====
 function alcFilteredList() {
   const employee = document.getElementById('alc-f-employee')?.value || '';
-  const result = document.getElementById('alc-f-result')?.value || '';
+  const resultOut = document.getElementById('alc-f-result-out')?.value || '';
+  const resultReturn = document.getElementById('alc-f-result-return')?.value || '';
   const dateFrom = document.getElementById('alc-f-datefrom')?.value || '';
   const dateTo = document.getElementById('alc-f-dateto')?.value || '';
   return alcTests.filter(t => {
     if (employee && t.employee !== employee) return false;
-    if (result && t.result !== result) return false;
+    if (resultOut && (t.resultOut || t.result || ALC_RESULT_OPTIONS[0]) !== resultOut) return false;
+    if (resultReturn && (t.resultReturn || ALC_RESULT_OPTIONS[0]) !== resultReturn) return false;
     if (dateFrom && t.date < dateFrom) return false;
     if (dateTo && t.date > dateTo) return false;
     return true;
@@ -199,15 +205,24 @@ function alcFilteredList() {
 
 function alcClearListFilters() {
   document.getElementById('alc-f-employee').value = '';
-  document.getElementById('alc-f-result').value = '';
+  document.getElementById('alc-f-result-out').value = '';
+  document.getElementById('alc-f-result-return').value = '';
   document.getElementById('alc-f-datefrom').value = '';
   document.getElementById('alc-f-dateto').value = '';
   alcRenderList();
 }
 
 function alcResultBadge(result) {
+  const map = {
+    'ผ่าน': 'badge-green',
+    'ไม่ผ่าน': null, // สีแดง ใช้ inline style ด้านล่าง (ไม่มี badge-red สำเร็จรูปในระบบ)
+    'ขาด/ลา': 'badge-orange',
+    'ต่อเนื่อง': 'badge-blue',
+    'ยังไม่เป่า': null,
+  };
   if (result === 'ไม่ผ่าน') return `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">${escapeHtml(result)}</span>`;
-  return `<span class="badge badge-green">${escapeHtml(result)}</span>`;
+  if (result === 'ยังไม่เป่า' || !result) return `<span class="badge" style="background:var(--bg-input);color:var(--text-muted);border:1px solid var(--border)">${escapeHtml(result || ALC_RESULT_OPTIONS[0])}</span>`;
+  return `<span class="badge ${map[result] || 'badge-green'}">${escapeHtml(result)}</span>`;
 }
 
 function alcRenderList() {
@@ -217,7 +232,7 @@ function alcRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(t => `
@@ -227,8 +242,9 @@ function alcRenderList() {
       <td>${escapeHtml(t.time || '-')}</td>
       <td>${escapeHtml(t.employee)}</td>
       <td>${escapeHtml(t.businessUnit || '-')}</td>
+      <td>${alcResultBadge(t.resultOut || t.result)}</td>
+      <td>${alcResultBadge(t.resultReturn)}</td>
       <td>${t.level ?? ALC_FIXED_LEVEL}</td>
-      <td>${alcResultBadge(t.result)}</td>
       <td>
         <button class="action-btn action-view" onclick="alcEditCase('${t.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="alcDeleteCase('${t.id}')">ลบ</button>

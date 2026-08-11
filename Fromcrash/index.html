@@ -165,6 +165,7 @@
         <div class="page-title" id="pageTitle">ภาพรวมระบบ</div>
       </div>
       <div class="topbar-right">
+        <button class="theme-toggle" id="forceSyncBtn" onclick="forceSyncAllToFirebase()" title="ซิงค์ข้อมูลในเครื่องนี้ขึ้น Firebase ทันที (ใช้ถ้าคนอื่นยังไม่เห็นข้อมูลที่เพิ่มไว้)">🔄</button>
         <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="สลับธีมสว่าง/มืด">🌙</button>
         <div class="current-date" id="currentDate"></div>
         <div class="user-badge" id="userBadge" onclick="authToggleUserMenu()">
@@ -1325,11 +1326,25 @@
               <select id="alc-f-employee" onchange="alcRenderList()"><option value="">ทั้งหมด</option></select>
             </div>
             <div class="filter-group">
-              <label>ผลการตรวจ</label>
-              <select id="alc-f-result" onchange="alcRenderList()">
+              <label>ผลตรวจ (ขา)</label>
+              <select id="alc-f-result-out" onchange="alcRenderList()">
                 <option value="">ทั้งหมด</option>
+                <option value="ยังไม่เป่า">ยังไม่เป่า</option>
                 <option value="ผ่าน">ผ่าน</option>
                 <option value="ไม่ผ่าน">ไม่ผ่าน</option>
+                <option value="ขาด/ลา">ขาด/ลา</option>
+                <option value="ต่อเนื่อง">ต่อเนื่อง</option>
+              </select>
+            </div>
+            <div class="filter-group">
+              <label>ผลตรวจ (ขากลับ)</label>
+              <select id="alc-f-result-return" onchange="alcRenderList()">
+                <option value="">ทั้งหมด</option>
+                <option value="ยังไม่เป่า">ยังไม่เป่า</option>
+                <option value="ผ่าน">ผ่าน</option>
+                <option value="ไม่ผ่าน">ไม่ผ่าน</option>
+                <option value="ขาด/ลา">ขาด/ลา</option>
+                <option value="ต่อเนื่อง">ต่อเนื่อง</option>
               </select>
             </div>
             <button class="btn-secondary" onclick="alcClearListFilters()">🔄 ล้างตัวกรอง</button>
@@ -1339,11 +1354,11 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>หน่วยงาน</th><th>ค่าที่วัดได้ (มก.)</th><th>ผลการตรวจ</th><th>จัดการ</th>
+                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>หน่วยงาน</th><th>ผลตรวจ (ขา)</th><th>ผลตรวจ (ขากลับ)</th><th>ค่าที่วัดได้ (มก.)</th><th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="alc-list-body">
-                <tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                <tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>
               </tbody>
             </table>
           </div>
@@ -1367,16 +1382,16 @@
                 <button type="button" class="btn-secondary" style="align-self:flex-start;" onclick="alcQuickAddEmployee()">+ เพิ่มพนักงานใหม่</button>
               </div>
             </div>
-            <p class="readonly-hint">เวลาบันทึกจะลงอัตโนมัติตามเวลาจริงตอนกดบันทึก ไม่ต้องเลือกเอง · ค่าที่วัดได้ตั้งไว้คงที่ 0 มก. · หมายเหตุแก้ไขได้ทีละคน</p>
+            <p class="readonly-hint">เวลาบันทึกจะลงอัตโนมัติตามเวลาจริงตอนกดบันทึก ไม่ต้องเลือกเอง · ค่าที่วัดได้ตั้งไว้คงที่ 0 มก. · หมายเหตุแก้ไขได้ทีละคน · แยกผลตรวจ 2 รอบ ขา/ขากลับ (เริ่มต้นเป็น "ยังไม่เป่า")</p>
             <div class="recent-table-wrap" style="margin-top:10px;">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th style="width:40px">ลำดับ</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th style="width:140px">ผลการตรวจ</th><th style="width:110px">ค่าที่วัดได้ (มก.)</th><th>หมายเหตุ</th>
+                    <th style="width:40px">ลำดับ</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th style="width:130px">ผลตรวจ (ขา)</th><th style="width:130px">ผลตรวจ (ขากลับ)</th><th style="width:110px">ค่าที่วัดได้ (มก.)</th><th>หมายเหตุ</th>
                   </tr>
                 </thead>
                 <tbody id="alc-roster-body">
-                  <tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                  <tr><td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td></tr>
                 </tbody>
               </table>
             </div>
