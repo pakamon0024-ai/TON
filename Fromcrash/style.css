@@ -423,6 +423,10 @@ body {
 
 /* ===== Form Section ===== */
 .form-section { max-width: 960px; margin: 0 auto; width: 100%; }
+/* หน้าเป่าวัดแอลกอฮอล์: ตารางสรุปรายเดือนมีคอลัมน์วันที่เยอะ (สูงสุด 31 วัน) การจำกัดความกว้าง
+   ไว้แค่ 960px ทำให้ผู้ใช้ต้องเลื่อนซ้าย-ขวามากจนดูเหมือนข้อมูลวันที่ 17-31 หายไป
+   ให้หน้านี้ใช้ความกว้างเต็มพื้นที่แทน ส่วนแท็บอื่น (รายการ/เพิ่มบันทึก) ยังพอดีกับความกว้างนี้อยู่แล้ว */
+#page-alcohol .form-section { max-width: none; }
 .form-header {
   display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
   margin-bottom: 24px;
