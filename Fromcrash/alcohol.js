@@ -268,6 +268,22 @@ function alcRenderList() {
   `).join('');
 }
 
+function alcExportListExcel() {
+  const list = alcFilteredList();
+  if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
+  const rows = [
+    ['เลขที่', 'วันที่', 'เวลา', 'พนักงาน', 'หน่วยงาน', 'ผลตรวจ (ขาไป)', 'ผลตรวจ (ขากลับ)', 'ค่าที่วัดได้ (มก.)', 'หมายเหตุ'],
+    ...list.map(t => [
+      t.runningNo, t.date, t.time || '', t.employee, t.businessUnit || '',
+      t.resultOut || t.result || '', t.resultReturn || '', t.level ?? ALC_FIXED_LEVEL, t.note || '',
+    ]),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'เป่าวัดแอลกอฮอล์');
+  XLSX.writeFile(wb, `บันทึกเป่าแอลกอฮอล์_${new Date().toISOString().substring(0, 10)}.xlsx`);
+}
+
 // ===== ตารางสรุปผลเป่าแอลกอฮอล์รายวัน แยกตามเดือน (No./ชื่อ/หน่วยงาน x วันที่ 1-31) =====
 function alcSummaryMonthValue() {
   return document.getElementById('alc-summary-month')?.value || new Date().toISOString().substring(0, 7);
