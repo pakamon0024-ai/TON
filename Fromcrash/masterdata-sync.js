@@ -120,9 +120,18 @@ async function mdInit() {
     mdAbcRef = ref(fbDb, '/abcStaff');
     mdReqRef = ref(fbDb, '/requesters');
 
-    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap, topicSnap, abcSnap, reqSnap] = await Promise.all([
+    // ใช้ allSettled ไม่ใช่ all — ถ้า path ใด path หนึ่งยังไม่มี Security Rule (เช่น เพิ่ง
+    // เพิ่ม path ใหม่แล้วลืมอัปเดต Rules) จะได้ไม่ทำให้ path อื่นที่ปกติดีพลอย sync ไม่ขึ้นไปด้วย
+    // (เดิมใช้ Promise.all แล้วเจอบั๊กจริง: get() หนึ่งตัว reject ทำให้ mdReady ไม่ถูกตั้งเป็น true เลย)
+    const results = await Promise.allSettled([
       get(mdEmpRef), get(mdVehRef), get(mdBuRef), get(mdInsRef), get(mdYardRef), get(mdPatRef), get(mdTopicRef), get(mdAbcRef), get(mdReqRef),
     ]);
+    const NULL_SNAP = { exists: () => false, val: () => null };
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') console.warn(`mdInit: path #${i} โหลดไม่สำเร็จ (อาจยังไม่มี Security Rule)`, r.reason);
+    });
+    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap, topicSnap, abcSnap, reqSnap] =
+      results.map(r => r.status === 'fulfilled' ? r.value : NULL_SNAP);
 
     if (empSnap.exists()) mdApplyServerDrivers(mdObjToRecords(empSnap.val()));
     if (vehSnap.exists()) mdApplyServerVehicles(mdObjToRecords(vehSnap.val()));
