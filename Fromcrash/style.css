@@ -391,6 +391,18 @@ body {
   color: var(--text-muted); font-size: 0.9rem;
 }
 
+/* ===== Alcohol Test Monthly Summary Matrix ===== */
+.alc-summary-table { min-width: 100%; font-size: 0.78rem; }
+.alc-summary-table th, .alc-summary-table td { padding: 6px 8px; text-align: center; white-space: nowrap; }
+.alc-summary-table td.alc-sum-name { text-align: left; white-space: normal; min-width: 140px; }
+.alc-summary-table td.alc-sum-label { text-align: left; color: var(--text-muted); font-size: 0.72rem; min-width: 110px; }
+.alc-sum-day { min-width: 34px; }
+.alc-sum-day .alc-sum-dow { font-size: 0.68rem; color: var(--text-muted); font-weight: 400; text-transform: none; letter-spacing: 0; }
+.alc-sum-weekend { background: var(--accent-orange); background: color-mix(in srgb, var(--accent-orange) 18%, transparent); }
+.alc-sum-cell { color: var(--text-secondary); }
+.alc-sum-flag { color: var(--accent-red); font-weight: 700; }
+.alc-sum-max { font-weight: 700; }
+
 /* ===== Status Badges ===== */
 .badge {
   display: inline-flex; align-items: center; gap: 5px;

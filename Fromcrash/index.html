@@ -1314,6 +1314,7 @@
         <div class="subtabs">
           <button class="subtab active" id="alc-tab-list" onclick="alcSwitchTab('list')">📋 รายการทั้งหมด</button>
           <button class="subtab" id="alc-tab-add" onclick="alcSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          <button class="subtab" id="alc-tab-summary" onclick="alcSwitchTab('summary')">📅 สรุปรายเดือน</button>
         </div>
 
         <!-- LIST SUBPAGE -->
@@ -1326,7 +1327,7 @@
               <select id="alc-f-employee" onchange="alcRenderList()"><option value="">ทั้งหมด</option></select>
             </div>
             <div class="filter-group">
-              <label>ผลตรวจ (ขา)</label>
+              <label>ผลตรวจ (ขาไป)</label>
               <select id="alc-f-result-out" onchange="alcRenderList()">
                 <option value="">ทั้งหมด</option>
                 <option value="ยังไม่เป่า">ยังไม่เป่า</option>
@@ -1354,7 +1355,7 @@
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>หน่วยงาน</th><th>ผลตรวจ (ขา)</th><th>ผลตรวจ (ขากลับ)</th><th>ค่าที่วัดได้ (มก.)</th><th>จัดการ</th>
+                  <th>เลขที่</th><th>วันที่</th><th>เวลา</th><th>พนักงาน</th><th>หน่วยงาน</th><th>ผลตรวจ (ขาไป)</th><th>ผลตรวจ (ขากลับ)</th><th>ค่าที่วัดได้ (มก.)</th><th>จัดการ</th>
                 </tr>
               </thead>
               <tbody id="alc-list-body">
@@ -1382,12 +1383,12 @@
                 <button type="button" class="btn-secondary" style="align-self:flex-start;" onclick="alcQuickAddEmployee()">+ เพิ่มพนักงานใหม่</button>
               </div>
             </div>
-            <p class="readonly-hint">เวลาบันทึกจะลงอัตโนมัติตามเวลาจริงตอนกดบันทึก ไม่ต้องเลือกเอง · ค่าที่วัดได้ตั้งไว้คงที่ 0 มก. · หมายเหตุแก้ไขได้ทีละคน · แยกผลตรวจ 2 รอบ ขา/ขากลับ (เริ่มต้นเป็น "ยังไม่เป่า")</p>
+            <p class="readonly-hint">เวลาบันทึกจะลงอัตโนมัติตามเวลาจริงตอนกดบันทึก ไม่ต้องเลือกเอง · ค่าที่วัดได้ตั้งต้นที่ 0 มก. แก้ไขได้ · หมายเหตุว่างไว้ให้กรอกเอง · แยกผลตรวจ 2 รอบ ขาไป/ขากลับ (เริ่มต้นเป็น "ยังไม่เป่า")</p>
             <div class="recent-table-wrap" style="margin-top:10px;">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th style="width:40px">ลำดับ</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th style="width:130px">ผลตรวจ (ขา)</th><th style="width:130px">ผลตรวจ (ขากลับ)</th><th style="width:110px">ค่าที่วัดได้ (มก.)</th><th>หมายเหตุ</th>
+                    <th style="width:40px">ลำดับ</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th style="width:130px">ผลตรวจ (ขาไป)</th><th style="width:130px">ผลตรวจ (ขากลับ)</th><th style="width:110px">ค่าที่วัดได้ (มก.)</th><th>หมายเหตุ</th>
                   </tr>
                 </thead>
                 <tbody id="alc-roster-body">
@@ -1400,6 +1401,18 @@
               <button class="btn-primary" onclick="alcSaveRoster()">💾 บันทึกผลตรวจทั้งหมด</button>
             </div>
           </div>
+        </div>
+
+        <!-- SUMMARY SUBPAGE: ตารางสรุปผลเป่าแอลกอฮอล์รายวัน แยกตามเดือน -->
+        <div class="subpage" id="alc-subpage-summary">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>เดือน</label>
+              <input type="month" id="alc-summary-month" onchange="alcRenderSummary()" />
+            </div>
+            <button class="btn-secondary" onclick="alcExportSummaryExcel()">📊 Export Excel</button>
+          </div>
+          <div class="recent-table-wrap" id="alc-summary-table-wrap" style="margin-top:10px;"></div>
         </div>
       </div>
     </div>
