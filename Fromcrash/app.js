@@ -75,9 +75,8 @@ if ('serviceWorker' in navigator) {
 function updateCurrentDate() {
   const el = document.getElementById('currentDate');
   const now = new Date();
-  el.textContent = now.toLocaleDateString('th-TH-u-ca-gregory', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-  });
+  const weekday = now.toLocaleDateString('th-TH', { weekday: 'long' });
+  el.textContent = `${weekday}ที่ ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
 }
 
 function setToday() {
@@ -194,12 +193,17 @@ function renderRequesterList() {
 }
 
 function syncRequesterDropdowns() {
-  ['pc-requester', 'ap-requester'].forEach(id => {
+  const placeholders = {
+    'pc-requester': '-- เลือกผู้เบิก --',
+    'ap-requester': '-- เลือกผู้ขออนุมัติ --',
+    'pc-reviewer': '-- เลือกผู้ตรวจสอบ --',
+    'ap-reviewer': '-- เลือกผู้ตรวจสอบ --',
+  };
+  Object.keys(placeholders).forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const current = sel.value;
-    const placeholder = id === 'pc-requester' ? '-- เลือกผู้เบิก --' : '-- เลือกผู้ขออนุมัติ --';
-    sel.innerHTML = `<option value="">${placeholder}</option>` +
+    sel.innerHTML = `<option value="">${placeholders[id]}</option>` +
       requesters.map(r => `<option value="${escapeHtml(r)}" ${r === current ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('');
   });
   attachRequesterListeners();
@@ -208,6 +212,8 @@ function syncRequesterDropdowns() {
 function attachRequesterListeners() {
   const pcSel = document.getElementById('pc-requester');
   const apSel = document.getElementById('ap-requester');
+  const pcReviewerSel = document.getElementById('pc-reviewer');
+  const apReviewerSel = document.getElementById('ap-reviewer');
   if (pcSel) {
     pcSel.onchange = () => updateSignature('pc');
     // trigger if already has value
@@ -217,12 +223,21 @@ function attachRequesterListeners() {
     apSel.onchange = () => updateSignature('ap');
     updateSignature('ap');
   }
+  if (pcReviewerSel) {
+    pcReviewerSel.onchange = () => updateSignature('pc', 'reviewer');
+    updateSignature('pc', 'reviewer');
+  }
+  if (apReviewerSel) {
+    apReviewerSel.onchange = () => updateSignature('ap', 'reviewer');
+    updateSignature('ap', 'reviewer');
+  }
 }
 
-function updateSignature(prefix) {
-  const sel = document.getElementById(`${prefix}-requester`);
-  const sigName = document.getElementById(`${prefix}-sig-name`);
-  const sigDate = document.getElementById(`${prefix}-sig-date`);
+function updateSignature(prefix, field = 'requester') {
+  const sel = document.getElementById(field === 'requester' ? `${prefix}-requester` : `${prefix}-reviewer`);
+  const idBase = field === 'requester' ? prefix : `${prefix}-reviewer`;
+  const sigName = document.getElementById(`${idBase}-sig-name`);
+  const sigDate = document.getElementById(`${idBase}-sig-date`);
   if (!sel || !sigName || !sigDate) return;
 
   const name = sel.value;
@@ -327,6 +342,7 @@ function getPettyData() {
     docno: document.getElementById('pc-docno').value,
     date: document.getElementById('pc-date').value,
     requester: document.getElementById('pc-requester').value,
+    reviewer: document.getElementById('pc-reviewer').value,
     purpose: document.getElementById('pc-purpose').value,
     detail: document.getElementById('pc-detail').value,
     items, total
@@ -346,7 +362,7 @@ function savePettyCash() {
     if (idx >= 0) {
       records[idx] = {
         ...records[idx],
-        docno: data.docno, dept: data.dept, requester: data.requester,
+        docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer,
         purpose: data.purpose, detail: data.detail, date: data.date, items: data.items, total: data.total,
       };
     }
@@ -359,6 +375,7 @@ function savePettyCash() {
       docno: data.docno,
       dept: data.dept,
       requester: data.requester,
+      reviewer: data.reviewer,
       purpose: data.purpose,
       detail: data.detail,
       date: data.date,
@@ -407,6 +424,8 @@ function loadPettyCashForEdit(rec) {
   document.getElementById('pc-date').value = rec.date || '';
   document.getElementById('pc-purpose').value = rec.purpose || '';
   document.getElementById('pc-detail').value = rec.detail || '';
+  setSelectValueSafe('pc-reviewer', rec.reviewer || '');
+  updateSignature('pc', 'reviewer');
 
   pettyRows = (rec.items || []).map((item, i) => ({ id: Date.now() + i }));
   if (pettyRows.length === 0) pettyRows = [{ id: Date.now() }];
@@ -518,6 +537,7 @@ function getApprovalData() {
     to: document.getElementById('ap-to').value,
     subject: document.getElementById('ap-subject').value,
     requester: document.getElementById('ap-requester').value,
+    reviewer: document.getElementById('ap-reviewer').value,
     reason: document.getElementById('ap-reason').value,
     note1: document.getElementById('ap-note1').value,
     note2: document.getElementById('ap-note2').value,
@@ -536,7 +556,7 @@ function saveApproval() {
     if (idx >= 0) {
       records[idx] = {
         ...records[idx],
-        docno: data.docno, dept: data.dept, requester: data.requester,
+        docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer,
         subject: data.subject, date: data.date, items: data.items, total: data.total,
         data: data,
       };
@@ -550,6 +570,7 @@ function saveApproval() {
       docno: data.docno,
       dept: data.dept,
       requester: data.requester,
+      reviewer: data.reviewer,
       subject: data.subject,
       date: data.date,
       items: data.items,
@@ -606,6 +627,8 @@ function loadApprovalForEdit(data, recordId) {
 
   setSelectValueSafe('ap-requester', data.requester || '');
   updateSignature('ap');
+  setSelectValueSafe('ap-reviewer', data.reviewer || '');
+  updateSignature('ap', 'reviewer');
   if (data.note1) document.getElementById('ap-note1').value = data.note1;
   if (data.note2) document.getElementById('ap-note2').value = data.note2;
 
@@ -804,8 +827,9 @@ function buildPettyCashDoc(data) {
         <tbody>${rows}</tbody>
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
-      <div class="print-sigs print-sigs-2">
+      <div class="print-sigs">
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้จัดทำ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">${escapeHtml(data.reviewer || '')}</div><div class="print-sig-date">วันที่ ${data.reviewer ? todayThaiDate() : '.............'}</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">คุณนิธิโรจน์ คำภานุช</div><div class="print-sig-position">ประธานบริษัท</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
     </div>
@@ -842,8 +866,9 @@ function buildApprovalDoc(data) {
       <p class="print-body-text">${escapeHtml(data.note1 || '')}</p>
       <p class="print-body-text">${escapeHtml(data.note2 || '')}</p>
       <p class="print-body-text">${escapeHtml(data.closing || '')}</p>
-      <div class="print-sigs print-sigs-2">
+      <div class="print-sigs">
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">${escapeHtml(data.reviewer || '')}</div><div class="print-sig-date">วันที่ ${data.reviewer ? todayThaiDate() : '.............'}</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">คุณนิธิโรจน์ คำภานุช</div><div class="print-sig-position">ประธานบริษัท</div><div class="print-sig-date">วันที่ .............</div></div>
       </div>
     </div>
@@ -881,7 +906,7 @@ function exportHistoryPDF() {
     <div class="print-doc">
       ${companyLetterhead()}
       <h1>รายงานประวัติรายการทั้งหมด</h1>
-      <p class="print-subtitle">สร้างเมื่อ: ${new Date().toLocaleDateString('th-TH-u-ca-gregory', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+      <p class="print-subtitle">สร้างเมื่อ: ${todayThaiDate()}</p>
       <hr class="print-divider" />
       <table>
         <thead>
@@ -936,7 +961,7 @@ function formatDate(val) {
   if (!val) return '-';
   const d = new Date(val);
   if (isNaN(d)) return val;
-  return d.toLocaleDateString('th-TH-u-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric' });
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 
 // แปลงตัวเลขเป็นข้อความจำนวนเงินภาษาไทย เช่น 23000 -> "สองหมื่นสามพันบาทถ้วน"
@@ -984,7 +1009,8 @@ function thaiBahtText(amount) {
 }
 
 function todayThaiDate() {
-  return new Date().toLocaleDateString('th-TH-u-ca-gregory', { year: 'numeric', month: 'short', day: 'numeric' });
+  const d = new Date();
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 
 function statusBadge(status) {

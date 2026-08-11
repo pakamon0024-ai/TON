@@ -281,11 +281,17 @@
             </div>
           </div>
 
-          <div class="form-row-2">
+          <div class="form-row-3">
             <div class="form-group">
               <label>ผู้เบิก</label>
               <select id="pc-requester">
                 <option value="">-- เลือกผู้เบิก --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ผู้ตรวจสอบ</label>
+              <select id="pc-reviewer">
+                <option value="">-- เลือกผู้ตรวจสอบ --</option>
               </select>
             </div>
             <div class="form-group">
@@ -330,12 +336,18 @@
           </div>
 
           <!-- Signature -->
-          <div class="signature-row signature-row-2">
+          <div class="signature-row">
             <div class="sig-box">
               <div class="sig-line"></div>
               <div class="sig-label">ผู้จัดทำ</div>
               <div class="sig-name" id="pc-sig-name"></div>
               <div class="sig-date" id="pc-sig-date">วันที่ ........./........./.........</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้ตรวจสอบ</div>
+              <div class="sig-name" id="pc-reviewer-sig-name"></div>
+              <div class="sig-date" id="pc-reviewer-sig-date">วันที่ ........./........./.........</div>
             </div>
             <div class="sig-box">
               <div class="sig-line"></div>
@@ -403,7 +415,7 @@
             </div>
           </div>
 
-          <div class="form-row-2">
+          <div class="form-row-3">
             <div class="form-group">
               <label>เรียน (ผู้มีอำนาจอนุมัติ)</label>
               <input type="text" id="ap-to" value="คุณนิธิโรจน์ คำภานุช" placeholder="เรียน" />
@@ -412,6 +424,12 @@
               <label>ผู้ขออนุมัติ</label>
               <select id="ap-requester">
                 <option value="">-- เลือกผู้ขออนุมัติ --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>ผู้ตรวจสอบ</label>
+              <select id="ap-reviewer">
+                <option value="">-- เลือกผู้ตรวจสอบ --</option>
               </select>
             </div>
           </div>
@@ -469,12 +487,18 @@
           </div>
 
           <!-- Signature -->
-          <div class="signature-row signature-row-2">
+          <div class="signature-row">
             <div class="sig-box">
               <div class="sig-line"></div>
               <div class="sig-label">ผู้ขออนุมัติ</div>
               <div class="sig-name" id="ap-sig-name"></div>
               <div class="sig-date" id="ap-sig-date">วันที่ ........./........./.........</div>
+            </div>
+            <div class="sig-box">
+              <div class="sig-line"></div>
+              <div class="sig-label">ผู้ตรวจสอบ</div>
+              <div class="sig-name" id="ap-reviewer-sig-name"></div>
+              <div class="sig-date" id="ap-reviewer-sig-date">วันที่ ........./........./.........</div>
             </div>
             <div class="sig-box">
               <div class="sig-line"></div>

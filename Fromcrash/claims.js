@@ -212,7 +212,7 @@ function icRenderDash() {
     <div class="sc cp"><div class="sc-l">ประกันจ่ายรวม</div><div class="sc-v" style="font-size:19px;">${icFmtNum(tI)}</div><div class="sc-u">บาท</div></div>
     <div class="sc co"><div class="sc-l">ส่วนต่างรวม</div><div class="sc-v" style="font-size:19px;">${icFmtNum(tC - tI)}</div><div class="sc-u">บาท</div></div>
   `;
-  document.getElementById('dashUp').textContent = 'อัปเดต: ' + new Date().toLocaleString('th-TH-u-ca-gregory');
+  document.getElementById('dashUp').textContent = 'อัปเดต: ' + icFmtDateTime(new Date());
 
   // Status doughnut
   icDestroyChart('cStatus');
@@ -562,7 +562,7 @@ function icExportSummaryCSV() {
     if (c.insurance) im[c.insurance] = (im[c.insurance]||0)+1;
   });
   const rows = [
-    ['รายงานสรุปการเคลมประกันสินค้า'], ['สร้างเมื่อ', new Date().toLocaleString('th-TH-u-ca-gregory')], [],
+    ['รายงานสรุปการเคลมประกันสินค้า'], ['สร้างเมื่อ', icFmtDateTime(new Date())], [],
     ['=== ภาพรวม ==='], ['เคสทั้งหมด',n], ['มูลค่าเรียกเก็บรวม (บาท)',tC], ['ประกันจ่ายรวม (บาท)',tI], ['ส่วนต่างรวม (บาท)',tC-tI], [],
     ['=== ตามสถานะ ==='], ['สถานะ','จำนวนเคส'], ...SIF.map((s,i) => [s.l, sc[i]]), [],
     ['=== ตามลานจอด ==='], ['ลานจอด','จำนวนเคส'], ...Object.entries(ym).sort((a,b)=>b[1]-a[1]).map(([k,v])=>[k,v]), [],
@@ -860,7 +860,11 @@ function icClearFbConfig() {
 // ═══════════════════════════════════════════
 function icFmtNum(n) { return (n||0).toLocaleString('th-TH', { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 function icShortNum(n) { if (n>=1000000) return (n/1000000).toFixed(1)+'M'; if (n>=1000) return (n/1000).toFixed(1)+'K'; return n.toFixed(0); }
-function icFmtDate(d) { if (!d) return ''; try { const [y,m,day] = d.substring(0,10).split('-'); return `${day}/${m}/${+y}`; } catch { return d; } }
+function icFmtDate(d) { if (!d) return ''; try { const [y,m,day] = d.substring(0,10).split('-'); return `${+day}/${+m}/${+y}`; } catch { return d; } }
+function icFmtDateTime(d) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
 function icTodayISO() { return new Date().toISOString().substring(0,10); }
 function icDownloadCSV(rows, filename) {
   const bom = '﻿';
