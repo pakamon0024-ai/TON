@@ -8,7 +8,6 @@
 // เวลาลงอัตโนมัติตามเวลาจริงตอนกดบันทึก ไม่ต้องเลือกเอง, ค่าที่วัดได้ fix ไว้ที่ 0 มก.
 
 const ALC_FIXED_LEVEL = 0;
-const ALC_DEFAULT_NOTE = '0 มก.';
 // ลำดับแรก (ยังไม่เป่า) ถูก fix ไว้เป็นค่าเริ่มต้นของทั้ง 2 รอบ (ขา / ขากลับ)
 const ALC_RESULT_OPTIONS = ['ยังไม่เป่า', 'ผ่าน', 'ไม่ผ่าน', 'ขาด/ลา', 'ต่อเนื่อง'];
 
@@ -88,9 +87,12 @@ function alcRenderRoster() {
   tbody.innerHTML = mdAbcStaff.map((emp, i) => {
     const name = emp.name;
     const existing = date ? alcTests.find(t => t.date === date && t.employee === name) : null;
-    const resultOut = existing?.resultOut || existing?.result || ALC_RESULT_OPTIONS[0];
+    // ค่าเริ่มต้นต้องเป็น "ยังไม่เป่า" เสมอสำหรับคนที่ยังไม่มีบันทึกในวันนี้ — ไม่สืบทอดค่า
+    // ผลตรวจแบบเก่า (ฟิลด์ result ก่อนแยก 2 รอบ) มาเป็นค่าเริ่มต้นของ "ขา" เพราะนั่นไม่ใช่ผลที่
+    // ถูกกดเลือกจริงสำหรับวันนี้
+    const resultOut = existing?.resultOut || ALC_RESULT_OPTIONS[0];
     const resultReturn = existing?.resultReturn || ALC_RESULT_OPTIONS[0];
-    const note = existing?.note ?? ALC_DEFAULT_NOTE;
+    const note = existing?.note ?? '';
     const optsHtml = (selected) => ALC_RESULT_OPTIONS.map(o =>
       `<option value="${escapeHtml(o)}" ${o === selected ? 'selected' : ''}>${escapeHtml(o)}</option>`
     ).join('');
