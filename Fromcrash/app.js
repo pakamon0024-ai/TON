@@ -159,6 +159,7 @@ function addRequester() {
   saveRequesters();
   renderRequesterList();
   syncRequesterDropdowns();
+  if (typeof mdPushIfReady === 'function') mdPushIfReady();
   input.value = '';
   input.focus();
   showToast(`เพิ่มผู้เบิก: ${name}`, 'success');
@@ -169,6 +170,7 @@ function removeRequester(name) {
   saveRequesters();
   renderRequesterList();
   syncRequesterDropdowns();
+  if (typeof mdPushIfReady === 'function') mdPushIfReady();
   showToast(`ลบแล้ว: ${name}`, 'warning');
 }
 
