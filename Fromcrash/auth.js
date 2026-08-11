@@ -158,6 +158,7 @@ function authApplyRoleVisibility() {
   const isAdmin = currentUserProfile?.role === 'admin';
   const navUsers = document.getElementById('nav-users');
   if (navUsers) navUsers.style.display = isAdmin ? 'flex' : 'none';
+  if (typeof mdApplyAdminOnlyVisibility === 'function') mdApplyAdminOnlyVisibility();
 }
 
 function authToggleUserMenu() {

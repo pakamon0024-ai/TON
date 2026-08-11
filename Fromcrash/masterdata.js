@@ -61,6 +61,23 @@ function readExcelRows(file, callback) {
   reader.readAsArrayBuffer(file);
 }
 
+// ===== ปุ่ม "ลบทั้งหมด" เฉพาะแอดมิน (currentUserProfile มาจาก auth.js) =====
+function mdIsAdmin() {
+  return typeof currentUserProfile !== 'undefined' && currentUserProfile?.role === 'admin';
+}
+
+// ปุ่ม .admin-only-btn ทุกปุ่มในหน้าฐานข้อมูลหลักถูกซ่อนไว้ก่อน (style="display:none" ใน HTML)
+// เรียกฟังก์ชันนี้ทั้งตอน render หน้า และตอน login เสร็จ (จาก auth.js) เพื่ออัปเดตให้ตรงสิทธิ์จริง
+function mdApplyAdminOnlyVisibility() {
+  const show = mdIsAdmin();
+  document.querySelectorAll('.admin-only-btn').forEach(el => { el.style.display = show ? '' : 'none'; });
+}
+
+function mdConfirmDeleteAll(label) {
+  if (!mdIsAdmin()) { showToast('เฉพาะแอดมินเท่านั้นที่ลบทั้งหมดได้', 'error'); return false; }
+  return confirm(`ยืนยันลบข้อมูล "${label}" ทั้งหมด?\nการกระทำนี้ไม่สามารถย้อนกลับได้`);
+}
+
 // ===== พนักงานขับรถ =====
 function addDriverDB() {
   const name = document.getElementById('md-driver-name').value.trim();
@@ -86,6 +103,16 @@ function deleteDriverDB(id) {
   updateDriverDatalist();
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
+}
+
+function deleteAllDriversDB() {
+  if (!mdConfirmDeleteAll('พนักงานขับรถ')) return;
+  mdDrivers = [];
+  saveDriversDB();
+  renderDriversTable();
+  updateDriverDatalist();
+  mdPushIfReady();
+  showToast('ลบพนักงานขับรถทั้งหมดแล้ว', 'warning');
 }
 
 function renderDriversTable() {
@@ -178,6 +205,16 @@ function deleteVehicleDB(id) {
   showToast('ลบแล้ว', 'warning');
 }
 
+function deleteAllVehiclesDB() {
+  if (!mdConfirmDeleteAll('ทะเบียนรถ')) return;
+  mdVehicles = [];
+  saveVehiclesDB();
+  renderVehiclesTable();
+  updatePlateDatalist();
+  mdPushIfReady();
+  showToast('ลบทะเบียนรถทั้งหมดแล้ว', 'warning');
+}
+
 function renderVehiclesTable() {
   const tbody = document.getElementById('md-vehicle-body');
   if (!tbody) return;
@@ -257,6 +294,15 @@ function deleteCustomerDB(id) {
   renderCustomersTable();
   updateCustomerDatalist();
   showToast('ลบแล้ว', 'warning');
+}
+
+function deleteAllCustomersDB() {
+  if (!mdConfirmDeleteAll('ชื่อลูกค้า')) return;
+  mdCustomers = [];
+  saveCustomersDB();
+  renderCustomersTable();
+  updateCustomerDatalist();
+  showToast('ลบชื่อลูกค้าทั้งหมดแล้ว', 'warning');
 }
 
 function renderCustomersTable() {
@@ -345,6 +391,16 @@ function deleteBusinessUnitDB(name) {
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
+function deleteAllBusinessUnitsDB() {
+  if (!mdConfirmDeleteAll('หน่วยงาน')) return;
+  mdBusinessUnits = [];
+  saveBusinessUnitsDB();
+  renderBusinessUnitsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบหน่วยงานทั้งหมดแล้ว', 'warning');
+}
+
 function renderBusinessUnitsTable() {
   const tbody = document.getElementById('md-bu-body');
   if (!tbody) return;
@@ -375,6 +431,16 @@ function deleteInsurerDB(name) {
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
+function deleteAllInsurersDB() {
+  if (!mdConfirmDeleteAll('บริษัทประกัน')) return;
+  mdInsurers = [];
+  saveInsurersDB();
+  renderInsurersTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบบริษัทประกันทั้งหมดแล้ว', 'warning');
+}
+
 function renderInsurersTable() {
   const tbody = document.getElementById('md-insurer-body');
   if (!tbody) return;
@@ -405,6 +471,16 @@ function deleteYardDB(name) {
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
+function deleteAllYardsDB() {
+  if (!mdConfirmDeleteAll('ลานจอด')) return;
+  mdYards = [];
+  saveYardsDB();
+  renderYardsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบลานจอดทั้งหมดแล้ว', 'warning');
+}
+
 function renderYardsTable() {
   const tbody = document.getElementById('md-yard-body');
   if (!tbody) return;
@@ -435,6 +511,16 @@ function deleteIncidentPatternDB(name) {
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
+function deleteAllIncidentPatternsDB() {
+  if (!mdConfirmDeleteAll('ลักษณะการเกิดเหตุ')) return;
+  mdIncidentPatterns = [];
+  savePatternsDB();
+  renderIncidentPatternsTable();
+  if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบลักษณะการเกิดเหตุทั้งหมดแล้ว', 'warning');
+}
+
 function renderIncidentPatternsTable() {
   const tbody = document.getElementById('md-pattern-body');
   if (!tbody) return;
@@ -469,6 +555,16 @@ function deleteIssueTopicDB(name) {
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
+function deleteAllIssueTopicsDB() {
+  if (!mdConfirmDeleteAll('หัวข้อปัญหาการทำงาน')) return;
+  mdIssueTopics = [];
+  saveIssueTopicsDB();
+  renderIssueTopicsTable();
+  if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบหัวข้อปัญหาทั้งหมดแล้ว', 'warning');
+}
+
 function renderIssueTopicsTable() {
   const tbody = document.getElementById('md-topic-body');
   if (!tbody) return;
@@ -511,6 +607,16 @@ function deleteAbcStaffDB(id) {
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
+function deleteAllAbcStaffDB() {
+  if (!mdConfirmDeleteAll('พนักงานลาน ABC')) return;
+  mdAbcStaff = [];
+  saveAbcStaffDB();
+  renderAbcStaffTable();
+  if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบพนักงานลาน ABC ทั้งหมดแล้ว', 'warning');
+}
+
 function renderAbcStaffTable() {
   const tbody = document.getElementById('md-abcstaff-body');
   if (!tbody) return;
@@ -590,6 +696,13 @@ function deleteCategoryDB(name) {
   showToast('ลบแล้ว', 'warning');
 }
 
+function deleteAllCategoriesDB() {
+  if (!mdConfirmDeleteAll('หมวดหมู่ค่าใช้จ่าย')) return;
+  saveCategoriesDB([]);
+  renderCategoriesTable();
+  showToast('ลบหมวดหมู่ทั้งหมดแล้ว', 'warning');
+}
+
 function renderCategoriesTable() {
   const tbody = document.getElementById('md-category-body');
   if (!tbody) return;
@@ -633,6 +746,7 @@ function renderMasterData() {
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+  mdApplyAdminOnlyVisibility();
 }
 
 document.addEventListener('DOMContentLoaded', renderMasterData);
