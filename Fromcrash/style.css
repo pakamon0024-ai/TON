@@ -1095,16 +1095,25 @@ body {
 #inc-subpage-dashboard .dashboard-grid { margin-bottom: 12px; }
 #inc-subpage-dashboard .kpi-card {
   background: #fff; border: none; border-radius: 14px;
-  box-shadow: 0 8px 24px -12px rgba(10,31,56,.14); padding: 14px 18px;
+  box-shadow: 0 8px 24px -12px rgba(10,31,56,.16); padding: 14px 18px;
+  border-top: 4px solid transparent;
 }
 #inc-subpage-dashboard .kpi-card::before { display: none; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(1) { border-top-color: #ff6b00; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(2) { border-top-color: #4361ee; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(3) { border-top-color: #9b5de5; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(4) { border-top-color: #06d6a0; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(1) .kpi-value { color: #e85c00; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(2) .kpi-value { color: #3350e0; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(3) .kpi-value { color: #7c3fd4; }
+#inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(4) .kpi-value { color: #05b88f; }
 #inc-subpage-dashboard .kpi-card .kpi-label {
   font-family: 'Sarabun', sans-serif; font-size: .7rem;
   color: #7a8faa; text-transform: uppercase; letter-spacing: .5px;
   font-weight: 700; margin-bottom: 4px;
 }
 #inc-subpage-dashboard .kpi-card .kpi-value {
-  font-family: 'Kanit', 'Sarabun', sans-serif; color: #0a1f38; font-size: 1.45rem; font-weight: 700;
+  font-family: 'Kanit', 'Sarabun', sans-serif; font-size: 1.45rem; font-weight: 700;
 }
 .kpi-card-icon { font-size: 1.3rem; margin-bottom: 6px; display: block; }
 
@@ -1138,7 +1147,7 @@ body {
 
 #inc-report-container {
   position: fixed; left: -1100px; top: 0; z-index: 9998;
-  width: 1080px; height: 1350px; overflow: hidden;
+  width: 1080px; height: auto; overflow: hidden;
   background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
 }
 .rpt-header {

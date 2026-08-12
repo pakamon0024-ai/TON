@@ -10,11 +10,11 @@ let incRef = null;
 let incReady = false;
 
 const INC_CHART_COLORS = {
-  month:   { bg: '#4d5fd199', border: '#4d5fd1' },
-  yard:    { bg: '#0fa08a99', border: '#0fa08a' },
-  pattern: { bg: '#f0a93b99', border: '#f0a93b' },
-  bu:      { bg: '#3fc9a599', border: '#3fc9a5' },
-  area:    { bg: '#e2574c99', border: '#e2574c' },
+  month:   { bg: 'rgba(67,97,238,0.85)',   border: '#4361ee' },
+  yard:    { bg: 'rgba(6,214,160,0.88)',   border: '#06d6a0' },
+  pattern: { bg: 'rgba(255,107,0,0.88)',   border: '#ff6b00' },
+  bu:      { bg: 'rgba(155,93,229,0.85)',  border: '#9b5de5' },
+  area:    { bg: 'rgba(239,35,60,0.85)',   border: '#ef233c' },
 };
 const INC_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 11 };
 const INC_CHART_TICK = { color: '#7a8faa', font: INC_CHART_FONT };
@@ -614,6 +614,7 @@ async function incSaveReport() {
 
   const chartData = incBuildChartData(data);
 
+  rpt.style.height = 'auto';
   rpt.style.left = '0';
   rpt.style.zIndex = '9998';
 
@@ -621,8 +622,12 @@ async function incSaveReport() {
 
   await new Promise(r => setTimeout(r, 1000));
 
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
   try {
-    const canvas = await html2canvas(rpt, { width: 1080, height: 1350, scale: 1, useCORS: true, logging: false });
+    const canvas = await html2canvas(rpt, { width: 1080, height: captureH, scale: 1, useCORS: true, logging: false });
     const link = document.createElement('a');
     link.download = 'รายงานอุบัติเหตุ_' + now.toISOString().slice(0, 10) + '.png';
     link.href = canvas.toDataURL('image/png');
