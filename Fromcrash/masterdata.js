@@ -411,11 +411,17 @@ function renderRequestersTable() {
 }
 
 function updateRequesterDatalist() {
-  ['pc-requester', 'ap-requester'].forEach(id => {
+  if (typeof syncRequesterDropdowns === 'function') {
+    syncRequesterDropdowns();
+    return;
+  }
+  // fallback ถ้า app.js ยังไม่โหลด
+  ['pc-requester', 'ap-requester', 'pc-reviewer', 'ap-reviewer'].forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const current = sel.value;
-    sel.innerHTML = `<option value="">-- เลือกผู้เบิก --</option>` +
+    const placeholder = id.includes('reviewer') ? '-- เลือกผู้ตรวจสอบ --' : '-- เลือกผู้เบิก --';
+    sel.innerHTML = `<option value="">${placeholder}</option>` +
       mdRequesters.map(r => `<option value="${escapeHtml(r)}" ${r === current ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('');
   });
   if (typeof attachRequesterListeners === 'function') attachRequesterListeners();
