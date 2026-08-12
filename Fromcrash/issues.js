@@ -1,13 +1,12 @@
 // ===== ระบบบันทึกปัญหาการทำงาน =====
 // เก็บ local ที่ localStorage key 'finflow_work_issues' และ sync กับ Firebase ที่ /workIssues
-// (ใช้ Firebase connection เดียวกับ claims.js — fbDb/fbReady)
-// หัวข้อปัญหาเป็นรายการที่จัดการได้เอง (mdIssueTopics ใน masterdata.js) เลือกจาก dropdown
-// หรือกดปุ่ม "+" ในฟอร์มเพื่อเพิ่มหัวข้อใหม่ทันทีโดยไม่ต้องไปหน้าฐานข้อมูลหลัก
 
 let workIssues = JSON.parse(localStorage.getItem('finflow_work_issues') || '[]');
 let wiEditingId = null;
 let wiRef = null;
 let wiReady = false;
+
+const WI_XLSX_HEADERS = ['เลขที่','วันที่','หัวข้อปัญหา','ชื่อพนักงาน','ทะเบียน','หน่วยงาน','ลานจอด','รายละเอียด'];
 
 function wiSave() { localStorage.setItem('finflow_work_issues', JSON.stringify(workIssues)); }
 
@@ -26,7 +25,7 @@ function wiOnPageShown() {
   wiRenderList();
 }
 
-// ===== Lookup dropdown (หัวข้อปัญหา จาก masterdata.js) =====
+// ===== Lookup dropdowns =====
 function wiFillSelect(id, list) {
   const el = document.getElementById(id);
   if (!el) return;
@@ -35,27 +34,32 @@ function wiFillSelect(id, list) {
   el.innerHTML = placeholder + (list || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
   if (list && list.includes(current)) el.value = current;
 }
+
 function wiRefreshLookupDropdowns() {
   wiFillSelect('wi-topic', mdIssueTopics);
   wiFillSelect('wi-f-topic', mdIssueTopics);
+  wiFillSelect('wi-driver', (mdDrivers || []).map(d => d.name).filter(Boolean));
+  wiFillSelect('wi-plate', (mdVehicles || []).map(v => v.plate).filter(Boolean));
+  wiFillSelect('wi-bu', mdBusinessUnits);
+  wiFillSelect('wi-yard', mdYards);
+  wiFillSelect('wi-f-yard', mdYards);
+}
+
+function wiLookupVehicle() {
+  const plate = document.getElementById('wi-plate').value;
+  const veh = (mdVehicles || []).find(v => v.plate === plate);
+  if (veh?.businessUnit) document.getElementById('wi-bu').value = veh.businessUnit;
+  if (veh?.yard) document.getElementById('wi-yard').value = veh.yard;
 }
 
 function wiQuickAddTopic() {
   const name = (prompt('เพิ่มหัวข้อปัญหาใหม่:') || '').trim();
   if (!name) return;
-  if (typeof addIssueTopicDB !== 'function') return;
-  const input = document.getElementById('md-topic-name');
-  if (input) {
-    input.value = name;
-    addIssueTopicDB();
-  } else {
-    // fallback หากยังไม่เคยเข้าหน้าฐานข้อมูลหลัก (input ไม่ถูกสร้างใน DOM)
-    if (!mdIssueTopics.includes(name)) {
-      mdIssueTopics.push(name);
-      saveIssueTopicsDB();
-      wiRefreshLookupDropdowns();
-      if (typeof mdPushIfReady === 'function') mdPushIfReady();
-    }
+  if (!mdIssueTopics.includes(name)) {
+    mdIssueTopics.push(name);
+    if (typeof saveIssueTopicsDB === 'function') saveIssueTopicsDB();
+    wiRefreshLookupDropdowns();
+    if (typeof mdPushIfReady === 'function') mdPushIfReady();
   }
   const sel = document.getElementById('wi-topic');
   if (sel) sel.value = name;
@@ -70,30 +74,28 @@ function wiNextRunningNo() {
 function wiSaveCase() {
   const date = document.getElementById('wi-date').value;
   const topic = document.getElementById('wi-topic').value.trim();
-  const reporter = document.getElementById('wi-reporter').value.trim();
   const detail = document.getElementById('wi-detail').value.trim();
 
-  if (!date) { showToast('กรุณาระบุวันที่แจ้งปัญหา', 'warning'); return; }
+  if (!date) { showToast('กรุณาระบุวันที่', 'warning'); return; }
   if (!topic) { showToast('กรุณาเลือกหัวข้อปัญหา', 'warning'); return; }
   if (!detail) { showToast('กรุณาระบุรายละเอียดปัญหา', 'warning'); return; }
 
   const record = {
-    date, topic, reporter,
+    date, topic,
+    driverName: document.getElementById('wi-driver').value,
+    plate: document.getElementById('wi-plate').value,
+    businessUnit: document.getElementById('wi-bu').value,
+    yard: document.getElementById('wi-yard').value,
     detail,
-    status: document.getElementById('wi-status').value,
-    solution: document.getElementById('wi-solution').value.trim(),
-    resolvedDate: document.getElementById('wi-resolved-date').value,
   };
 
   if (wiEditingId) {
     const idx = workIssues.findIndex(i => i.id === wiEditingId);
     if (idx >= 0) {
       workIssues[idx] = { ...workIssues[idx], ...record, updatedAt: new Date().toISOString() };
-      showToast('✅ บันทึกการแก้ไขแล้ว', 'success');
+      showToast('บันทึกการแก้ไขแล้ว', 'success');
       if (typeof sendTelegramNotification === 'function') {
-        sendTelegramNotification(
-          `✏️ <b>แก้ไขบันทึกปัญหาการทำงาน</b>\nเลขที่: ${workIssues[idx].runningNo}\nหัวข้อ: ${escapeHtml(topic)}\nสถานะ: ${escapeHtml(record.status)}`
-        );
+        sendTelegramNotification(`✏️ <b>แก้ไขบันทึกปัญหาการทำงาน</b>\nเลขที่: ${workIssues[idx].runningNo}\nหัวข้อ: ${escapeHtml(topic)}`);
       }
     }
     wiCancelEdit();
@@ -102,10 +104,10 @@ function wiSaveCase() {
     record.runningNo = wiNextRunningNo();
     record.createdAt = new Date().toISOString();
     workIssues.unshift(record);
-    showToast('✅ บันทึกข้อมูลแล้ว', 'success');
+    showToast('บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
-        `⚠️ <b>บันทึกปัญหาการทำงานใหม่</b>\nเลขที่: ${record.runningNo}\nหัวข้อ: ${escapeHtml(topic)}\nผู้แจ้ง: ${escapeHtml(reporter)}\nรายละเอียด: ${escapeHtml(detail)}`
+        `⚠️ <b>บันทึกปัญหาการทำงานใหม่</b>\nเลขที่: ${record.runningNo}\nหัวข้อ: ${escapeHtml(topic)}\nพนักงาน: ${escapeHtml(record.driverName)}\nทะเบียน: ${escapeHtml(record.plate)}\nรายละเอียด: ${escapeHtml(detail)}`
       );
     }
     wiClearForm();
@@ -120,11 +122,11 @@ function wiClearForm() {
   document.getElementById('wi-edit-banner').style.display = 'none';
   document.getElementById('wi-date').value = '';
   document.getElementById('wi-topic').value = '';
-  document.getElementById('wi-reporter').value = '';
+  document.getElementById('wi-driver').value = '';
+  document.getElementById('wi-plate').value = '';
+  document.getElementById('wi-bu').value = '';
+  document.getElementById('wi-yard').value = '';
   document.getElementById('wi-detail').value = '';
-  document.getElementById('wi-status').value = 'รอดำเนินการ';
-  document.getElementById('wi-solution').value = '';
-  document.getElementById('wi-resolved-date').value = '';
 }
 
 function wiEditCase(id) {
@@ -134,20 +136,17 @@ function wiEditCase(id) {
   document.getElementById('wi-edit-banner').style.display = 'flex';
   document.getElementById('wi-edit-no').textContent = rec.runningNo;
   document.getElementById('wi-date').value = rec.date || '';
-  if (typeof setSelectValueSafe === 'function') setSelectValueSafe('wi-topic', rec.topic || '');
-  else document.getElementById('wi-topic').value = rec.topic || '';
-  document.getElementById('wi-reporter').value = rec.reporter || '';
+  document.getElementById('wi-topic').value = rec.topic || '';
+  document.getElementById('wi-driver').value = rec.driverName || '';
+  document.getElementById('wi-plate').value = rec.plate || '';
+  document.getElementById('wi-bu').value = rec.businessUnit || '';
+  document.getElementById('wi-yard').value = rec.yard || '';
   document.getElementById('wi-detail').value = rec.detail || '';
-  document.getElementById('wi-status').value = rec.status || 'รอดำเนินการ';
-  document.getElementById('wi-solution').value = rec.solution || '';
-  document.getElementById('wi-resolved-date').value = rec.resolvedDate || '';
   wiSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function wiCancelEdit() {
-  wiClearForm();
-}
+function wiCancelEdit() { wiClearForm(); }
 
 function wiDeleteCase(id) {
   if (!confirm('ยืนยันการลบบันทึกนี้?')) return;
@@ -161,27 +160,19 @@ function wiDeleteCase(id) {
 // ===== List / Filter =====
 function wiFilteredList() {
   const topic = document.getElementById('wi-f-topic')?.value || '';
-  const status = document.getElementById('wi-f-status')?.value || '';
+  const yard = document.getElementById('wi-f-yard')?.value || '';
   const search = (document.getElementById('wi-f-search')?.value || '').toLowerCase().trim();
   return workIssues.filter(i => {
     if (topic && i.topic !== topic) return false;
-    if (status && i.status !== status) return false;
-    if (search && !(`${i.topic} ${i.reporter} ${i.detail}`.toLowerCase().includes(search))) return false;
+    if (yard && i.yard !== yard) return false;
+    if (search && !(`${i.topic} ${i.driverName} ${i.plate} ${i.businessUnit} ${i.detail}`.toLowerCase().includes(search))) return false;
     return true;
   });
 }
 
 function wiClearListFilters() {
-  document.getElementById('wi-f-topic').value = '';
-  document.getElementById('wi-f-status').value = '';
-  document.getElementById('wi-f-search').value = '';
+  ['wi-f-topic', 'wi-f-yard', 'wi-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   wiRenderList();
-}
-
-function wiStatusBadge(status) {
-  if (status === 'เสร็จสิ้น') return `<span class="badge badge-green">${escapeHtml(status)}</span>`;
-  if (status === 'กำลังดำเนินการ') return `<span class="badge badge-orange">${escapeHtml(status)}</span>`;
-  return `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">${escapeHtml(status)}</span>`;
 }
 
 function wiRenderList() {
@@ -191,7 +182,7 @@ function wiRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(i => `
@@ -199,9 +190,11 @@ function wiRenderList() {
       <td>${i.runningNo}</td>
       <td>${formatDate(i.date)}</td>
       <td>${escapeHtml(i.topic)}</td>
-      <td>${escapeHtml(i.reporter || '-')}</td>
+      <td>${escapeHtml(i.driverName || '-')}</td>
+      <td>${escapeHtml(i.plate || '-')}</td>
+      <td>${escapeHtml(i.businessUnit || '-')}</td>
+      <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.detail)}</td>
-      <td>${wiStatusBadge(i.status)}</td>
       <td>
         <button class="action-btn action-view" onclick="wiEditCase('${i.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="wiDeleteCase('${i.id}')">ลบ</button>
@@ -210,7 +203,69 @@ function wiRenderList() {
   `).join('');
 }
 
-// ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
+// ===== Excel Export / Import / Template =====
+function wiExportExcel() {
+  if (!workIssues.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
+  const rows = [WI_XLSX_HEADERS, ...workIssues.map(i => [
+    i.runningNo, i.date, i.topic||'', i.driverName||'', i.plate||'', i.businessUnit||'', i.yard||'', i.detail||''
+  ])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [8, 14, 20, 18, 14, 18, 14, 36].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ปัญหาการทำงาน');
+  XLSX.writeFile(wb, 'บันทึกปัญหาการทำงาน_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  showToast('Export เรียบร้อย', 'success');
+}
+
+function wiDownloadTemplate() {
+  const sample = [
+    WI_XLSX_HEADERS,
+    ['', '2025-01-15', 'GPS', 'สมชาย ใจดี', '1กข 1234', 'Trailer', 'ABC', 'ตัวอย่างรายละเอียดปัญหาที่พบ']
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(sample);
+  ws['!cols'] = [8, 14, 20, 18, 14, 18, 14, 36].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, 'Template_บันทึกปัญหา.xlsx');
+  showToast('ดาวน์โหลด Template เรียบร้อย', 'success');
+}
+
+function wiImportExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      let added = 0;
+      rows.slice(1).forEach(row => {
+        if (!row[1] && !row[2]) return;
+        const rec = {
+          id: 'WI_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          runningNo: wiNextRunningNo(),
+          date: String(row[1] || '').trim(),
+          topic: String(row[2] || '').trim(),
+          driverName: String(row[3] || '').trim(),
+          plate: String(row[4] || '').trim(),
+          businessUnit: String(row[5] || '').trim(),
+          yard: String(row[6] || '').trim(),
+          detail: String(row[7] || '').trim(),
+          createdAt: new Date().toISOString(),
+        };
+        workIssues.push(rec);
+        added++;
+      });
+      wiSave(); wiPushIfReady(); wiRenderList();
+      showToast(`นำเข้า ${added} รายการ`, 'success');
+    } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
+    evt.target.value = '';
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ===== Firebase Sync =====
 function wiRecordsToObj(arr) {
   const o = {};
   (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; });
@@ -255,9 +310,7 @@ async function wiInit() {
     wiReady = true;
     if (!snap.exists() && workIssues.length > 0) await wiWriteFB();
     onValue(wiRef, s => { if (s.exists()) wiApplyServer(wiObjToRecords(s.val())); });
-  } catch (e) {
-    console.warn('wiInit error', e);
-  }
+  } catch (e) { console.warn('wiInit error', e); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

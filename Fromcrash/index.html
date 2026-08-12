@@ -1484,36 +1484,40 @@
                 </select>
               </div>
               <div class="filter-group">
-                <label>สถานะ</label>
-                <select id="wi-f-status" onchange="wiRenderList()">
+                <label>ลานจอด</label>
+                <select id="wi-f-yard" onchange="wiRenderList()">
                   <option value="">ทั้งหมด</option>
-                  <option value="รอดำเนินการ">รอดำเนินการ</option>
-                  <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                  <option value="เสร็จสิ้น">เสร็จสิ้น</option>
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="wi-f-search"
-                  placeholder="หัวข้อ / ผู้แจ้ง / รายละเอียด..." oninput="wiRenderList()" /></div>
-              <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้างตัวกรอง</button>
+                  placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="wiRenderList()" /></div>
+              <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="wiExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="wiImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="wiDownloadTemplate()">📋 Template</button>
             </div>
-            <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
-            </div>
+            <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
             <div class="recent-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
                     <th>เลขที่</th>
-                    <th>วันที่แจ้ง</th>
+                    <th>วันที่</th>
                     <th>หัวข้อปัญหา</th>
-                    <th>ผู้แจ้ง</th>
+                    <th>พนักงาน</th>
+                    <th>ทะเบียน</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
                     <th>รายละเอียด</th>
-                    <th>สถานะ</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="wi-list-body">
                   <tr>
-                    <td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -1529,46 +1533,34 @@
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลปัญหา</div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่แจ้งปัญหา <span class="req">*</span></label><input type="date"
-                    id="wi-date" /></div>
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="wi-date" /></div>
                 <div class="form-group">
                   <label>หัวข้อปัญหา <span class="req">*</span></label>
                   <div style="display:flex; gap:6px;">
-                    <select id="wi-topic" style="flex:1;">
-                      <option value="">-- เลือก --</option>
-                    </select>
-                    <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่"
-                      onclick="wiQuickAddTopic()">+</button>
+                    <select id="wi-topic" style="flex:1;"><option value="">-- เลือก --</option></select>
+                    <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่" onclick="wiQuickAddTopic()">+</button>
                   </div>
                 </div>
-                <div class="form-group"><label>ผู้แจ้ง</label><input type="text" id="wi-reporter"
-                    placeholder="ชื่อผู้แจ้ง" /></div>
+                <div class="form-group"><label>ชื่อพนักงานขับรถ</label>
+                  <select id="wi-driver"><option value="">-- เลือก --</option></select>
+                </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span
-                      class="req">*</span></label>
+                <div class="form-group"><label>ทะเบียน</label>
+                  <select id="wi-plate" onchange="wiLookupVehicle()"><option value="">-- เลือก --</option></select>
+                </div>
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <select id="wi-bu"><option value="">-- เลือก --</option></select>
+                </div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <select id="wi-yard"><option value="">-- เลือก --</option></select>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span class="req">*</span></label>
                   <textarea class="fta" id="wi-detail" rows="3" placeholder="อธิบายรายละเอียดปัญหาที่พบ..."></textarea>
                 </div>
               </div>
-
-              <div class="fieldset-title">การติดตามแก้ไข</div>
-              <div class="form-row-3">
-                <div class="form-group"><label>สถานะ</label>
-                  <select id="wi-status">
-                    <option value="รอดำเนินการ">รอดำเนินการ</option>
-                    <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                    <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>วันที่แก้ไขเสร็จ</label><input type="date" id="wi-resolved-date" /></div>
-              </div>
-              <div class="form-row-3">
-                <div class="form-group full" style="grid-column:1/-1;"><label>แนวทางแก้ไข / ผลการแก้ไข</label>
-                  <textarea class="fta" id="wi-solution" rows="3"
-                    placeholder="บันทึกแนวทางหรือผลการแก้ไขปัญหา..."></textarea>
-                </div>
-              </div>
-
               <div class="form-actions">
                 <button class="btn-secondary" onclick="wiClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
