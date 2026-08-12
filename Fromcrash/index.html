@@ -1126,7 +1126,8 @@
 
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage active" id="inc-subpage-dashboard">
-            <div class="filter-bar">
+            <!-- Navy header with filters -->
+            <div class="inc-dash-header">
               <div class="filter-group">
                 <label>ประเภทความเสียหาย</label>
                 <select id="inc-f-damagetype" onchange="incRenderDashboard()">
@@ -1141,8 +1142,7 @@
                   <option value="">ทั้งหมด</option>
                   <option value="ผิด">ผิด</option>
                   <option value="ถูก">ถูก</option>
-                  <option value="สินค้าเสียหาย">สิน
-                    เสียหาย</option>
+                  <option value="สินค้าเสียหาย">สินค้าเสียหาย</option>
                 </select>
               </div>
               <div class="filter-group">
@@ -1157,28 +1157,35 @@
                   <option value="">ทั้งหมด</option>
                 </select>
               </div>
-              <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้างตัวกรอง</button>
+              <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้าง</button>
+              <button class="inc-btn-report" onclick="incSaveReport()">📸 บันทึกภาพรายงาน</button>
             </div>
 
-            <div class="dashboard-grid" style="margin-bottom:20px;">
+            <!-- KPI cards -->
+            <div class="dashboard-grid" style="margin-bottom:12px;">
               <div class="kpi-card">
-                <div class="kpi-label">มูลค่าความเสียหายสะสม</div>
+                <span class="kpi-card-icon">💰</span>
+                <div class="kpi-label">ค่าเสียหายสะสม</div>
                 <div class="kpi-value" id="inc-kpi-total">฿0.00</div>
               </div>
               <div class="kpi-card">
+                <span class="kpi-card-icon">🚧</span>
                 <div class="kpi-label">จำนวนเหตุการณ์ทั้งหมด</div>
                 <div class="kpi-value" id="inc-kpi-count">0</div>
               </div>
               <div class="kpi-card">
+                <span class="kpi-card-icon">👤</span>
                 <div class="kpi-label">พนักงานที่เกิดเหตุบ่อยสุด</div>
-                <div class="kpi-value" id="inc-kpi-top-emp" style="font-size:0.95rem;">-</div>
+                <div class="kpi-value" id="inc-kpi-top-emp" style="font-size:1rem;">-</div>
               </div>
               <div class="kpi-card">
+                <span class="kpi-card-icon">🚛</span>
                 <div class="kpi-label">รถที่เกิดเหตุบ่อยสุด</div>
-                <div class="kpi-value" id="inc-kpi-top-veh" style="font-size:0.95rem;">-</div>
+                <div class="kpi-value" id="inc-kpi-top-veh" style="font-size:1.1rem;">-</div>
               </div>
             </div>
 
+            <!-- Chart grid -->
             <div class="chart-grid">
               <div class="chart-card">
                 <div class="chart-title">สถิติรายเดือน</div>
@@ -1189,7 +1196,7 @@
                 <div class="chart-box"><canvas id="inc-chart-yard"></canvas></div>
               </div>
               <div class="chart-card span-2">
-                <div class="chart-title">ลักษณะการเกิดเหตุ</div>
+                <div class="chart-title">ลักษณะการเกิดเหตุ (เรียงจากมากไปน้อย)</div>
                 <div class="chart-box"><canvas id="inc-chart-pattern"></canvas></div>
               </div>
               <div class="chart-card">
@@ -2158,6 +2165,62 @@
 
   </div><!-- /appRoot -->
 
+  <!-- Report save loading screen -->
+  <div id="inc-report-loading" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,31,56,.88);align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;">
+    <div class="rptl-spinner"></div>
+    <div style="font-family:'Kanit','Sarabun',sans-serif;font-size:1rem;font-weight:600;">กำลังสร้างรายงาน...</div>
+  </div>
+
+  <!-- Report container 1080×1350 (off-screen, captured by html2canvas) -->
+  <div id="inc-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title">รายงานสถิติอุบัติเหตุ</div>
+        <div class="rpt-date-text" id="rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนเหตุการณ์</div>
+        <div class="rpt-count-val" id="rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <div class="rpt-kpi">
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">ค่าเสียหายสะสม</div><div class="rpt-kpi-value" id="rpt-kpi-total">฿0</div></div>
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">จำนวนเหตุการณ์</div><div class="rpt-kpi-value" id="rpt-kpi-count">0</div></div>
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">พนักงานเกิดเหตุบ่อย</div><div class="rpt-kpi-value" id="rpt-kpi-emp" style="font-size:13px;line-height:1.2;">-</div></div>
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">ทะเบียนเกิดเหตุบ่อย</div><div class="rpt-kpi-value" id="rpt-kpi-veh">-</div></div>
+      </div>
+      <div class="rpt-chart-card">
+        <div class="rpt-chart-title">สถิติรายเดือน</div>
+        <div class="rpt-chart-box" style="height:168px;"><canvas id="rpt-chart-month"></canvas></div>
+      </div>
+      <div class="rpt-chart-card">
+        <div class="rpt-chart-title">ลักษณะการเกิดเหตุ (เรียงจากมากไปน้อย)</div>
+        <div class="rpt-chart-box" style="height:210px;"><canvas id="rpt-chart-pattern"></canvas></div>
+      </div>
+      <div class="rpt-row-2">
+        <div class="rpt-chart-card">
+          <div class="rpt-chart-title">หน่วยงาน</div>
+          <div class="rpt-chart-box" style="height:168px;"><canvas id="rpt-chart-bu"></canvas></div>
+        </div>
+        <div class="rpt-chart-card">
+          <div class="rpt-chart-title">ตามลานจอด</div>
+          <div class="rpt-chart-box" style="height:168px;"><canvas id="rpt-chart-yard"></canvas></div>
+        </div>
+      </div>
+      <div class="rpt-chart-card">
+        <div class="rpt-chart-title">สถานะอุบัติเหตุ (พื้นที่)</div>
+        <div class="rpt-chart-box" style="height:148px;"><canvas id="rpt-chart-area"></canvas></div>
+      </div>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบบันทึกอุบัติเหตุ FormCrash · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">FORMCRASH · SAFETY REPORT</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="app.js"></script>
   <script src="claims.js"></script>
   <script src="masterdata.js"></script>

@@ -5,8 +5,20 @@
 let incidents = JSON.parse(localStorage.getItem('finflow_incidents') || '[]');
 let incEditingId = null;
 let incCharts = {};
+let incReportCharts = {};
 let incRef = null;
 let incReady = false;
+
+const INC_CHART_COLORS = {
+  month:   { bg: '#4d5fd199', border: '#4d5fd1' },
+  yard:    { bg: '#0fa08a99', border: '#0fa08a' },
+  pattern: { bg: '#f0a93b99', border: '#f0a93b' },
+  bu:      { bg: '#3fc9a599', border: '#3fc9a5' },
+  area:    { bg: '#e2574c99', border: '#e2574c' },
+};
+const INC_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 11 };
+const INC_CHART_TICK = { color: '#7a8faa', font: INC_CHART_FONT };
+const INC_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
 
 const MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const DOW_LABELS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -380,16 +392,17 @@ function incRenderDashboard() {
   incDestroyChart('month');
   incCharts.month = new Chart(document.getElementById('inc-chart-month'), {
     type: 'bar',
-    data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: monthCount, backgroundColor: '#6c63ff88', borderColor: '#6c63ff', borderWidth: 2, borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
+  const yardSorted = Object.entries(yardCount).sort((a,b)=>b[1]-a[1]);
   incDestroyChart('yard');
   incCharts.yard = new Chart(document.getElementById('inc-chart-yard'), {
     type: 'bar',
-    data: { labels: Object.keys(yardCount), datasets: [{ label: 'จำนวนเหตุ', data: Object.values(yardCount), backgroundColor: '#43e97b88', borderColor: '#43e97b', borderWidth: 2, borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
@@ -397,8 +410,8 @@ function incRenderDashboard() {
   incDestroyChart('pattern');
   incCharts.pattern = new Chart(document.getElementById('inc-chart-pattern'), {
     type: 'bar',
-    data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: '#f7971e88', borderColor: '#f7971e', borderWidth: 2, borderRadius: 4 }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, y: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
@@ -406,16 +419,17 @@ function incRenderDashboard() {
   incDestroyChart('bu');
   incCharts.bu = new Chart(document.getElementById('inc-chart-bu'), {
     type: 'bar',
-    data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: '#38f9d788', borderColor: '#38f9d7', borderWidth: 2, borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const areaCount = {}; data.forEach(i => { if (i.area) areaCount[i.area] = (areaCount[i.area]||0)+1; });
+  const areaSorted = Object.entries(areaCount).sort((a,b)=>b[1]-a[1]);
   incDestroyChart('area');
   incCharts.area = new Chart(document.getElementById('inc-chart-area'), {
     type: 'bar',
-    data: { labels: Object.keys(areaCount), datasets: [{ label: 'จำนวนเหตุ', data: Object.values(areaCount), backgroundColor: '#f64f5988', borderColor: '#f64f59', borderWidth: 2, borderRadius: 4 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 }
 
@@ -512,6 +526,116 @@ function incImportExcel(event) {
     event.target.value = '';
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ===== Report Mode (1080×1350 PNG for LINE) =====
+function incDestroyReportChart(id) {
+  if (incReportCharts[id]) { incReportCharts[id].destroy(); delete incReportCharts[id]; }
+}
+
+function incBuildChartData(data) {
+  const monthCount = new Array(12).fill(0);
+  data.forEach(i => { if (i.incidentDate) { const m = new Date(i.incidentDate).getMonth(); if (!isNaN(m)) monthCount[m]++; } });
+  const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
+  const patternSorted = Object.entries(patternCount).sort((a,b)=>b[1]-a[1]);
+  const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
+  const buSorted = Object.entries(buCount).sort((a,b)=>b[1]-a[1]);
+  const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
+  const yardSorted = Object.entries(yardCount).sort((a,b)=>b[1]-a[1]);
+  const areaCount = {}; data.forEach(i => { if (i.area) areaCount[i.area] = (areaCount[i.area]||0)+1; });
+  const areaSorted = Object.entries(areaCount).sort((a,b)=>b[1]-a[1]);
+  return { monthCount, patternSorted, buSorted, yardSorted, areaSorted };
+}
+
+function incRenderReportCharts(chartData) {
+  const rptFont = { family: "'Kanit','Sarabun',sans-serif", size: 11 };
+  const rptTick = { color: '#7a8faa', font: rptFont };
+  const rptGrid = { color: 'rgba(10,31,56,0.07)' };
+  const rptOpts = (extra = {}) => ({
+    responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: { legend: { display: false } }, ...extra
+  });
+
+  incDestroyReportChart('month');
+  incReportCharts.month = new Chart(document.getElementById('rpt-chart-month'), {
+    type: 'bar',
+    data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: chartData.monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
+    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+  });
+
+  incDestroyReportChart('pattern');
+  incReportCharts.pattern = new Chart(document.getElementById('rpt-chart-pattern'), {
+    type: 'bar',
+    data: { labels: chartData.patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
+    options: rptOpts({ indexAxis: 'y', scales: { x: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, y: { grid: { display: false }, ticks: rptTick } } })
+  });
+
+  incDestroyReportChart('bu');
+  incReportCharts.bu = new Chart(document.getElementById('rpt-chart-bu'), {
+    type: 'bar',
+    data: { labels: chartData.buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
+    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+  });
+
+  incDestroyReportChart('yard');
+  incReportCharts.yard = new Chart(document.getElementById('rpt-chart-yard'), {
+    type: 'bar',
+    data: { labels: chartData.yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
+    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+  });
+
+  incDestroyReportChart('area');
+  incReportCharts.area = new Chart(document.getElementById('rpt-chart-area'), {
+    type: 'bar',
+    data: { labels: chartData.areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
+    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+  });
+}
+
+async function incSaveReport() {
+  const loading = document.getElementById('inc-report-loading');
+  const rpt = document.getElementById('inc-report-container');
+  loading.style.display = 'flex';
+
+  const data = incFilteredForDashboard();
+  const totalCost = data.reduce((s, i) => s + (i.total || 0), 0);
+  const empCount = {}; data.forEach(i => { if (i.employeeName) empCount[i.employeeName] = (empCount[i.employeeName]||0)+1; });
+  const topEmp = Object.entries(empCount).sort((a,b)=>b[1]-a[1])[0];
+  const vehCount = {}; data.forEach(i => { if (i.plate) vehCount[i.plate] = (vehCount[i.plate]||0)+1; });
+  const topVeh = Object.entries(vehCount).sort((a,b)=>b[1]-a[1])[0];
+
+  const now = new Date();
+  document.getElementById('rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('rpt-total-count').textContent = data.length;
+  document.getElementById('rpt-kpi-total').textContent = formatMoney(totalCost);
+  document.getElementById('rpt-kpi-count').textContent = data.length;
+  document.getElementById('rpt-kpi-emp').textContent = topEmp ? `${topEmp[0]} (${topEmp[1]} ครั้ง)` : '-';
+  document.getElementById('rpt-kpi-veh').textContent = topVeh ? `${topVeh[0]} (${topVeh[1]} ครั้ง)` : '-';
+
+  const chartData = incBuildChartData(data);
+
+  rpt.style.left = '0';
+  rpt.style.zIndex = '9998';
+
+  incRenderReportCharts(chartData);
+
+  await new Promise(r => setTimeout(r, 1000));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: 1080, height: 1350, scale: 1, useCORS: true, logging: false });
+    const link = document.createElement('a');
+    link.download = 'รายงานอุบัติเหตุ_' + now.toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('ดาวน์โหลดรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  rpt.style.left = '-1100px';
+  rpt.style.zIndex = '';
+  loading.style.display = 'none';
+  Object.keys(incReportCharts).forEach(id => incDestroyReportChart(id));
 }
 
 function incDeleteAllIncidents() {
