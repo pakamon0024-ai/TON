@@ -393,18 +393,20 @@ function incRenderDashboard() {
   });
 
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
+  const patternSorted = Object.entries(patternCount).sort((a,b) => b[1]-a[1]);
   incDestroyChart('pattern');
   incCharts.pattern = new Chart(document.getElementById('inc-chart-pattern'), {
     type: 'bar',
-    data: { labels: Object.keys(patternCount), datasets: [{ label: 'จำนวนเหตุ', data: Object.values(patternCount), backgroundColor: '#f7971e88', borderColor: '#f7971e', borderWidth: 2, borderRadius: 4 }] },
+    data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: '#f7971e88', borderColor: '#f7971e', borderWidth: 2, borderRadius: 4 }] },
     options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
+  const buSorted = Object.entries(buCount).sort((a,b) => b[1]-a[1]);
   incDestroyChart('bu');
   incCharts.bu = new Chart(document.getElementById('inc-chart-bu'), {
     type: 'bar',
-    data: { labels: Object.keys(buCount), datasets: [{ label: 'จำนวนเหตุ', data: Object.values(buCount), backgroundColor: '#38f9d788', borderColor: '#38f9d7', borderWidth: 2, borderRadius: 4 }] },
+    data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: '#38f9d788', borderColor: '#38f9d7', borderWidth: 2, borderRadius: 4 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
   });
 
