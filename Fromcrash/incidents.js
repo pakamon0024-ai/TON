@@ -303,11 +303,13 @@ function incFilteredList() {
   const dateFrom = document.getElementById('inc-lf-datefrom')?.value;
   const dateTo = document.getElementById('inc-lf-dateto')?.value;
   const yard = document.getElementById('inc-lf-yard')?.value;
+  const area = document.getElementById('inc-lf-area')?.value;
   const status = document.getElementById('inc-lf-status')?.value;
   const q = (document.getElementById('inc-lf-search')?.value || '').toLowerCase();
   return incidents.filter(i => {
     if (dateFrom && i.incidentDate < dateFrom) return false;
     if (dateTo && i.incidentDate > dateTo) return false;
+    if (area && i.area !== area) return false;
     if (yard && i.yard !== yard) return false;
     if (status && i.caseStatus !== status) return false;
     if (q && !((i.plate||'').toLowerCase().includes(q) || (i.employeeName||'').toLowerCase().includes(q))) return false;
@@ -316,7 +318,7 @@ function incFilteredList() {
 }
 
 function incClearListFilters() {
-  ['inc-lf-datefrom','inc-lf-dateto','inc-lf-yard','inc-lf-status','inc-lf-search'].forEach(id => { document.getElementById(id).value = ''; });
+  ['inc-lf-datefrom','inc-lf-dateto','inc-lf-yard','inc-lf-area','inc-lf-status','inc-lf-search'].forEach(id => { document.getElementById(id).value = ''; });
   incRenderList();
 }
 
