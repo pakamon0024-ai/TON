@@ -131,22 +131,6 @@
         </a>
       </nav>
 
-      <!-- Requester Manager Panel -->
-      <div class="requester-panel" id="requesterPanel">
-        <div class="requester-panel-header" onclick="toggleRequesterPanel()">
-          <span>👤 จัดการผู้เบิก</span>
-          <span class="requester-panel-arrow" id="requesterArrow">▾</span>
-        </div>
-        <div class="requester-panel-body" id="requesterPanelBody">
-          <div class="requester-add-row">
-            <input type="text" id="newRequesterInput" placeholder="พิมพ์ชื่อผู้เบิก..."
-              onkeydown="if(event.key==='Enter') addRequester()" />
-            <button class="btn-requester-add" onclick="addRequester()" title="เพิ่ม">+</button>
-          </div>
-          <ul class="requester-list" id="requesterList"></ul>
-        </div>
-      </div>
-
       <div class="sidebar-footer">
         <div class="org-info">
           <div class="org-avatar">A</div>
@@ -593,6 +577,7 @@
             <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
             <button class="subtab" id="md-tab-abcstaff" onclick="mdSwitchTopic('abcstaff')">🍃 พนักงานลาน ABC</button>
             <button class="subtab" id="md-tab-customer" onclick="mdSwitchTopic('customer')">🏢 ชื่อลูกค้า</button>
+            <button class="subtab" id="md-tab-requester" onclick="mdSwitchTopic('requester')">👤 ผู้เบิก</button>
             <button class="subtab" id="md-tab-category" onclick="mdSwitchTopic('category')">🏷️
               หมวดหมู่ค่าใช้จ่าย</button>
             <button class="subtab" id="md-tab-telegram" onclick="mdSwitchTopic('telegram')">🔔 แจ้งเตือน
@@ -968,6 +953,41 @@
                     </tr>
                   </thead>
                   <tbody id="md-customer-body">
+                    <tr>
+                      <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ผู้เบิก -->
+          <div class="subpage" id="md-subpage-requester">
+            <div class="form-card" style="margin-bottom:24px;">
+              <div class="items-header">
+                <h3>👤 ผู้เบิก</h3>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>ชื่อผู้เบิก</label>
+                  <input type="text" id="md-requester-name" placeholder="ชื่อ-นามสกุล"
+                    onkeydown="if(event.key==='Enter') addRequesterDB()" />
+                </div>
+              </div>
+              <div class="form-actions" style="justify-content:flex-start;">
+                <button class="btn-primary" onclick="addRequesterDB()">+ เพิ่มผู้เบิก</button>
+                <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllRequestersDB()">🗑️ ลบทั้งหมด</button>
+              </div>
+              <div class="recent-table-wrap" style="margin-top:16px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ชื่อผู้เบิก</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="md-requester-body">
                     <tr>
                       <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
                     </tr>

@@ -3,7 +3,7 @@ let records = JSON.parse(localStorage.getItem('finflow_records') || '[]');
 let pettyRows = [];
 let approvalRows = [];
 let currentPrintFn = null;
-let requesters = JSON.parse(localStorage.getItem('finflow_requesters') || '[]');
+// requesters ถูกย้ายไปจัดการใน masterdata.js แล้ว (mdRequesters)
 let editingPettyId = null;
 let editingApprovalId = null;
 
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   addApprovalRow();
   updateCurrentDate();
   autoDocNo();
-  loadRequesters();
+  syncRequesterDropdowns();
   updateThemeToggleIcon();
 });
 
@@ -135,65 +135,7 @@ function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
 
-// ===== Requester Manager =====
-function loadRequesters() {
-  renderRequesterList();
-  syncRequesterDropdowns();
-}
-
-function toggleRequesterPanel() {
-  const body = document.getElementById('requesterPanelBody');
-  const arrow = document.getElementById('requesterArrow');
-  body.classList.toggle('open');
-  arrow.classList.toggle('open');
-}
-
-function addRequester() {
-  const input = document.getElementById('newRequesterInput');
-  const name = input.value.trim();
-  if (!name) { input.focus(); return; }
-  if (requesters.includes(name)) {
-    showToast('มีชื่อนี้อยู่แล้ว', 'warning'); return;
-  }
-  requesters.push(name);
-  saveRequesters();
-  renderRequesterList();
-  syncRequesterDropdowns();
-  if (typeof mdPushIfReady === 'function') mdPushIfReady();
-  input.value = '';
-  input.focus();
-  showToast(`เพิ่มผู้เบิก: ${name}`, 'success');
-}
-
-function removeRequester(name) {
-  requesters = requesters.filter(r => r !== name);
-  saveRequesters();
-  renderRequesterList();
-  syncRequesterDropdowns();
-  if (typeof mdPushIfReady === 'function') mdPushIfReady();
-  showToast(`ลบแล้ว: ${name}`, 'warning');
-}
-
-function saveRequesters() {
-  localStorage.setItem('finflow_requesters', JSON.stringify(requesters));
-}
-
-function renderRequesterList() {
-  const ul = document.getElementById('requesterList');
-  if (!ul) return;
-  if (requesters.length === 0) {
-    ul.innerHTML = '<li class="requester-list-empty">ยังไม่มีรายชื่อ — พิมพ์ชื่อเพื่อเพิ่ม</li>';
-    return;
-  }
-  ul.innerHTML = requesters.map(name => `
-    <li>
-      <span title="${escapeHtml(name)}">${escapeHtml(name)}</span>
-      <button class="btn-req-delete" onclick="removeRequester('${escapeHtml(name).replace(/'/g, "&apos;")}')"
-        title="ลบรายชื่อนี้">✕</button>
-    </li>
-  `).join('');
-}
-
+// ===== Requester Dropdowns (ข้อมูลจาก mdRequesters ใน masterdata.js) =====
 function syncRequesterDropdowns() {
   const placeholders = {
     'pc-requester': '-- เลือกผู้เบิก --',
@@ -201,12 +143,13 @@ function syncRequesterDropdowns() {
     'pc-reviewer': '-- เลือกผู้ตรวจสอบ --',
     'ap-reviewer': '-- เลือกผู้ตรวจสอบ --',
   };
+  const list = (typeof mdRequesters !== 'undefined') ? mdRequesters : [];
   Object.keys(placeholders).forEach(id => {
     const sel = document.getElementById(id);
     if (!sel) return;
     const current = sel.value;
     sel.innerHTML = `<option value="">${placeholders[id]}</option>` +
-      requesters.map(r => `<option value="${escapeHtml(r)}" ${r === current ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('');
+      list.map(r => `<option value="${escapeHtml(r)}" ${r === current ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('');
   });
   attachRequesterListeners();
 }
