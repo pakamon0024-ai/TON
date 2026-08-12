@@ -805,7 +805,6 @@ function renderMasterData() {
   renderIncidentPatternsTable();
   renderIssueTopicsTable();
   renderAbcStaffTable();
-  renderCustomersTable();
   renderRequestersTable();
   updateRequesterDatalist();
   renderCategoriesTable();
