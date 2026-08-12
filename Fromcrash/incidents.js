@@ -397,15 +397,6 @@ function incRenderDashboard() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
-  const faultData = { 'ถูก': 0, 'ผิด': 0 };
-  data.forEach(i => { if (i.faultStatus === 'ถูก' || i.faultStatus === 'ผิด') faultData[i.faultStatus]++; });
-  incDestroyChart('fault');
-  incCharts.fault = new Chart(document.getElementById('inc-chart-fault'), {
-    type: 'bar',
-    data: { labels: ['ถูก', 'ผิด'], datasets: [{ label: 'จำนวน', data: [faultData['ถูก'], faultData['ผิด']], backgroundColor: ['rgba(6,214,160,0.88)', 'rgba(239,35,60,0.85)'], borderColor: ['#06d6a0', '#ef233c'], borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: { ...INC_CHART_TICK, font: { ...INC_CHART_FONT, size: 15, weight: '700' } } } } }
-  });
-
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
   const yardSorted = Object.entries(yardCount).sort((a,b)=>b[1]-a[1]);
   incDestroyChart('yard');
