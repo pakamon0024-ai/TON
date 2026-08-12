@@ -1108,8 +1108,8 @@ body {
 #inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(3) .kpi-value { color: #7c3fd4; }
 #inc-subpage-dashboard .dashboard-grid .kpi-card:nth-child(4) .kpi-value { color: #05b88f; }
 #inc-subpage-dashboard .kpi-card .kpi-label {
-  font-family: 'Sarabun', sans-serif; font-size: .7rem;
-  color: #7a8faa; text-transform: uppercase; letter-spacing: .5px;
+  font-family: 'Sarabun', sans-serif; font-size: .75rem;
+  color: #3d4f6d; text-transform: uppercase; letter-spacing: .5px;
   font-weight: 700; margin-bottom: 4px;
 }
 #inc-subpage-dashboard .kpi-card .kpi-value {
@@ -1124,8 +1124,8 @@ body {
   box-shadow: 0 8px 24px -12px rgba(10,31,56,.14); padding: 14px 16px 10px;
 }
 #inc-subpage-dashboard .chart-card .chart-title {
-  font-family: 'Sarabun', sans-serif; font-size: .7rem;
-  color: #7a8faa; letter-spacing: .5px;
+  font-family: 'Sarabun', sans-serif; font-size: .75rem;
+  color: #3d4f6d; letter-spacing: .5px; font-weight: 700;
 }
 #inc-subpage-dashboard .chart-card .chart-box { height: 165px; }
 @media (max-width: 920px) {
@@ -1166,13 +1166,13 @@ body {
   background: #fff; border-radius: 12px; padding: 16px 18px;
   box-shadow: 0 4px 16px -6px rgba(10,31,56,.14);
 }
-.rpt-kpi-label { font-size: 12px; color: #7a8faa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; font-weight: 700; }
+.rpt-kpi-label { font-size: 12px; color: #3d4f6d; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; font-weight: 700; }
 .rpt-kpi-value { font-family: 'Kanit', sans-serif; font-size: 22px; font-weight: 700; color: #0a1f38; line-height: 1.1; }
 .rpt-chart-card {
   background: #fff; border-radius: 12px; padding: 14px 16px 12px;
   box-shadow: 0 4px 16px -6px rgba(10,31,56,.14); margin-bottom: 12px;
 }
-.rpt-chart-title { font-size: 13px; color: #7a8faa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; font-weight: 700; }
+.rpt-chart-title { font-size: 13px; color: #3d4f6d; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; font-weight: 700; }
 .rpt-chart-box { position: relative; }
 .rpt-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .rpt-row-2 .rpt-chart-card { margin-bottom: 0; }
