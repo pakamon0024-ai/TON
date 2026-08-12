@@ -1155,31 +1155,31 @@ body {
   color: #fff; padding: 24px 36px;
   display: flex; justify-content: space-between; align-items: flex-end;
 }
-.rpt-org { font-size: 11px; opacity: .65; letter-spacing: .12em; text-transform: uppercase; }
-.rpt-title { font-family: 'Kanit', sans-serif; font-size: 24px; font-weight: 700; margin: 4px 0 2px; }
-.rpt-date-text { font-size: 12px; opacity: .75; }
-.rpt-count-label { font-size: 11px; opacity: .65; text-align: right; margin-bottom: 4px; }
-.rpt-count-val { font-family: 'Kanit', sans-serif; font-size: 28px; font-weight: 800; color: #f0a93b; text-align: right; }
+.rpt-org { font-size: 14px; opacity: .65; letter-spacing: .12em; text-transform: uppercase; }
+.rpt-title { font-family: 'Kanit', sans-serif; font-size: 30px; font-weight: 700; margin: 4px 0 2px; }
+.rpt-date-text { font-size: 15px; opacity: .75; }
+.rpt-count-label { font-size: 14px; opacity: .65; text-align: right; margin-bottom: 4px; }
+.rpt-count-val { font-family: 'Kanit', sans-serif; font-size: 36px; font-weight: 800; color: #f0a93b; text-align: right; }
 .rpt-body { padding: 20px 28px 0; }
-.rpt-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.rpt-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
 .rpt-kpi-card {
-  background: #fff; border-radius: 12px; padding: 12px 14px;
+  background: #fff; border-radius: 12px; padding: 16px 18px;
   box-shadow: 0 4px 16px -6px rgba(10,31,56,.14);
 }
-.rpt-kpi-label { font-size: 9.5px; color: #7a8faa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 3px; font-weight: 700; }
-.rpt-kpi-value { font-family: 'Kanit', sans-serif; font-size: 17px; font-weight: 700; color: #0a1f38; line-height: 1.1; }
+.rpt-kpi-label { font-size: 12px; color: #7a8faa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 5px; font-weight: 700; }
+.rpt-kpi-value { font-family: 'Kanit', sans-serif; font-size: 22px; font-weight: 700; color: #0a1f38; line-height: 1.1; }
 .rpt-chart-card {
-  background: #fff; border-radius: 12px; padding: 12px 14px 10px;
-  box-shadow: 0 4px 16px -6px rgba(10,31,56,.14); margin-bottom: 10px;
+  background: #fff; border-radius: 12px; padding: 14px 16px 12px;
+  box-shadow: 0 4px 16px -6px rgba(10,31,56,.14); margin-bottom: 12px;
 }
-.rpt-chart-title { font-size: 9.5px; color: #7a8faa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; font-weight: 700; }
+.rpt-chart-title { font-size: 13px; color: #7a8faa; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; font-weight: 700; }
 .rpt-chart-box { position: relative; }
-.rpt-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.rpt-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .rpt-row-2 .rpt-chart-card { margin-bottom: 0; }
 .rpt-footer {
-  margin: 10px 28px 0; padding: 10px 0;
+  margin: 12px 28px 0; padding: 12px 0;
   border-top: 1px solid #d4dce8;
   display: flex; justify-content: space-between; align-items: center;
 }
-.rpt-footer-note { font-size: 9.5px; color: #9aacbf; }
-.rpt-footer-brand { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; color: #4d5fd1; opacity: .75; }
+.rpt-footer-note { font-size: 12px; color: #9aacbf; }
+.rpt-footer-brand { font-size: 13px; font-weight: 700; letter-spacing: .12em; color: #4d5fd1; opacity: .75; }

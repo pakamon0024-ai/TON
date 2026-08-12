@@ -16,10 +16,10 @@ const INC_CHART_COLORS = {
   bu:      { bg: 'rgba(155,93,229,0.85)',  border: '#9b5de5' },
   area:    { bg: 'rgba(239,35,60,0.85)',   border: '#ef233c' },
 };
-const INC_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 11 };
+const INC_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
 const INC_CHART_TICK = { color: '#7a8faa', font: INC_CHART_FONT };
 const INC_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
-const INC_DL_OPTS = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 11, weight: '700' }, formatter: v => v > 0 ? v : '' };
+const INC_DL_OPTS = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' }, formatter: v => v > 0 ? v : '' };
 
 const MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const DOW_LABELS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -549,10 +549,10 @@ function incBuildChartData(data) {
 }
 
 function incRenderReportCharts(chartData) {
-  const rptFont = { family: "'Kanit','Sarabun',sans-serif", size: 11 };
+  const rptFont = { family: "'Kanit','Sarabun',sans-serif", size: 15 };
   const rptTick = { color: '#7a8faa', font: rptFont };
   const rptGrid = { color: 'rgba(10,31,56,0.07)' };
-  const rptDL = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 11, weight: '700' }, formatter: v => v > 0 ? v : '' };
+  const rptDL = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 15, weight: '700' }, formatter: v => v > 0 ? v : '' };
   const rptOpts = (extra = {}) => ({
     responsive: true, maintainAspectRatio: false, animation: false,
     plugins: { legend: { display: false }, datalabels: rptDL }, ...extra
@@ -617,6 +617,7 @@ async function incSaveReport() {
   const chartData = incBuildChartData(data);
 
   rpt.style.height = 'auto';
+  rpt.style.top = '0';
   rpt.style.left = '0';
   rpt.style.zIndex = '9998';
 
@@ -628,8 +629,12 @@ async function incSaveReport() {
   rpt.style.height = captureH + 'px';
   await new Promise(r => setTimeout(r, 60));
 
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 80));
+
   try {
-    const canvas = await html2canvas(rpt, { width: 1080, height: captureH, scale: 1, useCORS: true, logging: false });
+    const canvas = await html2canvas(rpt, { width: 1080, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
     const link = document.createElement('a');
     link.download = 'รายงานอุบัติเหตุ_' + now.toISOString().slice(0, 10) + '.png';
     link.href = canvas.toDataURL('image/png');
@@ -639,6 +644,8 @@ async function incSaveReport() {
     showToast('สร้างรายงานไม่ได้: ' + e.message, 'error');
   }
 
+  window.scrollTo(0, savedScroll);
+  rpt.style.top = '';
   rpt.style.left = '-1100px';
   rpt.style.zIndex = '';
   loading.style.display = 'none';
