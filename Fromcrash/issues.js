@@ -35,21 +35,29 @@ function wiFillSelect(id, list) {
   if (list && list.includes(current)) el.value = current;
 }
 
+function wiFillDatalist(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = (list || []).map(name => `<option value="${escapeHtml(name)}">`).join('');
+}
+
 function wiRefreshLookupDropdowns() {
-  wiFillSelect('wi-topic', mdIssueTopics);
+  wiFillDatalist('wi-topic-list', mdIssueTopics);
+  wiFillDatalist('wi-driver-list', (mdDrivers || []).map(d => d.name).filter(Boolean));
+  wiFillDatalist('wi-plate-list', (mdVehicles || []).map(v => v.plate).filter(Boolean));
+  wiFillDatalist('wi-bu-list', mdBusinessUnits);
+  wiFillDatalist('wi-yard-list', mdYards);
   wiFillSelect('wi-f-topic', mdIssueTopics);
-  wiFillSelect('wi-driver', (mdDrivers || []).map(d => d.name).filter(Boolean));
-  wiFillSelect('wi-plate', (mdVehicles || []).map(v => v.plate).filter(Boolean));
-  wiFillSelect('wi-bu', mdBusinessUnits);
-  wiFillSelect('wi-yard', mdYards);
   wiFillSelect('wi-f-yard', mdYards);
 }
 
 function wiLookupVehicle() {
-  const plate = document.getElementById('wi-plate').value;
+  const plate = document.getElementById('wi-plate').value.trim();
   const veh = (mdVehicles || []).find(v => v.plate === plate);
-  if (veh?.businessUnit) document.getElementById('wi-bu').value = veh.businessUnit;
-  if (veh?.yard) document.getElementById('wi-yard').value = veh.yard;
+  if (veh) {
+    if (veh.businessUnit) document.getElementById('wi-bu').value = veh.businessUnit;
+    if (veh.yard) document.getElementById('wi-yard').value = veh.yard;
+  }
 }
 
 function wiQuickAddTopic() {

@@ -1537,23 +1537,28 @@
                 <div class="form-group">
                   <label>หัวข้อปัญหา <span class="req">*</span></label>
                   <div style="display:flex; gap:6px;">
-                    <select id="wi-topic" style="flex:1;"><option value="">-- เลือก --</option></select>
+                    <input type="text" id="wi-topic" list="wi-topic-list" placeholder="พิมพ์หรือเลือก..." style="flex:1;" />
+                    <datalist id="wi-topic-list"></datalist>
                     <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่" onclick="wiQuickAddTopic()">+</button>
                   </div>
                 </div>
                 <div class="form-group"><label>ชื่อพนักงานขับรถ</label>
-                  <select id="wi-driver"><option value="">-- เลือก --</option></select>
+                  <input type="text" id="wi-driver" list="wi-driver-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="wi-driver-list"></datalist>
                 </div>
               </div>
               <div class="form-row-3">
                 <div class="form-group"><label>ทะเบียน</label>
-                  <select id="wi-plate" onchange="wiLookupVehicle()"><option value="">-- เลือก --</option></select>
+                  <input type="text" id="wi-plate" list="wi-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..." oninput="wiLookupVehicle()" />
+                  <datalist id="wi-plate-list"></datalist>
                 </div>
                 <div class="form-group"><label>หน่วยงาน</label>
-                  <select id="wi-bu"><option value="">-- เลือก --</option></select>
+                  <input type="text" id="wi-bu" list="wi-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="wi-bu-list"></datalist>
                 </div>
                 <div class="form-group"><label>ลานจอด</label>
-                  <select id="wi-yard"><option value="">-- เลือก --</option></select>
+                  <input type="text" id="wi-yard" list="wi-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="wi-yard-list"></datalist>
                 </div>
               </div>
               <div class="form-row-3">
