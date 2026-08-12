@@ -445,6 +445,35 @@ function incExportExcel() {
   XLSX.writeFile(wb, 'บันทึกอุบัติเหตุ_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 
+function incParseImportRow(row) {
+  const employeeName = String(row[5] || '').trim();
+  const plate = String(row[6] || '').trim();
+  if (!employeeName && !plate) return null;
+  const emp = mdDrivers.find(d => d.name === employeeName);
+  const veh = mdVehicles.find(v => v.plate === plate);
+  const incidentDate = normalizeImportDate(row[3]);
+  const d = incidentDate ? new Date(incidentDate) : null;
+  return {
+    tmsStatus: String(row[1]||'').trim(), damageType: String(row[2]||'').trim() || 'Accident',
+    incidentDate, incidentTime: String(row[4]||'').trim(),
+    dayOfWeek: d ? DOW_LABELS_TH[d.getDay()] : '', monthLabel: d ? MONTH_LABELS_TH[d.getMonth()]+' '+(d.getFullYear()) : '',
+    employeeName, employeeBirthDate: emp?.birthDate||'', employeeStartDate: emp?.startDate||'',
+    plate, owner: veh?.owner||'', businessUnit: veh?.businessUnit||'', yard: veh?.yard||'',
+    insuranceCompany: String(row[35]||'').trim() || veh?.insuranceCompany||'',
+    location: String(row[7]||'').trim(), description: String(row[8]||'').trim(),
+    faultStatus: String(row[9]||'').trim(), area: String(row[10]||'').trim(), incidentPattern: String(row[11]||'').trim(), severity: String(row[12]||'').trim(),
+    repairShop: String(row[13]||'').trim(), repairInDate: normalizeImportDate(row[14]), repairOutDate: normalizeImportDate(row[15]),
+    score: row[16]||'', claimNo: String(row[17]||'').trim(), zone: String(row[18]||'').trim(),
+    companyDamageCost: parseFloat(row[19])||0, companyPaid: parseFloat(row[20])||0, towingCost: parseFloat(row[21])||0,
+    chargedToCustomer: parseFloat(row[22])||0, chargedToEmployee: parseFloat(row[23])||0, advanceAmount: parseFloat(row[24])||0,
+    insurancePaid: parseFloat(row[25])||0, insuranceReportedAmount: parseFloat(row[26])||0, insuranceClaimStatus: String(row[27]||'').trim(),
+    remarkCost: String(row[28]||'').trim(), injuryStatus: String(row[29]||'').trim(),
+    otherPartyName: String(row[30]||'').trim(), otherPartyPhone: String(row[31]||'').trim(), otherPartyPlate: String(row[32]||'').trim(),
+    caseStatus: String(row[33]||'').trim() || 'Open', suspensionDays: parseFloat(row[34])||0,
+    total: (parseFloat(row[19])||0)+(parseFloat(row[20])||0)+(parseFloat(row[21])||0)+(parseFloat(row[22])||0)+(parseFloat(row[23])||0)+(parseFloat(row[24])||0)+(parseFloat(row[25])||0),
+  };
+}
+
 function incImportExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -453,44 +482,26 @@ function incImportExcel(event) {
       const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }).slice(1);
-      let added = 0;
+      let updated = 0, added = 0;
       rows.forEach((row, idx) => {
-        const employeeName = String(row[5] || '').trim();
-        const plate = String(row[6] || '').trim();
-        if (!employeeName && !plate) return;
-        const emp = mdDrivers.find(d => d.name === employeeName);
-        const veh = mdVehicles.find(v => v.plate === plate);
-        const incidentDate = normalizeImportDate(row[3]);
-        const d = incidentDate ? new Date(incidentDate) : null;
-        incidents.unshift({
-          id: 'INC_' + Date.now() + '_' + idx,
-          runningNo: incNextRunningNo(),
-          tmsStatus: String(row[1]||'').trim(), damageType: String(row[2]||'').trim() || 'Accident',
-          incidentDate, incidentTime: String(row[4]||'').trim(),
-          dayOfWeek: d ? DOW_LABELS_TH[d.getDay()] : '', monthLabel: d ? MONTH_LABELS_TH[d.getMonth()]+' '+(d.getFullYear()) : '',
-          employeeName, employeeBirthDate: emp?.birthDate||'', employeeStartDate: emp?.startDate||'',
-          plate, owner: veh?.owner||'', businessUnit: veh?.businessUnit||'', yard: veh?.yard||'',
-          insuranceCompany: String(row[35]||'').trim() || veh?.insuranceCompany||'',
-          location: String(row[7]||'').trim(), description: String(row[8]||'').trim(),
-          faultStatus: String(row[9]||'').trim(), area: String(row[10]||'').trim(), incidentPattern: String(row[11]||'').trim(), severity: String(row[12]||'').trim(),
-          repairShop: String(row[13]||'').trim(), repairInDate: normalizeImportDate(row[14]), repairOutDate: normalizeImportDate(row[15]),
-          score: row[16]||'', claimNo: String(row[17]||'').trim(), zone: String(row[18]||'').trim(),
-          companyDamageCost: parseFloat(row[19])||0, companyPaid: parseFloat(row[20])||0, towingCost: parseFloat(row[21])||0,
-          chargedToCustomer: parseFloat(row[22])||0, chargedToEmployee: parseFloat(row[23])||0, advanceAmount: parseFloat(row[24])||0,
-          insurancePaid: parseFloat(row[25])||0, insuranceReportedAmount: parseFloat(row[26])||0, insuranceClaimStatus: String(row[27]||'').trim(),
-          remarkCost: String(row[28]||'').trim(), injuryStatus: String(row[29]||'').trim(),
-          otherPartyName: String(row[30]||'').trim(), otherPartyPhone: String(row[31]||'').trim(), otherPartyPlate: String(row[32]||'').trim(),
-          caseStatus: String(row[33]||'').trim() || 'Open', suspensionDays: parseFloat(row[34])||0,
-          total: (parseFloat(row[19])||0) + (parseFloat(row[20])||0) + (parseFloat(row[21])||0) + (parseFloat(row[22])||0) + (parseFloat(row[23])||0) + (parseFloat(row[24])||0) + (parseFloat(row[25])||0),
-          createdAt: new Date().toISOString(),
-        });
-        added++;
+        const parsed = incParseImportRow(row);
+        if (!parsed) return;
+        const rowNo = parseInt(row[0]);
+        const existingIdx = rowNo ? incidents.findIndex(i => i.runningNo === rowNo) : -1;
+        if (existingIdx >= 0) {
+          incidents[existingIdx] = { ...incidents[existingIdx], ...parsed };
+          updated++;
+        } else {
+          incidents.unshift({ id: 'INC_' + Date.now() + '_' + idx, runningNo: incNextRunningNo(), createdAt: new Date().toISOString(), ...parsed });
+          added++;
+        }
       });
       incSave();
       incPushIfReady();
       incRenderList();
       incRenderDashboard();
-      showToast(`นำเข้า ${added} รายการ`, 'success');
+      const msg = [updated ? `อัปเดต ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
+      showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
     } catch (err) {
       showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error');
     }
