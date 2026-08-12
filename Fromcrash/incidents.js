@@ -512,6 +512,17 @@ function incImportExcel(event) {
   reader.readAsArrayBuffer(file);
 }
 
+function incDeleteAllIncidents() {
+  if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
+  if (!confirm(`ลบบันทึกอุบัติเหตุทั้งหมด ${incidents.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  incidents = [];
+  incSave();
+  incPushIfReady();
+  incRenderList();
+  incRenderDashboard();
+  showToast('ลบทั้งหมดเรียบร้อย', 'success');
+}
+
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function incRecordsToObj(arr) {
   const o = {};
