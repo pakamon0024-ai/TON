@@ -393,7 +393,7 @@ function incRenderDashboard() {
   incCharts.month = new Chart(document.getElementById('inc-chart-month'), {
     type: 'bar',
     data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
@@ -402,7 +402,7 @@ function incRenderDashboard() {
   incCharts.yard = new Chart(document.getElementById('inc-chart-yard'), {
     type: 'bar',
     data: { labels: yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
@@ -411,7 +411,7 @@ function incRenderDashboard() {
   incCharts.pattern = new Chart(document.getElementById('inc-chart-pattern'), {
     type: 'bar',
     data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, y: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, y: { grid: { display: false }, ticks: { ...INC_CHART_TICK, maxRotation: 0 } } } }
   });
 
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
@@ -420,7 +420,7 @@ function incRenderDashboard() {
   incCharts.bu = new Chart(document.getElementById('inc-chart-bu'), {
     type: 'bar',
     data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const areaCount = {}; data.forEach(i => { if (i.area) areaCount[i.area] = (areaCount[i.area]||0)+1; });
@@ -429,7 +429,7 @@ function incRenderDashboard() {
   incCharts.area = new Chart(document.getElementById('inc-chart-area'), {
     type: 'bar',
     data: { labels: areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 }
 
