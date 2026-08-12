@@ -19,6 +19,7 @@ const INC_CHART_COLORS = {
 const INC_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 11 };
 const INC_CHART_TICK = { color: '#7a8faa', font: INC_CHART_FONT };
 const INC_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
+const INC_DL_OPTS = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 11, weight: '700' }, formatter: v => v > 0 ? v : '' };
 
 const MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 const DOW_LABELS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
@@ -393,7 +394,7 @@ function incRenderDashboard() {
   incCharts.month = new Chart(document.getElementById('inc-chart-month'), {
     type: 'bar',
     data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
@@ -402,7 +403,7 @@ function incRenderDashboard() {
   incCharts.yard = new Chart(document.getElementById('inc-chart-yard'), {
     type: 'bar',
     data: { labels: yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
@@ -411,7 +412,7 @@ function incRenderDashboard() {
   incCharts.pattern = new Chart(document.getElementById('inc-chart-pattern'), {
     type: 'bar',
     data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { x: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, y: { grid: { display: false }, ticks: { ...INC_CHART_TICK, maxRotation: 0 } } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: { ...INC_CHART_TICK, maxRotation: 30 } } } }
   });
 
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
@@ -420,7 +421,7 @@ function incRenderDashboard() {
   incCharts.bu = new Chart(document.getElementById('inc-chart-bu'), {
     type: 'bar',
     data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const areaCount = {}; data.forEach(i => { if (i.area) areaCount[i.area] = (areaCount[i.area]||0)+1; });
@@ -429,7 +430,7 @@ function incRenderDashboard() {
   incCharts.area = new Chart(document.getElementById('inc-chart-area'), {
     type: 'bar',
     data: { labels: areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: { display: false } }, scales: { y: { beginAtZero: true, grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 }
 
@@ -551,44 +552,45 @@ function incRenderReportCharts(chartData) {
   const rptFont = { family: "'Kanit','Sarabun',sans-serif", size: 11 };
   const rptTick = { color: '#7a8faa', font: rptFont };
   const rptGrid = { color: 'rgba(10,31,56,0.07)' };
+  const rptDL = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 11, weight: '700' }, formatter: v => v > 0 ? v : '' };
   const rptOpts = (extra = {}) => ({
     responsive: true, maintainAspectRatio: false, animation: false,
-    plugins: { legend: { display: false } }, ...extra
+    plugins: { legend: { display: false }, datalabels: rptDL }, ...extra
   });
 
   incDestroyReportChart('month');
   incReportCharts.month = new Chart(document.getElementById('rpt-chart-month'), {
     type: 'bar',
     data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: chartData.monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
-    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+    options: rptOpts({ scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
   });
 
   incDestroyReportChart('pattern');
   incReportCharts.pattern = new Chart(document.getElementById('rpt-chart-pattern'), {
     type: 'bar',
     data: { labels: chartData.patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
-    options: rptOpts({ indexAxis: 'y', scales: { x: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, y: { grid: { display: false }, ticks: rptTick } } })
+    options: rptOpts({ scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: { ...rptTick, maxRotation: 30 } } } })
   });
 
   incDestroyReportChart('bu');
   incReportCharts.bu = new Chart(document.getElementById('rpt-chart-bu'), {
     type: 'bar',
     data: { labels: chartData.buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
-    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+    options: rptOpts({ scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
   });
 
   incDestroyReportChart('yard');
   incReportCharts.yard = new Chart(document.getElementById('rpt-chart-yard'), {
     type: 'bar',
     data: { labels: chartData.yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
-    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+    options: rptOpts({ scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
   });
 
   incDestroyReportChart('area');
   incReportCharts.area = new Chart(document.getElementById('rpt-chart-area'), {
     type: 'bar',
     data: { labels: chartData.areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: chartData.areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
-    options: rptOpts({ scales: { y: { beginAtZero: true, grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+    options: rptOpts({ scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
   });
 }
 
