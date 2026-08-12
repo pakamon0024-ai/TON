@@ -137,9 +137,9 @@ function incSaveCase() {
     employeeStartDate: emp?.startDate || '',
     plate,
     owner: veh?.owner || '',
-    businessUnit: veh?.businessUnit || '',
-    yard: veh?.yard || '',
-    insuranceCompany: veh?.insuranceCompany || '',
+    businessUnit: document.getElementById('inc-bu').value || veh?.businessUnit || '',
+    yard: document.getElementById('inc-yard-auto').value || veh?.yard || '',
+    insuranceCompany: document.getElementById('inc-insurance-auto').value || veh?.insuranceCompany || '',
     location: document.getElementById('inc-location').value.trim(),
     description: document.getElementById('inc-description').value.trim(),
     faultStatus: document.getElementById('inc-fault').value,
@@ -324,9 +324,9 @@ function incRenderList() {
       <td>${escapeHtml(i.employeeName || '-')}</td>
       <td style="font-family:monospace">${escapeHtml(i.plate || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
+      <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.faultStatus || '-')}</td>
       <td>${formatMoney(i.total)}</td>
-      <td>${i.caseStatus === 'Closed' ? '<span class="badge badge-green">Closed</span>' : '<span class="badge badge-orange">Open</span>'}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="action-btn action-view" onclick="incEditCase('${i.id}')">แก้ไข</button>
