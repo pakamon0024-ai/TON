@@ -418,12 +418,12 @@ function incRenderDashboard() {
 }
 
 // ===== Excel Import / Export / Template =====
-const INC_XLSX_HEADERS = ['เลขที่','สถานะTMS','ประเภท','วันที่','เวลา','ชื่อพนักงาน','ทะเบียนรถ','สถานที่','รายละเอียด','ถูกผิด','พื้นที่','ลักษณะ','ความรุนแรง','อู่ซ่อม','วันเข้าซ่อม','วันซ่อมเสร็จ','คะแนน','เลขที่เคลม','โซน','ค่าเสียหายบริษัท','บริษัทจ่ายจริง','ค่าลาก','เรียกเก็บลูกค้า','เรียกเก็บพนักงาน','เงินทดรอง','ประกันจ่าย','ยอดแจ้งประกัน','สถานะเคลม','หมายเหตุ','สถานะบาดเจ็บ','ชื่อคู่กรณี','เบอร์คู่กรณี','ทะเบียนคู่กรณี','สถานะเคส','วันหยุดงาน','ประกันภัย'];
+const INC_XLSX_HEADERS = ['เลขที่','สถานะTMS','ประเภท','วันที่','เวลา','ชื่อพนักงาน','ทะเบียนรถ','สถานที่','รายละเอียด','ถูกผิด','พื้นที่','ลักษณะ','ความรุนแรง','อู่ซ่อม','วันเข้าซ่อม','วันซ่อมเสร็จ','คะแนน','เลขที่เคลม','โซน','ค่าเสียหายบริษัท','บริษัทจ่ายจริง','ค่าลาก','เรียกเก็บลูกค้า','เรียกเก็บพนักงาน','เงินทดรอง','ประกันจ่าย','ยอดแจ้งประกัน','สถานะเคลม','หมายเหตุ','สถานะบาดเจ็บ','ชื่อคู่กรณี','เบอร์คู่กรณี','ทะเบียนคู่กรณี','สถานะเคส','วันหยุดงาน','ประกันภัย','ลานจอด','หน่วยงาน'];
 
 function incDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     INC_XLSX_HEADERS,
-    ['1','OK','Accident','2026-01-15','09:30','นายสมชาย ใจดี','70-1234','หน้าโรงงาน','รถชนท้าย','ผิด','On the way','เฉี่ยวชน','ทั่วไป','อู่ ก','2026-01-16','2026-01-20','5','CL-001','โซน1','15000','15000','0','0','0','0','15000','15000','อนุมัติ','','ไม่มี','','','','Closed','0','วิริยะ'],
+    ['1','OK','Accident','2026-01-15','09:30','นายสมชาย ใจดี','70-1234','หน้าโรงงาน','รถชนท้าย','ผิด','On the way','เฉี่ยวชน','ทั่วไป','อู่ ก','2026-01-16','2026-01-20','5','CL-001','โซน1','15000','15000','0','0','0','0','15000','15000','อนุมัติ','','ไม่มี','','','','Closed','0','วิริยะ','ลานจอด A','หน่วยงาน 1'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'บันทึกอุบัติเหตุ');
@@ -437,7 +437,7 @@ function incExportExcel() {
     i.faultStatus, i.area, i.incidentPattern, i.severity, i.repairShop, i.repairInDate, i.repairOutDate, i.score, i.claimNo, i.zone,
     i.companyDamageCost, i.companyPaid, i.towingCost, i.chargedToCustomer, i.chargedToEmployee, i.advanceAmount, i.insurancePaid,
     i.insuranceReportedAmount, i.insuranceClaimStatus, i.remarkCost, i.injuryStatus, i.otherPartyName, i.otherPartyPhone, i.otherPartyPlate,
-    i.caseStatus, i.suspensionDays, i.insuranceCompany,
+    i.caseStatus, i.suspensionDays, i.insuranceCompany, i.yard, i.businessUnit,
   ]);
   const ws = XLSX.utils.aoa_to_sheet([INC_XLSX_HEADERS, ...rows]);
   const wb = XLSX.utils.book_new();
@@ -458,7 +458,9 @@ function incParseImportRow(row) {
     incidentDate, incidentTime: String(row[4]||'').trim(),
     dayOfWeek: d ? DOW_LABELS_TH[d.getDay()] : '', monthLabel: d ? MONTH_LABELS_TH[d.getMonth()]+' '+(d.getFullYear()) : '',
     employeeName, employeeBirthDate: emp?.birthDate||'', employeeStartDate: emp?.startDate||'',
-    plate, owner: veh?.owner||'', businessUnit: veh?.businessUnit||'', yard: veh?.yard||'',
+    plate, owner: veh?.owner||'',
+    yard: String(row[36]||'').trim() || veh?.yard||'',
+    businessUnit: String(row[37]||'').trim() || veh?.businessUnit||'',
     insuranceCompany: String(row[35]||'').trim() || veh?.insuranceCompany||'',
     location: String(row[7]||'').trim(), description: String(row[8]||'').trim(),
     faultStatus: String(row[9]||'').trim(), area: String(row[10]||'').trim(), incidentPattern: String(row[11]||'').trim(), severity: String(row[12]||'').trim(),
