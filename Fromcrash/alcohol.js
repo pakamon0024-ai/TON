@@ -298,6 +298,16 @@ function alcSummaryMonthValue() {
   return document.getElementById('alc-summary-month')?.value || new Date().toISOString().substring(0, 7);
 }
 
+// จำนวนรอบที่เป่าจริงของวันนั้น (0-2) — นับจากผลตรวจที่ไม่ใช่ "ยังไม่เป่า" ของขาไป+ขากลับรวมกัน
+// 1 = เป่าแค่ขาเดียว, 2 = เป่าครบทั้ง 2 ขา
+function alcTestedCount(rec) {
+  if (!rec) return 0;
+  let count = 0;
+  if (rec.resultOut && rec.resultOut !== ALC_RESULT_OPTIONS[0]) count++;
+  if (rec.resultReturn && rec.resultReturn !== ALC_RESULT_OPTIONS[0]) count++;
+  return count;
+}
+
 // รวมข้อมูลของพนักงานแต่ละคนสำหรับเดือนที่เลือก: ผลรายวัน (byDay) + ค่าสูงสุดที่วัดได้ (maxLevel)
 function alcSummaryDataForMonth(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
@@ -332,7 +342,12 @@ function alcRenderSummary() {
   }).join('');
 
   const bodyRows = rows.map(({ emp, byDay, maxLevel }, i) => {
-    const timeCells = days.map(d => `<td class="alc-sum-cell">${byDay[d]?.time ? escapeHtml(byDay[d].time) : ''}</td>`).join('');
+    const countCells = days.map(d => {
+      const rec = byDay[d];
+      if (!rec) return '<td class="alc-sum-cell"></td>';
+      const c = alcTestedCount(rec);
+      return `<td class="alc-sum-cell${c < 2 ? ' alc-sum-flag' : ''}">${c || ''}</td>`;
+    }).join('');
     const levelCells = days.map(d => {
       const rec = byDay[d];
       if (!rec) return '<td class="alc-sum-cell"></td>';
@@ -344,9 +359,9 @@ function alcRenderSummary() {
         <td rowspan="2">${i + 1}</td>
         <td rowspan="2" class="alc-sum-name">${escapeHtml(emp.name)}</td>
         <td rowspan="2">${escapeHtml(emp.businessUnit || '-')}</td>
-        <td class="alc-sum-label">เวลาตรวจ</td>
+        <td class="alc-sum-label">จำนวนตรวจ</td>
         <td rowspan="2" class="alc-sum-max${maxLevel > 0 ? ' alc-sum-flag' : ''}">${maxLevel === null ? '-' : maxLevel}</td>
-        ${timeCells}
+        ${countCells}
       </tr>
       <tr>
         <td class="alc-sum-label">แอลกอฮอล์ (มก.)</td>
@@ -375,7 +390,7 @@ function alcExportSummaryExcel() {
 
   const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', ...days.map(String)]];
   rows.forEach(({ emp, byDay, maxLevel }, i) => {
-    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', 'เวลาตรวจ', maxLevel === null ? '-' : maxLevel, ...days.map(d => byDay[d]?.time || '')]);
+    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', 'จำนวนตรวจ', maxLevel === null ? '-' : maxLevel, ...days.map(d => byDay[d] ? alcTestedCount(byDay[d]) : '')]);
     sheetRows.push(['', '', '', 'แอลกอฮอล์ (มก.)', '', ...days.map(d => byDay[d] ? (byDay[d].level ?? 0) : '')]);
   });
 
