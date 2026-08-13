@@ -425,22 +425,22 @@ body {
 .alc-daily-table th, .alc-daily-table td {
   padding: 4px 6px; text-align: center; border: 1px solid var(--border); white-space: nowrap;
 }
-.alc-daily-table th { color: #fff; font-size: 0.68rem; font-weight: 700; line-height: 1.3; }
+.alc-daily-table th { background: var(--bg-secondary); color: var(--text-primary); font-size: 0.68rem; font-weight: 700; line-height: 1.3; }
 .alc-daily-table td:first-child, .alc-daily-table th:first-child { text-align: left; }
 .alc-daily-table td { font-weight: 600; }
 
-/* กลุ่ม "พนักงาน" (เขียว) */
-.alc-daily-grp-emp, .alc-daily-table thead .alc-daily-col-emp { background: #2f9e5c; }
-.alc-daily-table tbody .alc-daily-col-emp { background: color-mix(in srgb, #43e97b 14%, transparent); }
+/* กลุ่ม "พนักงาน" (เขียว) — ใช้ .alc-daily-table th/td คู่กับ class เพื่อให้ specificity ชนะ .data-table th/td ที่เป็นสีพื้นฐาน */
+.alc-daily-table th.alc-daily-grp-emp, .alc-daily-table th.alc-daily-col-emp { background: #2f9e5c; color: #fff; }
+.alc-daily-table td.alc-daily-col-emp { background: color-mix(in srgb, #43e97b 14%, transparent); }
 /* กลุ่ม "ขาไป" (น้ำเงิน) */
-.alc-daily-grp-out, .alc-daily-table thead .alc-daily-col-out { background: #2f6fd6; }
-.alc-daily-table tbody .alc-daily-col-out { background: color-mix(in srgb, #2f6fd6 12%, transparent); }
+.alc-daily-table th.alc-daily-grp-out, .alc-daily-table th.alc-daily-col-out { background: #2f6fd6; color: #fff; }
+.alc-daily-table td.alc-daily-col-out { background: color-mix(in srgb, #2f6fd6 12%, transparent); }
 /* กลุ่ม "ขากลับ" (ฟ้าอมเขียว) */
-.alc-daily-grp-ret, .alc-daily-table thead .alc-daily-col-ret { background: #0f9b8e; }
-.alc-daily-table tbody .alc-daily-col-ret { background: color-mix(in srgb, #0f9b8e 12%, transparent); }
+.alc-daily-table th.alc-daily-grp-ret, .alc-daily-table th.alc-daily-col-ret { background: #0f9b8e; color: #fff; }
+.alc-daily-table td.alc-daily-col-ret { background: color-mix(in srgb, #0f9b8e 12%, transparent); }
 /* คอลัมน์ "% สรุปการตรวจ" (ม่วง) */
-.alc-daily-grp-summary, .alc-daily-table thead .alc-daily-col-summary { background: var(--accent-primary); }
-.alc-daily-table tbody .alc-daily-col-summary { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); font-weight: 700; }
+.alc-daily-table th.alc-daily-grp-summary, .alc-daily-table th.alc-daily-col-summary { background: var(--accent-primary); color: #fff; }
+.alc-daily-table td.alc-daily-col-summary { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); font-weight: 700; }
 
 .alc-daily-pct {
   display: inline-block; min-width: 40px; padding: 2px 6px; border-radius: 5px;
