@@ -120,11 +120,13 @@ function deleteAllDriversDB() {
 function renderDriversTable() {
   const tbody = document.getElementById('md-driver-body');
   if (!tbody) return;
-  if (mdDrivers.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+  const search = (document.getElementById('md-driver-search')?.value || '').trim().toLowerCase();
+  const list = search ? mdDrivers.filter(d => (d.name || '').toLowerCase().includes(search)) : mdDrivers;
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${mdDrivers.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
     return;
   }
-  tbody.innerHTML = mdDrivers.map(d => `
+  tbody.innerHTML = list.map(d => `
     <tr>
       <td>${escapeHtml(d.name)}</td>
       <td>${formatDate(d.birthDate)}</td>
@@ -144,6 +146,18 @@ function downloadDriverTemplate() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'พนักงานขับรถ');
   XLSX.writeFile(wb, 'template_พนักงานขับรถ.xlsx');
+}
+
+function exportDriverExcel() {
+  if (mdDrivers.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
+  const rows = [
+    ['ชื่อพนักงาน', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)'],
+    ...mdDrivers.map(d => [d.name, d.birthDate || '', d.startDate || '']),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'พนักงานขับรถ');
+  XLSX.writeFile(wb, `พนักงานขับรถ_${new Date().toISOString().substring(0, 10)}.xlsx`);
 }
 
 function importDriverExcel(event) {
@@ -218,11 +232,13 @@ function deleteAllVehiclesDB() {
 function renderVehiclesTable() {
   const tbody = document.getElementById('md-vehicle-body');
   if (!tbody) return;
-  if (mdVehicles.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+  const search = (document.getElementById('md-vehicle-search')?.value || '').trim().toLowerCase();
+  const list = search ? mdVehicles.filter(v => (v.plate || '').toLowerCase().includes(search) || (v.owner || '').toLowerCase().includes(search)) : mdVehicles;
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
     return;
   }
-  tbody.innerHTML = mdVehicles.map(v => `
+  tbody.innerHTML = list.map(v => `
     <tr>
       <td style="font-family:monospace">${escapeHtml(v.plate)}</td>
       <td>${escapeHtml(v.owner || '-')}</td>
@@ -241,6 +257,18 @@ function downloadVehicleTemplate() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
   XLSX.writeFile(wb, 'template_ทะเบียนรถ.xlsx');
+}
+
+function exportVehicleExcel() {
+  if (mdVehicles.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
+  const rows = [
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)'],
+    ...mdVehicles.map(v => [v.plate, v.owner || '', v.registerDate || '']),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
+  XLSX.writeFile(wb, `ทะเบียนรถ_${new Date().toISOString().substring(0, 10)}.xlsx`);
 }
 
 function importVehicleExcel(event) {

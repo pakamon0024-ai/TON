@@ -606,7 +606,9 @@
                 <button class="btn-secondary" onclick="downloadDriverTemplate()">📄 Template Excel</button>
                 <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file"
                     accept=".xlsx,.xls" style="display:none" onchange="importDriverExcel(event)"></label>
+                <button class="btn-secondary" onclick="exportDriverExcel()">📊 Export Excel</button>
               </div>
+              <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา — ระบบจะจับคู่ด้วยชื่อพนักงาน ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ชื่อพนักงาน</label>
@@ -625,6 +627,10 @@
                 <button class="btn-primary" onclick="addDriverDB()">+ เพิ่มพนักงาน</button>
                 <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllDriversDB()">🗑️
                   ลบทั้งหมด</button>
+              </div>
+              <div class="form-group" style="margin-top:16px; max-width:320px;">
+                <label>ค้นหาพนักงาน</label>
+                <input type="text" id="md-driver-search" placeholder="พิมพ์ชื่อพนักงาน..." oninput="renderDriversTable()" />
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
@@ -658,7 +664,9 @@
                 <button class="btn-secondary" onclick="downloadVehicleTemplate()">📄 Template Excel</button>
                 <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file"
                     accept=".xlsx,.xls" style="display:none" onchange="importVehicleExcel(event)"></label>
+                <button class="btn-secondary" onclick="exportVehicleExcel()">📊 Export Excel</button>
               </div>
+              <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา — ระบบจะจับคู่ด้วยทะเบียนรถ ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ</label>
@@ -682,6 +690,10 @@
                 <button class="btn-primary" onclick="addVehicleDB()">+ เพิ่มรถ</button>
                 <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllVehiclesDB()">🗑️
                   ลบทั้งหมด</button>
+              </div>
+              <div class="form-group" style="margin-top:16px; max-width:320px;">
+                <label>ค้นหารถ</label>
+                <input type="text" id="md-vehicle-search" placeholder="พิมพ์ทะเบียนหรือเจ้าของรถ..." oninput="renderVehiclesTable()" />
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
