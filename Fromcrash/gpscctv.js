@@ -58,12 +58,14 @@ function gcSaveCase() {
   const company = document.getElementById('gc-company').value.trim();
   const installDate = document.getElementById('gc-install-date').value;
   const removeDate = document.getElementById('gc-remove-date').value;
+  const serialNumber = document.getElementById('gc-serial').value.trim();
+  const simNumber = document.getElementById('gc-sim').value.trim();
   const note = document.getElementById('gc-note').value.trim();
 
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
   if (!installDate) { showToast('กรุณาระบุวันที่ติดตั้ง', 'warning'); return; }
 
-  const record = { plate, owner, device, company, installDate, removeDate, note };
+  const record = { plate, owner, device, company, installDate, removeDate, serialNumber, simNumber, note };
 
   if (gcEditingId) {
     const idx = gcRecords.findIndex(r => r.id === gcEditingId);
@@ -88,6 +90,7 @@ function gcSaveCase() {
   gcSave();
   gcPushIfReady();
   gcRenderList();
+  if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
 }
 
 function gcClearForm() {
@@ -99,6 +102,8 @@ function gcClearForm() {
   document.getElementById('gc-company').value = '';
   document.getElementById('gc-install-date').value = '';
   document.getElementById('gc-remove-date').value = '';
+  document.getElementById('gc-serial').value = '';
+  document.getElementById('gc-sim').value = '';
   document.getElementById('gc-note').value = '';
 }
 
@@ -114,6 +119,8 @@ function gcEditCase(id) {
   document.getElementById('gc-company').value = rec.company || '';
   document.getElementById('gc-install-date').value = rec.installDate || '';
   document.getElementById('gc-remove-date').value = rec.removeDate || '';
+  document.getElementById('gc-serial').value = rec.serialNumber || '';
+  document.getElementById('gc-sim').value = rec.simNumber || '';
   document.getElementById('gc-note').value = rec.note || '';
   gcSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -127,6 +134,7 @@ function gcDeleteCase(id) {
   gcSave();
   gcPushIfReady();
   gcRenderList();
+  if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
   showToast('ลบแล้ว', 'warning');
 }
 
@@ -168,6 +176,8 @@ function gcRenderList() {
       <td>${escapeHtml(r.company || '-')}</td>
       <td>${formatDate(r.installDate)}</td>
       <td>${r.removeDate ? formatDate(r.removeDate) : '-'}</td>
+      <td>${escapeHtml(r.serialNumber || '-')}</td>
+      <td>${escapeHtml(r.simNumber || '-')}</td>
       <td>${gcStatusBadge(r)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
       <td>
@@ -317,8 +327,8 @@ function grRenderList() {
 // ===== Excel: ติดตั้ง/ถอด (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่ติดตั้ง) =====
 function gcDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'หมายเหตุ'],
-    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', ''],
+    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'เลข S/N', 'เบอร์ SIM', 'หมายเหตุ'],
+    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', 'SN-12345', '081-234-5678', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ติดตั้ง-ถอด');
@@ -329,8 +339,8 @@ function gcExportExcel() {
   const list = gcFilteredList();
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'สถานะ', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
+    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'เลข S/N', 'เบอร์ SIM', 'สถานะ', 'หมายเหตุ'],
+    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', r.serialNumber || '', r.simNumber || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -352,7 +362,8 @@ function gcImportExcel(event) {
       const record = {
         plate, owner: String(row[1] || '').trim() || veh?.owner || '', device,
         company: String(row[3] || '').trim(), installDate, removeDate: normalizeImportDate(row[5]),
-        note: String(row[6] || '').trim(),
+        serialNumber: String(row[6] || '').trim(), simNumber: String(row[7] || '').trim(),
+        note: String(row[8] || '').trim(),
       };
       const idx = gcRecords.findIndex(r => r.plate === plate && r.device === device && r.installDate === installDate);
       if (idx >= 0) { gcRecords[idx] = { ...gcRecords[idx], ...record, updatedAt: new Date().toISOString() }; updated++; }
@@ -361,6 +372,7 @@ function gcImportExcel(event) {
     gcSave();
     gcPushIfReady();
     gcRenderList();
+    if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
     showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
     event.target.value = '';
   });
@@ -421,7 +433,7 @@ function grImportExcel(event) {
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function gcRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function gcObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
-function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); }
+function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); if (typeof renderVehiclesTable === 'function') renderVehiclesTable(); }
 async function gcWriteFB() {
   if (!gcRef) return;
   try {

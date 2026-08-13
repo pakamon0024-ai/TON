@@ -588,6 +588,7 @@
             <button class="subtab" id="md-tab-pattern" onclick="mdSwitchTopic('pattern')">💥 ลักษณะการเกิดเหตุ</button>
             <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
             <button class="subtab" id="md-tab-abcstaff" onclick="mdSwitchTopic('abcstaff')">🍃 พนักงานลาน ABC</button>
+            <button class="subtab" id="md-tab-bz" onclick="mdSwitchTopic('bz')">🫁 เครื่องเป่าแอลกอฮอล์</button>
             <button class="subtab" id="md-tab-customer" onclick="mdSwitchTopic('customer')">🏢 ชื่อลูกค้า</button>
             <button class="subtab" id="md-tab-requester" onclick="mdSwitchTopic('requester')">👤 ผู้เบิก</button>
             <button class="subtab" id="md-tab-category" onclick="mdSwitchTopic('category')">🏷️
@@ -669,7 +670,8 @@
                 <button class="btn-secondary" onclick="exportVehicleExcel()">📊 Export Excel</button>
               </div>
               <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา —
-                ระบบจะจับคู่ด้วยทะเบียนรถ ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+                ระบบจะจับคู่ด้วยทะเบียนรถ ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ<br />
+                คอลัมน์ GPS/CCTV/เลข S/N/เบอร์ SIM ดึงมาจากเมนู "จัดการ GPS/CCTV" อัตโนมัติ — แก้ไขที่เมนูนั้นแทน</p>
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ</label>
@@ -707,12 +709,16 @@
                       <th>เจ้าของรถ</th>
                       <th>วันที่จดทะเบียน</th>
                       <th>อายุรถ</th>
+                      <th>GPS วันที่ติดตั้ง</th>
+                      <th>CCTV วันที่ติดตั้ง</th>
+                      <th>เลข S/N</th>
+                      <th>เบอร์ SIM</th>
                       <th>จัดการ</th>
                     </tr>
                   </thead>
                   <tbody id="md-vehicle-body">
                     <tr>
-                      <td colspan="5" class="empty-state">ยังไม่มีข้อมูล</td>
+                      <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
                     </tr>
                   </tbody>
                 </table>
@@ -942,6 +948,77 @@
                   <tbody id="md-abcstaff-body">
                     <tr>
                       <td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- เครื่องเป่าแอลกอฮอล์ -->
+          <div class="subpage" id="md-subpage-bz">
+            <div class="form-card" style="margin-bottom:24px;">
+              <div class="items-header">
+                <h3>🫁 เครื่องเป่าแอลกอฮอล์</h3>
+              </div>
+              <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:14px;">ทะเบียนตัวเครื่อง (inventory) —
+                คนละส่วนกับผลตรวจในเมนู "เป่าวัดแอลกอฮอล์"</p>
+              <div class="filter-bar" style="margin-bottom:14px;">
+                <button class="btn-secondary" onclick="downloadBreathalyzerTemplate()">📄 Template Excel</button>
+                <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file"
+                    accept=".xlsx,.xls" style="display:none" onchange="importBreathalyzerExcel(event)"></label>
+                <button class="btn-secondary" onclick="exportBreathalyzerExcel()">📊 Export Excel</button>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>เลขเครื่อง</label>
+                  <input type="text" id="md-bz-deviceno" placeholder="เช่น BZ-001" />
+                </div>
+                <div class="form-group">
+                  <label>ทะเบียนรถ</label>
+                  <input type="text" id="md-bz-plate" list="plateNoList" placeholder="ทะเบียนรถ"
+                    onchange="bzLookupVehicle()" />
+                </div>
+                <div class="form-group">
+                  <label>เจ้าของรถ</label>
+                  <input type="text" id="md-bz-owner" placeholder="เจ้าของรถ" readonly />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>รับวันไหน</label>
+                  <input type="date" id="md-bz-receive-date" />
+                </div>
+                <div class="form-group">
+                  <label>คืนวันไหน</label>
+                  <input type="date" id="md-bz-return-date" />
+                </div>
+                <div class="form-group">
+                  <label>หมายเหตุ</label>
+                  <input type="text" id="md-bz-note" placeholder="หมายเหตุ" />
+                </div>
+              </div>
+              <div class="form-actions" style="justify-content:flex-start;">
+                <button class="btn-primary" onclick="addBreathalyzerDB()">+ เพิ่มเครื่องเป่าแอลกอฮอล์</button>
+                <button class="btn-danger admin-only-btn" style="display:none;"
+                  onclick="deleteAllBreathalyzersDB()">🗑️ ลบทั้งหมด</button>
+              </div>
+              <div class="recent-table-wrap" style="margin-top:16px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>เลขเครื่อง</th>
+                      <th>ทะเบียนรถ</th>
+                      <th>เจ้าของรถ</th>
+                      <th>รับวันไหน</th>
+                      <th>คืนวันไหน</th>
+                      <th>หมายเหตุ</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="md-bz-body">
+                    <tr>
+                      <td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td>
                     </tr>
                   </tbody>
                 </table>
@@ -1976,6 +2053,8 @@
                     <th>บริษัท</th>
                     <th>วันที่ติดตั้ง</th>
                     <th>วันที่ถอด</th>
+                    <th>เลข S/N</th>
+                    <th>เบอร์ SIM</th>
                     <th>สถานะ</th>
                     <th>หมายเหตุ</th>
                     <th>จัดการ</th>
@@ -1983,7 +2062,7 @@
                 </thead>
                 <tbody id="gc-list-body">
                   <tr>
-                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -2019,6 +2098,10 @@
                 <div class="form-group"><label>วันที่ติดตั้ง <span class="req">*</span></label><input type="date"
                     id="gc-install-date" /></div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="gc-remove-date" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>เลข S/N</label><input type="text" id="gc-serial" placeholder="เลข S/N อุปกรณ์" /></div>
+                <div class="form-group"><label>เบอร์ SIM</label><input type="text" id="gc-sim" placeholder="เบอร์ SIM ที่ใช้กับอุปกรณ์" /></div>
               </div>
               <div class="form-row-3">
                 <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>

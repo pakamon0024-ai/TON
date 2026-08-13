@@ -209,6 +209,23 @@ function addVehicleDB() {
   showToast('เพิ่มรถแล้ว', 'success');
 }
 
+// ดึงสถานะ GPS/CCTV ล่าสุดของรถแต่ละคันจากเมนู "จัดการ GPS/CCTV" (gcRecords ใน gpscctv.js)
+// นับเฉพาะรายการที่ยังไม่ถอด (ไม่มี removeDate) และเอาวันที่ติดตั้งล่าสุดของแต่ละประเภทอุปกรณ์
+function mdVehicleGpsCctvInfo(plate) {
+  if (typeof gcRecords === 'undefined') return { gpsInstallDate: '', cctvInstallDate: '', serialNumber: '', simNumber: '' };
+  const active = gcRecords.filter(r => r.plate === plate && !r.removeDate);
+  const pick = device => active.filter(r => r.device === device).sort((a, b) => (b.installDate || '').localeCompare(a.installDate || ''))[0];
+  const gps = pick('GPS');
+  const cctv = pick('CCTV');
+  const latest = [gps, cctv].filter(Boolean).sort((a, b) => (b.installDate || '').localeCompare(a.installDate || ''))[0];
+  return {
+    gpsInstallDate: gps?.installDate || '',
+    cctvInstallDate: cctv?.installDate || '',
+    serialNumber: latest?.serialNumber || '',
+    simNumber: latest?.simNumber || '',
+  };
+}
+
 function deleteVehicleDB(id) {
   if (!confirm('ยืนยันการลบรถคันนี้?')) return;
   mdVehicles = mdVehicles.filter(v => v.id !== id);
@@ -235,18 +252,25 @@ function renderVehiclesTable() {
   const search = (document.getElementById('md-vehicle-search')?.value || '').trim().toLowerCase();
   const list = search ? mdVehicles.filter(v => (v.plate || '').toLowerCase().includes(search) || (v.owner || '').toLowerCase().includes(search)) : mdVehicles;
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(v => `
+  tbody.innerHTML = list.map(v => {
+    const gc = mdVehicleGpsCctvInfo(v.plate);
+    return `
     <tr>
       <td style="font-family:monospace">${escapeHtml(v.plate)}</td>
       <td>${escapeHtml(v.owner || '-')}</td>
       <td>${formatDate(v.registerDate)}</td>
       <td>${formatDuration(v.registerDate)}</td>
+      <td>${gc.gpsInstallDate ? formatDate(gc.gpsInstallDate) : '-'}</td>
+      <td>${gc.cctvInstallDate ? formatDate(gc.cctvInstallDate) : '-'}</td>
+      <td>${escapeHtml(gc.serialNumber || '-')}</td>
+      <td>${escapeHtml(gc.simNumber || '-')}</td>
       <td><button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button></td>
     </tr>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function downloadVehicleTemplate() {
@@ -262,8 +286,11 @@ function downloadVehicleTemplate() {
 function exportVehicleExcel() {
   if (mdVehicles.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)'],
-    ...mdVehicles.map(v => [v.plate, v.owner || '', v.registerDate || '']),
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง', 'CCTV วันที่ติดตั้ง', 'เลข S/N', 'เบอร์ SIM'],
+    ...mdVehicles.map(v => {
+      const gc = mdVehicleGpsCctvInfo(v.plate);
+      return [v.plate, v.owner || '', v.registerDate || '', gc.gpsInstallDate || '', gc.cctvInstallDate || '', gc.serialNumber || '', gc.simNumber || ''];
+    }),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -279,6 +306,8 @@ function importVehicleExcel(event) {
     rows.forEach((row, i) => {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
+      // หมายเหตุ: คอลัมน์ GPS/CCTV/S-N/SIM (ถ้ามีในไฟล์ที่ export มา) จะไม่ถูกนำเข้า เพราะข้อมูลชุดนี้
+      // เชื่อมกับเมนู "จัดการ GPS/CCTV" โดยตรงแล้ว แก้ไขที่เมนูนั้นแทน
       const data = { plate, owner: String(row[1] || '').trim(), registerDate: normalizeImportDate(row[2]) };
       // จับคู่ด้วยทะเบียน — ถ้ามีอยู่แล้วจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
       const idx = mdVehicles.findIndex(v => v.plate === plate);
@@ -757,6 +786,126 @@ function importAbcStaffExcel(event) {
   });
 }
 
+// ===== เครื่องเป่าแอลกอฮอล์ (inventory ตัวเครื่อง — คนละส่วนกับผลตรวจ "เป่าวัดแอลกอฮอล์" ใน alcohol.js) =====
+let mdBreathalyzers = JSON.parse(localStorage.getItem('finflow_breathalyzers_db') || '[]');
+function saveBreathalyzersDB() { localStorage.setItem('finflow_breathalyzers_db', JSON.stringify(mdBreathalyzers)); }
+
+function bzLookupVehicle() {
+  const plate = document.getElementById('md-bz-plate').value.trim();
+  const veh = mdVehicles.find(v => v.plate === plate);
+  document.getElementById('md-bz-owner').value = veh?.owner || '';
+}
+
+function addBreathalyzerDB() {
+  const deviceNo = document.getElementById('md-bz-deviceno').value.trim();
+  if (!deviceNo) { showToast('กรุณากรอกเลขเครื่อง', 'error'); return; }
+  mdBreathalyzers.push({
+    id: Date.now(),
+    deviceNo,
+    plate: document.getElementById('md-bz-plate').value.trim(),
+    owner: document.getElementById('md-bz-owner').value.trim(),
+    receiveDate: document.getElementById('md-bz-receive-date').value,
+    returnDate: document.getElementById('md-bz-return-date').value,
+    note: document.getElementById('md-bz-note').value.trim(),
+  });
+  saveBreathalyzersDB();
+  document.getElementById('md-bz-deviceno').value = '';
+  document.getElementById('md-bz-plate').value = '';
+  document.getElementById('md-bz-owner').value = '';
+  document.getElementById('md-bz-receive-date').value = '';
+  document.getElementById('md-bz-return-date').value = '';
+  document.getElementById('md-bz-note').value = '';
+  renderBreathalyzersTable();
+  mdPushIfReady();
+  showToast('เพิ่มเครื่องเป่าแอลกอฮอล์แล้ว', 'success');
+}
+
+function deleteBreathalyzerDB(id) {
+  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  mdBreathalyzers = mdBreathalyzers.filter(b => b.id !== id);
+  saveBreathalyzersDB();
+  renderBreathalyzersTable();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+
+function deleteAllBreathalyzersDB() {
+  if (!mdConfirmDeleteAll('เครื่องเป่าแอลกอฮอล์')) return;
+  mdBreathalyzers = [];
+  saveBreathalyzersDB();
+  renderBreathalyzersTable();
+  mdPushIfReady();
+  showToast('ลบเครื่องเป่าแอลกอฮอล์ทั้งหมดแล้ว', 'warning');
+}
+
+function renderBreathalyzersTable() {
+  const tbody = document.getElementById('md-bz-body');
+  if (!tbody) return;
+  if (mdBreathalyzers.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdBreathalyzers.map(b => `
+    <tr>
+      <td>${escapeHtml(b.deviceNo)}</td>
+      <td style="font-family:monospace">${escapeHtml(b.plate || '-')}</td>
+      <td>${escapeHtml(b.owner || '-')}</td>
+      <td>${b.receiveDate ? formatDate(b.receiveDate) : '-'}</td>
+      <td>${b.returnDate ? formatDate(b.returnDate) : '-'}</td>
+      <td>${escapeHtml(b.note || '-')}</td>
+      <td><button class="action-btn action-delete" onclick="deleteBreathalyzerDB(${b.id})">ลบ</button></td>
+    </tr>
+  `).join('');
+}
+
+function downloadBreathalyzerTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['เลขเครื่อง', 'ทะเบียนรถ', 'เจ้าของรถ', 'รับวันไหน (YYYY-MM-DD)', 'คืนวันไหน (YYYY-MM-DD)', 'หมายเหตุ'],
+    ['BZ-001', '70-1234', 'นายสมชาย ใจดี', '2026-01-10', '', ''],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'เครื่องเป่าแอลกอฮอล์');
+  XLSX.writeFile(wb, 'template_เครื่องเป่าแอลกอฮอล์.xlsx');
+}
+
+function exportBreathalyzerExcel() {
+  if (mdBreathalyzers.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
+  const rows = [
+    ['เลขเครื่อง', 'ทะเบียนรถ', 'เจ้าของรถ', 'รับวันไหน (YYYY-MM-DD)', 'คืนวันไหน (YYYY-MM-DD)', 'หมายเหตุ'],
+    ...mdBreathalyzers.map(b => [b.deviceNo, b.plate || '', b.owner || '', b.receiveDate || '', b.returnDate || '', b.note || '']),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'เครื่องเป่าแอลกอฮอล์');
+  XLSX.writeFile(wb, `เครื่องเป่าแอลกอฮอล์_${new Date().toISOString().substring(0, 10)}.xlsx`);
+}
+
+function importBreathalyzerExcel(event) {
+  const file = event.target.files[0]; if (!file) return;
+  readExcelRows(file, (err, rows) => {
+    if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
+    let added = 0, updated = 0;
+    rows.forEach((row, i) => {
+      const deviceNo = String(row[0] || '').trim();
+      if (!deviceNo) return;
+      const plate = String(row[1] || '').trim();
+      const veh = mdVehicles.find(v => v.plate === plate);
+      const data = {
+        deviceNo, plate,
+        owner: String(row[2] || '').trim() || veh?.owner || '',
+        receiveDate: normalizeImportDate(row[3]), returnDate: normalizeImportDate(row[4]),
+        note: String(row[5] || '').trim(),
+      };
+      // จับคู่ด้วยเลขเครื่อง — ถ้ามีอยู่แล้วจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
+      const idx = mdBreathalyzers.findIndex(b => b.deviceNo === deviceNo);
+      if (idx >= 0) { mdBreathalyzers[idx] = { ...mdBreathalyzers[idx], ...data }; updated++; }
+      else { mdBreathalyzers.push({ id: Date.now() + i, ...data }); added++; }
+    });
+    saveBreathalyzersDB();
+    renderBreathalyzersTable();
+    mdPushIfReady();
+    showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
+    event.target.value = '';
+  });
+}
+
 // ===== หมวดหมู่ค่าใช้จ่าย =====
 // เก็บเป็น array ของชื่อ (string) ที่คีย์ 'finflow_categories_db' ใน localStorage
 // ฟอร์มเงินสดย่อย/ขออนุมัติ (app.js: categoryOptions()) จะอ่านจากคีย์นี้โดยตรงทุกครั้ง
@@ -812,7 +961,7 @@ function renderCategoriesTable() {
 }
 
 // ===== เลือกหัวข้อที่จะบันทึก (แสดงเฉพาะส่วนที่เลือก) =====
-const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'abcstaff', 'customer', 'requester', 'category', 'telegram'];
+const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'abcstaff', 'bz', 'customer', 'requester', 'category', 'telegram'];
 function mdSwitchTopic(topic) {
   MD_TOPICS.forEach(t => {
     document.getElementById(`md-tab-${t}`).classList.toggle('active', t === topic);
@@ -833,6 +982,7 @@ function renderMasterData() {
   renderIncidentPatternsTable();
   renderIssueTopicsTable();
   renderAbcStaffTable();
+  renderBreathalyzersTable();
   renderRequestersTable();
   updateRequesterDatalist();
   renderCategoriesTable();
