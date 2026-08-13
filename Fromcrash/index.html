@@ -133,6 +133,10 @@
           <span class="nav-icon">📡</span>
           <span>จัดการ GPS/CCTV</span>
         </a>
+        <a href="#" class="nav-item" data-page="backup" onclick="showPage('backup')">
+          <span class="nav-icon">💾</span>
+          <span>สำรองข้อมูล</span>
+        </a>
         <a href="#" class="nav-item" data-page="users" id="nav-users" onclick="showPage('users')" style="display:none;">
           <span class="nav-icon">👥</span>
           <span>จัดการผู้ใช้</span>
@@ -2048,6 +2052,32 @@
         </div>
       </div>
 
+      <!-- BACKUP PAGE (สำรองข้อมูลทั้งหมดเป็น Excel เก็บไว้ในเครื่อง) -->
+      <div class="page" id="page-backup">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">💾</div>
+            <div>
+              <h2>สำรองข้อมูล</h2>
+              <p>ดาวน์โหลดข้อมูลทุกเมนูเป็นไฟล์ Excel ไฟล์เดียว (แยกชีทตามแต่ละเมนู) เก็บไว้ในเครื่องกันข้อมูลหาย</p>
+            </div>
+          </div>
+
+          <div class="form-card" style="text-align:center; padding:40px 24px;">
+            <div id="bk-status" style="font-size:0.95rem; margin-bottom:24px;"></div>
+            <button class="btn-primary" style="font-size:1rem; padding:14px 32px;" onclick="bkExportAll()">📥 ดาวน์โหลดข้อมูลสำรองทั้งหมด (Excel)</button>
+            <p class="readonly-hint" style="margin-top:28px; text-align:left;">
+              กดปุ่มแล้วจะขึ้นกล่อง "บันทึกเป็น" ให้เลือกโฟลเดอร์เอง (รองรับใน Chrome/Edge) — ครั้งแรกให้เลือกไปที่
+              <code>P:\QA\สำรองข้อมูล QA-APP</code> จากนั้นเบราว์เซอร์จะจำโฟลเดอร์นี้ไว้เป็นค่าเริ่มต้นให้เองในครั้งถัดไป
+              (เบราว์เซอร์ที่ไม่รองรับ เช่น Firefox จะดาวน์โหลดลงโฟลเดอร์ดาวน์โหลดตามปกติแทน)<br />
+              แนะนำให้สำรองข้อมูลทุก 3 วัน — ระบบจะแจ้งเตือนอัตโนมัติเมื่อครบกำหนดตอนเปิดแอป (เฉพาะเครื่อง/เบราว์เซอร์นี้)<br />
+              ไฟล์ที่ได้จะมีชีทแยกตามเมนู เช่น เงินสดย่อย, เคลมประกันภัย, ฐานข้อมูลหลัก (พนักงาน/รถ/ลูกค้า/ผู้เบิก/หน่วยงาน ฯลฯ), บันทึกอุบัติเหตุ, บันทึกปัญหาการทำงาน, เป่าวัดแอลกอฮอล์, บันทึกรถร่วม, GPS/CCTV<br />
+              ⚠️ ข้อมูลจริงยังคงซิงค์อยู่บน Firebase ตามปกติ — ไฟล์นี้เป็นสำเนาสำรองเพิ่มเติมเผื่อกรณีฉุกเฉินเท่านั้น
+            </p>
+          </div>
+        </div>
+      </div>
+
       <!-- CLAIMS PAGE (เคลมประกันภัย) -->
       <div class="page" id="page-claims">
         <div id="ic-hdr" class="ic-toprow">
@@ -2548,6 +2578,7 @@
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
   <script src="gpscctv.js"></script>
+  <script src="backup.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
   <script src="auth.js"></script>

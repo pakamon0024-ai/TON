@@ -114,7 +114,8 @@ function showPage(page) {
     issues: 'บันทึกปัญหาการทำงาน',
     alcohol: 'บันทึกการเป่าวัดแอลกอฮอล์',
     jointvehicle: 'บันทึกรถร่วม',
-    gpscctv: 'จัดการ GPS/CCTV'
+    gpscctv: 'จัดการ GPS/CCTV',
+    backup: 'สำรองข้อมูล'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
@@ -128,6 +129,7 @@ function showPage(page) {
   if (page === 'alcohol' && typeof alcOnPageShown === 'function') alcOnPageShown();
   if (page === 'jointvehicle' && typeof jvOnPageShown === 'function') jvOnPageShown();
   if (page === 'gpscctv' && typeof gcOnPageShown === 'function') gcOnPageShown();
+  if (page === 'backup' && typeof bkOnPageShown === 'function') bkOnPageShown();
   if (page === 'petty-cash') refreshCategoryDropdowns('pc');
   if (page === 'approval') refreshCategoryDropdowns('ap');
 
