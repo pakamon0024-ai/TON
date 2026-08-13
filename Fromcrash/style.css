@@ -412,24 +412,46 @@ body {
 .alc-summary-table tbody tr:nth-child(4n+2) td { border-bottom: 2px solid var(--border-light); }
 
 /* ===== Alcohol Test Daily Report (รายงานตัวประจำวัน) ===== */
-/* ลดขนาดตารางลงครึ่งหนึ่ง (กว้างเดิม 100% ของ container) — ไม่ต้อง stretch เต็มจอ */
-.alc-daily-table { width: 50%; min-width: 460px; font-size: 0.72rem; border-collapse: collapse; }
+/* หัวตารางแบ่งเป็นกลุ่มสี (พนักงาน/ขาไป/ขากลับ/สรุป%) ตัวหนังสือใหญ่ชัดเจน แต่ตารางกระชับ
+   ไม่กว้างมาก เอาไว้แคปภาพลงไลน์ได้พอดีจอ */
+.alc-daily-table { width: auto; min-width: 560px; max-width: 100%; font-size: 0.86rem; border-collapse: collapse; }
 .alc-daily-table caption {
-  caption-side: top; text-align: left; font-weight: 700; font-size: 0.8rem;
-  padding: 5px 6px; color: var(--text-primary); background: var(--bg-secondary);
+  caption-side: top; text-align: center; padding: 8px 6px 10px;
+  color: var(--text-primary); background: var(--bg-secondary);
   border: 1px solid var(--border); border-bottom: none;
 }
+.alc-daily-title { font-weight: 700; font-size: 1.05rem; }
+.alc-daily-subtitle { font-weight: 600; font-size: 0.86rem; color: var(--text-secondary); margin-top: 2px; }
 .alc-daily-table th, .alc-daily-table td {
-  padding: 3px 4px; text-align: center; border: 1px solid var(--border);
+  padding: 4px 6px; text-align: center; border: 1px solid var(--border); white-space: nowrap;
 }
-.alc-daily-table th { background: var(--accent-primary); color: #fff; font-size: 0.6rem; }
-.alc-daily-table td:first-child { text-align: left; white-space: nowrap; }
-.alc-daily-checked { color: var(--accent-blue); font-weight: 700; }
+.alc-daily-table th { color: #fff; font-size: 0.68rem; font-weight: 700; line-height: 1.3; }
+.alc-daily-table td:first-child, .alc-daily-table th:first-child { text-align: left; }
+.alc-daily-table td { font-weight: 600; }
+
+/* กลุ่ม "พนักงาน" (เขียว) */
+.alc-daily-grp-emp, .alc-daily-table thead .alc-daily-col-emp { background: #2f9e5c; }
+.alc-daily-table tbody .alc-daily-col-emp { background: color-mix(in srgb, #43e97b 14%, transparent); }
+/* กลุ่ม "ขาไป" (น้ำเงิน) */
+.alc-daily-grp-out, .alc-daily-table thead .alc-daily-col-out { background: #2f6fd6; }
+.alc-daily-table tbody .alc-daily-col-out { background: color-mix(in srgb, #2f6fd6 12%, transparent); }
+/* กลุ่ม "ขากลับ" (ฟ้าอมเขียว) */
+.alc-daily-grp-ret, .alc-daily-table thead .alc-daily-col-ret { background: #0f9b8e; }
+.alc-daily-table tbody .alc-daily-col-ret { background: color-mix(in srgb, #0f9b8e 12%, transparent); }
+/* คอลัมน์ "% สรุปการตรวจ" (ม่วง) */
+.alc-daily-grp-summary, .alc-daily-table thead .alc-daily-col-summary { background: var(--accent-primary); }
+.alc-daily-table tbody .alc-daily-col-summary { background: color-mix(in srgb, var(--accent-primary) 16%, transparent); font-weight: 700; }
+
 .alc-daily-pct {
-  display: inline-block; min-width: 30px; padding: 1px 5px; border-radius: 4px;
-  background: var(--accent-primary); color: #fff; font-weight: 700; font-size: 0.64rem;
+  display: inline-block; min-width: 40px; padding: 2px 6px; border-radius: 5px;
+  color: #fff; font-weight: 700; font-size: 0.78rem;
 }
+.alc-daily-pct-out { background: #2f6fd6; }
+.alc-daily-pct-ret { background: #0f9b8e; }
 .alc-daily-empty td { background: var(--bg-hover); color: var(--text-muted); }
+.alc-daily-totals-row td { border-top: 2px solid var(--text-primary); font-weight: 700; }
+.alc-daily-totals-row td:first-child, .alc-daily-avg-row td:first-child { text-align: left; }
+.alc-daily-avg-row td { font-weight: 700; color: var(--text-secondary); }
 
 /* ===== Status Badges ===== */
 .badge {
