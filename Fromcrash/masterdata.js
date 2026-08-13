@@ -211,18 +211,23 @@ function addVehicleDB() {
 
 // ดึงสถานะ GPS/CCTV ล่าสุดของรถแต่ละคันจากเมนู "จัดการ GPS/CCTV" (gcRecords ใน gpscctv.js)
 // นับเฉพาะรายการที่ยังไม่ถอด (ไม่มี removeDate) และเอาวันที่ติดตั้งล่าสุดของแต่ละประเภทอุปกรณ์
+// แยกเลข S/N และเบอร์ SIM ของ GPS กับ CCTV ออกจากกัน เพราะเป็นอุปกรณ์คนละตัว
 function mdVehicleGpsCctvInfo(plate) {
-  if (typeof gcRecords === 'undefined') return { gpsInstallDate: '', cctvInstallDate: '', serialNumber: '', simNumber: '' };
+  if (typeof gcRecords === 'undefined') {
+    return { gpsInstallDate: '', gpsSerialNumber: '', gpsSimNumber: '', cctvInstallDate: '', cctvType: '', cctvSerialNumber: '', cctvSimNumber: '' };
+  }
   const active = gcRecords.filter(r => r.plate === plate && !r.removeDate);
   const pick = device => active.filter(r => r.device === device).sort((a, b) => (b.installDate || '').localeCompare(a.installDate || ''))[0];
   const gps = pick('GPS');
   const cctv = pick('CCTV');
-  const latest = [gps, cctv].filter(Boolean).sort((a, b) => (b.installDate || '').localeCompare(a.installDate || ''))[0];
   return {
     gpsInstallDate: gps?.installDate || '',
+    gpsSerialNumber: gps?.serialNumber || '',
+    gpsSimNumber: gps?.simNumber || '',
     cctvInstallDate: cctv?.installDate || '',
-    serialNumber: latest?.serialNumber || '',
-    simNumber: latest?.simNumber || '',
+    cctvType: cctv?.cctvType || '',
+    cctvSerialNumber: cctv?.serialNumber || '',
+    cctvSimNumber: cctv?.simNumber || '',
   };
 }
 
@@ -252,7 +257,7 @@ function renderVehiclesTable() {
   const search = (document.getElementById('md-vehicle-search')?.value || '').trim().toLowerCase();
   const list = search ? mdVehicles.filter(v => (v.plate || '').toLowerCase().includes(search) || (v.owner || '').toLowerCase().includes(search)) : mdVehicles;
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(v => {
@@ -264,9 +269,12 @@ function renderVehiclesTable() {
       <td>${formatDate(v.registerDate)}</td>
       <td>${formatDuration(v.registerDate)}</td>
       <td>${gc.gpsInstallDate ? formatDate(gc.gpsInstallDate) : '-'}</td>
+      <td>${escapeHtml(gc.gpsSerialNumber || '-')}</td>
+      <td>${escapeHtml(gc.gpsSimNumber || '-')}</td>
       <td>${gc.cctvInstallDate ? formatDate(gc.cctvInstallDate) : '-'}</td>
-      <td>${escapeHtml(gc.serialNumber || '-')}</td>
-      <td>${escapeHtml(gc.simNumber || '-')}</td>
+      <td>${escapeHtml(gc.cctvType || '-')}</td>
+      <td>${escapeHtml(gc.cctvSerialNumber || '-')}</td>
+      <td>${escapeHtml(gc.cctvSimNumber || '-')}</td>
       <td><button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button></td>
     </tr>
   `;
@@ -286,10 +294,10 @@ function downloadVehicleTemplate() {
 function exportVehicleExcel() {
   if (mdVehicles.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง', 'CCTV วันที่ติดตั้ง', 'เลข S/N', 'เบอร์ SIM'],
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง', 'GPS เลข S/N', 'GPS เบอร์ SIM', 'CCTV วันที่ติดตั้ง', 'ประเภท CCTV', 'CCTV เลข S/N', 'CCTV เบอร์ SIM'],
     ...mdVehicles.map(v => {
       const gc = mdVehicleGpsCctvInfo(v.plate);
-      return [v.plate, v.owner || '', v.registerDate || '', gc.gpsInstallDate || '', gc.cctvInstallDate || '', gc.serialNumber || '', gc.simNumber || ''];
+      return [v.plate, v.owner || '', v.registerDate || '', gc.gpsInstallDate || '', gc.gpsSerialNumber || '', gc.gpsSimNumber || '', gc.cctvInstallDate || '', gc.cctvType || '', gc.cctvSerialNumber || '', gc.cctvSimNumber || ''];
     }),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -325,8 +333,8 @@ function importVehicleExcel(event) {
 
 function updatePlateDatalist() {
   const dl = document.getElementById('plateNoList');
-  if (!dl) return;
-  dl.innerHTML = mdVehicles.map(v => `<option value="${escapeHtml(v.plate)}"></option>`).join('');
+  if (dl) dl.innerHTML = mdVehicles.map(v => `<option value="${escapeHtml(v.plate)}"></option>`).join('');
+  if (typeof gcUpdatePlateDropdown === 'function') gcUpdatePlateDropdown();
 }
 
 // ===== ลูกค้า =====

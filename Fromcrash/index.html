@@ -710,15 +710,18 @@
                       <th>วันที่จดทะเบียน</th>
                       <th>อายุรถ</th>
                       <th>GPS วันที่ติดตั้ง</th>
+                      <th>GPS เลข S/N</th>
+                      <th>GPS เบอร์ SIM</th>
                       <th>CCTV วันที่ติดตั้ง</th>
-                      <th>เลข S/N</th>
-                      <th>เบอร์ SIM</th>
+                      <th>ประเภท CCTV</th>
+                      <th>CCTV เลข S/N</th>
+                      <th>CCTV เบอร์ SIM</th>
                       <th>จัดการ</th>
                     </tr>
                   </thead>
                   <tbody id="md-vehicle-body">
                     <tr>
-                      <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                      <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
                     </tr>
                   </tbody>
                 </table>
@@ -2050,6 +2053,7 @@
                     <th>ทะเบียนรถ</th>
                     <th>เจ้าของรถ</th>
                     <th>อุปกรณ์</th>
+                    <th>ประเภทย่อย</th>
                     <th>บริษัท</th>
                     <th>วันที่ติดตั้ง</th>
                     <th>วันที่ถอด</th>
@@ -2062,7 +2066,7 @@
                 </thead>
                 <tbody id="gc-list-body">
                   <tr>
-                    <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="13" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -2080,13 +2084,14 @@
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <input type="text" id="gc-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..."
-                    oninput="gcLookupVehicle()" />
+                  <select id="gc-plate" onchange="gcLookupVehicle()">
+                    <option value="">-- เลือกทะเบียนรถ --</option>
+                  </select>
                 </div>
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly />
                 </div>
                 <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
-                  <select id="gc-device">
+                  <select id="gc-device" onchange="gcToggleDeviceFields()">
                     <option value="GPS">GPS</option>
                     <option value="CCTV">CCTV</option>
                   </select>
@@ -2100,6 +2105,12 @@
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="gc-remove-date" /></div>
               </div>
               <div class="form-row-3">
+                <div class="form-group" id="gc-cctv-type-wrap" style="display:none;"><label>ประเภท CCTV</label>
+                  <select id="gc-cctv-type">
+                    <option value="CCTV">CCTV</option>
+                    <option value="AI">AI</option>
+                  </select>
+                </div>
                 <div class="form-group"><label>เลข S/N</label><input type="text" id="gc-serial" placeholder="เลข S/N อุปกรณ์" /></div>
                 <div class="form-group"><label>เบอร์ SIM</label><input type="text" id="gc-sim" placeholder="เบอร์ SIM ที่ใช้กับอุปกรณ์" /></div>
               </div>
@@ -2184,8 +2195,9 @@
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <input type="text" id="gr-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..."
-                    oninput="grLookupVehicle()" />
+                  <select id="gr-plate" onchange="grLookupVehicle()">
+                    <option value="">-- เลือกทะเบียนรถ --</option>
+                  </select>
                 </div>
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gr-owner" readonly />
                 </div>

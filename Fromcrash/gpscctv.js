@@ -28,9 +28,26 @@ function gcSwitchTab(tab) {
   if (tab === 'repadd' && !grEditingId) grClearForm();
 }
 
-function gcOnPageShown() { gcRenderList(); grRenderList(); }
+function gcOnPageShown() { gcUpdatePlateDropdown(); gcRenderList(); grRenderList(); }
 
-// ===== ดึงเจ้าของรถจากฐานข้อมูลหลัก =====
+// ===== ทะเบียนรถ: เลือกจากฐานข้อมูลหลัก (mdVehicles) เท่านั้น — ดึงเจ้าของรถให้อัตโนมัติ =====
+// รวมทะเบียนที่เคยบันทึกไว้ในรายการเดิมด้วย เผื่อรถถูกลบออกจากฐานข้อมูลหลักไปแล้วจะได้ไม่หายจากตัวเลือกตอนแก้ไข
+function gcUpdatePlateDropdown() {
+  if (typeof mdVehicles === 'undefined') return;
+  const platesFromMaster = mdVehicles.map(v => v.plate);
+  const platesFromRecords = [...gcRecords.map(r => r.plate), ...grRecords.map(r => r.plate)];
+  const allPlates = Array.from(new Set([...platesFromMaster, ...platesFromRecords])).filter(Boolean).sort();
+  const options = '<option value="">-- เลือกทะเบียนรถ --</option>' +
+    allPlates.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+  ['gc-plate', 'gr-plate'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    sel.innerHTML = options;
+    if (allPlates.includes(current)) sel.value = current;
+  });
+}
+
 function gcLookupVehicle() {
   const plate = document.getElementById('gc-plate').value.trim();
   const veh = mdVehicles.find(v => v.plate === plate);
@@ -45,6 +62,12 @@ function grLookupVehicle() {
 // ===== ติดตั้ง/ถอด: Running number / สถานะ =====
 function gcNextRunningNo() { return gcRecords.length ? Math.max(...gcRecords.map(r => r.runningNo || 0)) + 1 : 1; }
 function gcStatusOf(rec) { return rec.removeDate ? 'removed' : 'active'; }
+
+// ช่อง "ประเภท CCTV (CCTV/AI)" มีความหมายเฉพาะตอนอุปกรณ์เป็น CCTV เท่านั้น
+function gcToggleDeviceFields() {
+  const isCctv = document.getElementById('gc-device').value === 'CCTV';
+  document.getElementById('gc-cctv-type-wrap').style.display = isCctv ? '' : 'none';
+}
 function gcStatusBadge(rec) {
   return gcStatusOf(rec) === 'removed'
     ? `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ถอดแล้ว</span>`
@@ -58,14 +81,16 @@ function gcSaveCase() {
   const company = document.getElementById('gc-company').value.trim();
   const installDate = document.getElementById('gc-install-date').value;
   const removeDate = document.getElementById('gc-remove-date').value;
+  const cctvType = device === 'CCTV' ? document.getElementById('gc-cctv-type').value : '';
   const serialNumber = document.getElementById('gc-serial').value.trim();
   const simNumber = document.getElementById('gc-sim').value.trim();
   const note = document.getElementById('gc-note').value.trim();
 
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
-  if (!installDate) { showToast('กรุณาระบุวันที่ติดตั้ง', 'warning'); return; }
+  // ไม่บังคับว่าต้องกรอกวันที่ติดตั้งเสมอไป — บันทึกแค่วันที่ติดตั้ง หรือแค่วันที่ถอด อย่างใดอย่างหนึ่งก็ได้
+  if (!installDate && !removeDate) { showToast('กรุณาระบุวันที่ติดตั้งหรือวันที่ถอดอย่างน้อยหนึ่งอย่าง', 'warning'); return; }
 
-  const record = { plate, owner, device, company, installDate, removeDate, serialNumber, simNumber, note };
+  const record = { plate, owner, device, company, installDate, removeDate, cctvType, serialNumber, simNumber, note };
 
   if (gcEditingId) {
     const idx = gcRecords.findIndex(r => r.id === gcEditingId);
@@ -82,7 +107,9 @@ function gcSaveCase() {
     showToast('✅ บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
-        `📡 <b>บันทึกติดตั้ง${device}ใหม่</b>\nทะเบียน: ${escapeHtml(plate)}\nบริษัท: ${escapeHtml(company || '-')}\nวันที่ติดตั้ง: ${formatDate(installDate)}`
+        `📡 <b>บันทึกติดตั้ง${device}ใหม่</b>\nทะเบียน: ${escapeHtml(plate)}\nบริษัท: ${escapeHtml(company || '-')}` +
+        (installDate ? `\nวันที่ติดตั้ง: ${formatDate(installDate)}` : '') +
+        (removeDate ? `\nวันที่ถอด: ${formatDate(removeDate)}` : '')
       );
     }
     gcClearForm();
@@ -102,9 +129,11 @@ function gcClearForm() {
   document.getElementById('gc-company').value = '';
   document.getElementById('gc-install-date').value = '';
   document.getElementById('gc-remove-date').value = '';
+  document.getElementById('gc-cctv-type').value = 'CCTV';
   document.getElementById('gc-serial').value = '';
   document.getElementById('gc-sim').value = '';
   document.getElementById('gc-note').value = '';
+  gcToggleDeviceFields();
 }
 
 function gcEditCase(id) {
@@ -119,9 +148,11 @@ function gcEditCase(id) {
   document.getElementById('gc-company').value = rec.company || '';
   document.getElementById('gc-install-date').value = rec.installDate || '';
   document.getElementById('gc-remove-date').value = rec.removeDate || '';
+  document.getElementById('gc-cctv-type').value = rec.cctvType || 'CCTV';
   document.getElementById('gc-serial').value = rec.serialNumber || '';
   document.getElementById('gc-sim').value = rec.simNumber || '';
   document.getElementById('gc-note').value = rec.note || '';
+  gcToggleDeviceFields();
   gcSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -164,7 +195,7 @@ function gcRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="13" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
@@ -173,6 +204,7 @@ function gcRenderList() {
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.owner || '-')}</td>
       <td>${escapeHtml(r.device || '-')}</td>
+      <td>${escapeHtml(r.device === 'CCTV' ? (r.cctvType || 'CCTV') : '-')}</td>
       <td>${escapeHtml(r.company || '-')}</td>
       <td>${formatDate(r.installDate)}</td>
       <td>${r.removeDate ? formatDate(r.removeDate) : '-'}</td>
@@ -327,8 +359,9 @@ function grRenderList() {
 // ===== Excel: ติดตั้ง/ถอด (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่ติดตั้ง) =====
 function gcDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'เลข S/N', 'เบอร์ SIM', 'หมายเหตุ'],
-    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', 'SN-12345', '081-234-5678', ''],
+    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'ประเภทย่อย CCTV (CCTV/AI)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'เลข S/N', 'เบอร์ SIM', 'หมายเหตุ'],
+    ['70-1234', 'นายสมชาย ใจดี', 'GPS', '', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', 'SN-12345', '081-234-5678', ''],
+    ['70-1234', 'นายสมชาย ใจดี', 'CCTV', 'AI', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', 'SN-67890', '081-999-9999', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ติดตั้ง-ถอด');
@@ -339,8 +372,8 @@ function gcExportExcel() {
   const list = gcFilteredList();
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'เลข S/N', 'เบอร์ SIM', 'สถานะ', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', r.serialNumber || '', r.simNumber || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
+    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'ประเภทย่อย CCTV', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'เลข S/N', 'เบอร์ SIM', 'สถานะ', 'หมายเหตุ'],
+    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.device === 'CCTV' ? (r.cctvType || 'CCTV') : '', r.company || '', r.installDate || '', r.removeDate || '', r.serialNumber || '', r.simNumber || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -357,13 +390,14 @@ function gcImportExcel(event) {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
       const device = String(row[2] || '').trim().toUpperCase() === 'CCTV' ? 'CCTV' : 'GPS';
-      const installDate = normalizeImportDate(row[4]);
+      const cctvType = device === 'CCTV' && String(row[3] || '').trim().toUpperCase() === 'AI' ? 'AI' : (device === 'CCTV' ? 'CCTV' : '');
+      const installDate = normalizeImportDate(row[5]);
       const veh = mdVehicles.find(v => v.plate === plate);
       const record = {
-        plate, owner: String(row[1] || '').trim() || veh?.owner || '', device,
-        company: String(row[3] || '').trim(), installDate, removeDate: normalizeImportDate(row[5]),
-        serialNumber: String(row[6] || '').trim(), simNumber: String(row[7] || '').trim(),
-        note: String(row[8] || '').trim(),
+        plate, owner: String(row[1] || '').trim() || veh?.owner || '', device, cctvType,
+        company: String(row[4] || '').trim(), installDate, removeDate: normalizeImportDate(row[6]),
+        serialNumber: String(row[7] || '').trim(), simNumber: String(row[8] || '').trim(),
+        note: String(row[9] || '').trim(),
       };
       const idx = gcRecords.findIndex(r => r.plate === plate && r.device === device && r.installDate === installDate);
       if (idx >= 0) { gcRecords[idx] = { ...gcRecords[idx], ...record, updatedAt: new Date().toISOString() }; updated++; }
@@ -433,7 +467,7 @@ function grImportExcel(event) {
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function gcRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function gcObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
-function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); if (typeof renderVehiclesTable === 'function') renderVehiclesTable(); }
+function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); gcUpdatePlateDropdown(); if (typeof renderVehiclesTable === 'function') renderVehiclesTable(); }
 async function gcWriteFB() {
   if (!gcRef) return;
   try {
@@ -443,7 +477,7 @@ async function gcWriteFB() {
 }
 function gcPushIfReady() { if (gcReady) gcWriteFB(); }
 
-function grApplyServer(serverRecords) { grRecords = serverRecords; grSave(); grRenderList(); }
+function grApplyServer(serverRecords) { grRecords = serverRecords; grSave(); grRenderList(); gcUpdatePlateDropdown(); }
 async function grWriteFB() {
   if (!grRef) return;
   try {
@@ -486,6 +520,7 @@ async function gcInit() {
 document.addEventListener('DOMContentLoaded', () => {
   gcClearForm();
   grClearForm();
+  gcUpdatePlateDropdown();
   gcRenderList();
   grRenderList();
   gcInit();
