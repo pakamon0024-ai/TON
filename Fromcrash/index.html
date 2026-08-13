@@ -608,7 +608,8 @@
                     accept=".xlsx,.xls" style="display:none" onchange="importDriverExcel(event)"></label>
                 <button class="btn-secondary" onclick="exportDriverExcel()">📊 Export Excel</button>
               </div>
-              <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา — ระบบจะจับคู่ด้วยชื่อพนักงาน ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+              <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา —
+                ระบบจะจับคู่ด้วยชื่อพนักงาน ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ชื่อพนักงาน</label>
@@ -630,7 +631,8 @@
               </div>
               <div class="form-group" style="margin-top:16px; max-width:320px;">
                 <label>ค้นหาพนักงาน</label>
-                <input type="text" id="md-driver-search" placeholder="พิมพ์ชื่อพนักงาน..." oninput="renderDriversTable()" />
+                <input type="text" id="md-driver-search" placeholder="พิมพ์ชื่อพนักงาน..."
+                  oninput="renderDriversTable()" />
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
@@ -666,7 +668,8 @@
                     accept=".xlsx,.xls" style="display:none" onchange="importVehicleExcel(event)"></label>
                 <button class="btn-secondary" onclick="exportVehicleExcel()">📊 Export Excel</button>
               </div>
-              <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา — ระบบจะจับคู่ด้วยทะเบียนรถ ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+              <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา —
+                ระบบจะจับคู่ด้วยทะเบียนรถ ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ</label>
@@ -693,7 +696,8 @@
               </div>
               <div class="form-group" style="margin-top:16px; max-width:320px;">
                 <label>ค้นหารถ</label>
-                <input type="text" id="md-vehicle-search" placeholder="พิมพ์ทะเบียนหรือเจ้าของรถ..." oninput="renderVehiclesTable()" />
+                <input type="text" id="md-vehicle-search" placeholder="พิมพ์ทะเบียนหรือเจ้าของรถ..."
+                  oninput="renderVehiclesTable()" />
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
@@ -1001,7 +1005,8 @@
               </div>
               <div class="form-actions" style="justify-content:flex-start;">
                 <button class="btn-primary" onclick="addRequesterDB()">+ เพิ่มผู้เบิก</button>
-                <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllRequestersDB()">🗑️ ลบทั้งหมด</button>
+                <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllRequestersDB()">🗑️
+                  ลบทั้งหมด</button>
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
@@ -1273,7 +1278,8 @@
               <button class="btn-secondary" onclick="incDownloadTemplate()">📄 Template Excel</button>
               <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
                   style="display:none" onchange="incImportExcel(event)"></label>
-              <button class="btn-danger admin-only-btn" style="display:none;" onclick="incDeleteAllIncidents()">🗑️ ลบทั้งหมด</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="incDeleteAllIncidents()">🗑️
+                ลบทั้งหมด</button>
             </div>
             <div class="ctxt" id="inc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
@@ -1523,7 +1529,8 @@
               </label>
               <button class="btn-secondary" onclick="wiDownloadTemplate()">📋 Template</button>
             </div>
-            <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
             <div class="recent-table-wrap">
               <table class="data-table">
                 <thead>
@@ -1557,13 +1564,16 @@
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลปัญหา</div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="wi-date" /></div>
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date"
+                    id="wi-date" /></div>
                 <div class="form-group">
                   <label>หัวข้อปัญหา <span class="req">*</span></label>
                   <div style="display:flex; gap:6px;">
-                    <input type="text" id="wi-topic" list="wi-topic-list" placeholder="พิมพ์หรือเลือก..." style="flex:1;" />
+                    <input type="text" id="wi-topic" list="wi-topic-list" placeholder="พิมพ์หรือเลือก..."
+                      style="flex:1;" />
                     <datalist id="wi-topic-list"></datalist>
-                    <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่" onclick="wiQuickAddTopic()">+</button>
+                    <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่"
+                      onclick="wiQuickAddTopic()">+</button>
                   </div>
                 </div>
                 <div class="form-group"><label>ชื่อพนักงานขับรถ</label>
@@ -1573,7 +1583,8 @@
               </div>
               <div class="form-row-3">
                 <div class="form-group"><label>ทะเบียน</label>
-                  <input type="text" id="wi-plate" list="wi-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..." oninput="wiLookupVehicle()" />
+                  <input type="text" id="wi-plate" list="wi-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..."
+                    oninput="wiLookupVehicle()" />
                   <datalist id="wi-plate-list"></datalist>
                 </div>
                 <div class="form-group"><label>หน่วยงาน</label>
@@ -1586,7 +1597,8 @@
                 </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span class="req">*</span></label>
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span
+                      class="req">*</span></label>
                   <textarea class="fta" id="wi-detail" rows="3" placeholder="อธิบายรายละเอียดปัญหาที่พบ..."></textarea>
                 </div>
               </div>
@@ -1754,7 +1766,8 @@
               </div>
               <button class="btn-secondary" onclick="alcExportDailyReportExcel()">📊 Export Excel</button>
             </div>
-            <p class="readonly-hint">นับจากผลตรวจรอบ "ขาไป" ของแต่ละคนต่อวัน · ขาด/ลา รวมเป็นคอลัมน์เดียว · % = (ตรวจแล้ว + ต่อเนื่อง) ÷ พนักงานมาทำงาน</p>
+            <p class="readonly-hint">นับจากผลตรวจรอบ "ขาไป" ของแต่ละคนต่อวัน · ขาด/ลา รวมเป็นคอลัมน์เดียว · % =
+              (ตรวจแล้ว + ต่อเนื่อง) ÷ พนักงานมาทำงาน</p>
             <div class="recent-table-wrap" id="alc-daily-table-wrap" style="margin-top:10px;"></div>
           </div>
         </div>
@@ -1779,7 +1792,8 @@
           <!-- LIST SUBPAGE -->
           <div class="subpage active" id="jv-subpage-list">
             <div class="filter-bar">
-              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="jv-f-plate" placeholder="ทะเบียนรถ..." oninput="jvRenderList()" /></div>
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="jv-f-plate"
+                  placeholder="ทะเบียนรถ..." oninput="jvRenderList()" /></div>
               <div class="filter-group">
                 <label>สถานะ</label>
                 <select id="jv-f-status" onchange="jvRenderList()">
@@ -1796,17 +1810,31 @@
                   style="display:none" onchange="jvImportExcel(event)"></label>
               <button class="btn-secondary" onclick="jvExportExcel()">📊 Export Excel</button>
             </div>
-            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + วันที่สมัครเข้าร่วม" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (แก้ในไฟล์ Excel แล้ว Import กลับมาได้)</p>
-            <div class="ctxt" id="jv-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + วันที่สมัครเข้าร่วม" เป็นตัวจับคู่ —
+              ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (แก้ในไฟล์ Excel แล้ว Import กลับมาได้)</p>
+            <div class="ctxt" id="jv-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
             <div class="recent-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>เลขที่</th><th>ทะเบียนรถ</th><th>เจ้าของรถ</th><th>เอกสารสมัคร</th><th>วันที่สมัครเข้าร่วม</th><th>วันที่ลาออก</th><th>สถานะ</th><th>ค่าใช้จ่ายถอด</th><th>หมายเหตุ</th><th>จัดการ</th>
+                    <th>เลขที่</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>เจ้าของรถ</th>
+                    <th>เอกสารสมัคร</th>
+                    <th>วันที่สมัครเข้าร่วม</th>
+                    <th>วันที่ลาออก</th>
+                    <th>วันที่ถอดอุปกรณ์</th>
+                    <th>สถานะ</th>
+                    <th>ค่าใช้จ่ายถอด</th>
+                    <th>หมายเหตุ</th>
+                    <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="jv-list-body">
-                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                  <tr>
+                    <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -1823,12 +1851,15 @@
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <input type="text" id="jv-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="jvLookupVehicle()" />
+                  <input type="text" id="jv-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..."
+                    oninput="jvLookupVehicle()" />
                 </div>
-                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="jv-owner" readonly /></div>
+                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="jv-owner" readonly />
+                </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่สมัครเข้าร่วม <span class="req">*</span></label><input type="date" id="jv-join-date" /></div>
+                <div class="form-group"><label>วันที่สมัครเข้าร่วม <span class="req">*</span></label><input type="date"
+                    id="jv-join-date" /></div>
               </div>
 
               <div class="fieldset-title">เช็คลิสต์เอกสารที่ใช้สมัครเข้าร่วม</div>
@@ -1844,20 +1875,27 @@
 
               <div class="fieldset-title">รายการตอนลาออก</div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่ทำงานวันสุดท้าย</label><input type="date" id="jv-lastwork-date" /></div>
+                <div class="form-group"><label>วันที่ทำงานวันสุดท้าย</label><input type="date" id="jv-lastwork-date" />
+                </div>
                 <div class="form-group"><label>วันที่ลาออก</label><input type="date" id="jv-leave-date" /></div>
+                <div class="form-group"><label>วันที่ถอดอุปกรณ์</label><input type="date" id="jv-equip-remove-date" />
+                </div>
               </div>
               <div class="jv-check-grid">
                 <label class="jv-check-item"><input type="checkbox" id="jv-leave-gps" /> ถอด GPS</label>
                 <label class="jv-check-item"><input type="checkbox" id="jv-leave-cctv" /> ถอด CCTV</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-leave-breath" /> ถอดเครื่องเป่าแอลกอฮอล์</label>
+                <label class="jv-check-item"><input type="checkbox" id="jv-leave-breath" />
+                  ถอดเครื่องเป่าแอลกอฮอล์</label>
                 <label class="jv-check-item"><input type="checkbox" id="jv-leave-fuelcard" /> คืนบัตรน้ำมัน</label>
                 <label class="jv-check-item"><input type="checkbox" id="jv-leave-sticker" /> ถอดสติ๊กเกอร์</label>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>ค่าใช้จ่ายถอด GPS</label><input type="number" min="0" step="0.01" id="jv-cost-gps" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
-                <div class="form-group"><label>ค่าใช้จ่ายถอด CCTV</label><input type="number" min="0" step="0.01" id="jv-cost-cctv" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
-                <div class="form-group"><label>ค่าใช้จ่ายถอดเครื่องเป่าแอลกอฮอล์</label><input type="number" min="0" step="0.01" id="jv-cost-breath" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
+                <div class="form-group"><label>ค่าใช้จ่ายถอด GPS</label><input type="number" min="0" step="0.01"
+                    id="jv-cost-gps" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
+                <div class="form-group"><label>ค่าใช้จ่ายถอด CCTV</label><input type="number" min="0" step="0.01"
+                    id="jv-cost-cctv" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
+                <div class="form-group"><label>ค่าใช้จ่ายถอดเครื่องเป่าแอลกอฮอล์</label><input type="number" min="0"
+                    step="0.01" id="jv-cost-breath" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
               </div>
               <div class="jv-cost-total">รวมค่าใช้จ่ายถอดอุปกรณ์: <span id="jv-cost-total-display">฿0.00</span></div>
 
@@ -1897,7 +1935,8 @@
           <!-- LIST: ติดตั้ง/ถอด -->
           <div class="subpage active" id="gc-subpage-list">
             <div class="filter-bar">
-              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gc-f-plate" placeholder="ทะเบียนรถ..." oninput="gcRenderList()" /></div>
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gc-f-plate"
+                  placeholder="ทะเบียนรถ..." oninput="gcRenderList()" /></div>
               <div class="filter-group">
                 <label>ประเภทอุปกรณ์</label>
                 <select id="gc-f-device" onchange="gcRenderList()">
@@ -1922,17 +1961,30 @@
                   style="display:none" onchange="gcImportExcel(event)"></label>
               <button class="btn-secondary" onclick="gcExportExcel()">📊 Export Excel</button>
             </div>
-            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่ติดตั้ง" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
-            <div class="ctxt" id="gc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่ติดตั้ง" เป็นตัวจับคู่ —
+              ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+            <div class="ctxt" id="gc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
             <div class="recent-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>เลขที่</th><th>ทะเบียนรถ</th><th>เจ้าของรถ</th><th>อุปกรณ์</th><th>บริษัท</th><th>วันที่ติดตั้ง</th><th>วันที่ถอด</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                    <th>เลขที่</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>เจ้าของรถ</th>
+                    <th>อุปกรณ์</th>
+                    <th>บริษัท</th>
+                    <th>วันที่ติดตั้ง</th>
+                    <th>วันที่ถอด</th>
+                    <th>สถานะ</th>
+                    <th>หมายเหตุ</th>
+                    <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="gc-list-body">
-                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                  <tr>
+                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -1949,9 +2001,11 @@
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <input type="text" id="gc-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="gcLookupVehicle()" />
+                  <input type="text" id="gc-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..."
+                    oninput="gcLookupVehicle()" />
                 </div>
-                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly /></div>
+                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly />
+                </div>
                 <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
                   <select id="gc-device">
                     <option value="GPS">GPS</option>
@@ -1960,8 +2014,10 @@
                 </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>บริษัท</label><input type="text" id="gc-company" placeholder="บริษัทผู้ติดตั้ง" /></div>
-                <div class="form-group"><label>วันที่ติดตั้ง <span class="req">*</span></label><input type="date" id="gc-install-date" /></div>
+                <div class="form-group"><label>บริษัท</label><input type="text" id="gc-company"
+                    placeholder="บริษัทผู้ติดตั้ง" /></div>
+                <div class="form-group"><label>วันที่ติดตั้ง <span class="req">*</span></label><input type="date"
+                    id="gc-install-date" /></div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="gc-remove-date" /></div>
               </div>
               <div class="form-row-3">
@@ -1979,7 +2035,8 @@
           <!-- LIST: แจ้งซ่อม -->
           <div class="subpage" id="gc-subpage-replist">
             <div class="filter-bar">
-              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gr-f-plate" placeholder="ทะเบียนรถ..." oninput="grRenderList()" /></div>
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gr-f-plate"
+                  placeholder="ทะเบียนรถ..." oninput="grRenderList()" /></div>
               <div class="filter-group">
                 <label>ประเภทอุปกรณ์</label>
                 <select id="gr-f-device" onchange="grRenderList()">
@@ -2004,17 +2061,30 @@
                   style="display:none" onchange="grImportExcel(event)"></label>
               <button class="btn-secondary" onclick="grExportExcel()">📊 Export Excel</button>
             </div>
-            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่นัดซ่อม" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
-            <div class="ctxt" id="gr-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่แจ้ง" เป็นตัวจับคู่ —
+              ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+            <div class="ctxt" id="gr-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
             <div class="recent-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>เลขที่</th><th>ทะเบียนรถ</th><th>เจ้าของรถ</th><th>อุปกรณ์</th><th>อาการ</th><th>วันที่นัดซ่อม</th><th>วันที่ช่างมาซ่อม</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                    <th>เลขที่</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>เจ้าของรถ</th>
+                    <th>อุปกรณ์</th>
+                    <th>อาการ</th>
+                    <th>วันที่แจ้ง</th>
+                    <th>วันที่ช่างมาซ่อม</th>
+                    <th>สถานะ</th>
+                    <th>หมายเหตุ</th>
+                    <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="gr-list-body">
-                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                  <tr>
+                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -2031,9 +2101,11 @@
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <input type="text" id="gr-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="grLookupVehicle()" />
+                  <input type="text" id="gr-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..."
+                    oninput="grLookupVehicle()" />
                 </div>
-                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gr-owner" readonly /></div>
+                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gr-owner" readonly />
+                </div>
                 <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
                   <select id="gr-device">
                     <option value="GPS">GPS</option>
@@ -2047,7 +2119,7 @@
                 </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่นัดซ่อม</label><input type="date" id="gr-appointment-date" /></div>
+                <div class="form-group"><label>วันที่แจ้ง</label><input type="date" id="gr-appointment-date" /></div>
                 <div class="form-group"><label>วันที่ช่างมาซ่อม</label><input type="date" id="gr-repair-date" /></div>
               </div>
               <div class="form-row-3">
@@ -2077,13 +2149,18 @@
 
           <div class="form-card" style="text-align:center; padding:40px 24px;">
             <div id="bk-status" style="font-size:0.95rem; margin-bottom:24px;"></div>
-            <button class="btn-primary" style="font-size:1rem; padding:14px 32px;" onclick="bkExportAll()">📥 ดาวน์โหลดข้อมูลสำรองทั้งหมด (Excel)</button>
+            <button class="btn-primary" style="font-size:1rem; padding:14px 32px;" onclick="bkExportAll()">📥
+              ดาวน์โหลดข้อมูลสำรองทั้งหมด (Excel)</button>
             <p class="readonly-hint" style="margin-top:28px; text-align:left;">
               กดปุ่มแล้วจะขึ้นกล่อง "บันทึกเป็น" ให้เลือกโฟลเดอร์เอง (รองรับใน Chrome/Edge) — ครั้งแรกให้เลือกไปที่
-              <code>P:\QA\สำรองข้อมูล QA-APP</code> จากนั้นเบราว์เซอร์จะจำโฟลเดอร์นี้ไว้เป็นค่าเริ่มต้นให้เองในครั้งถัดไป
+              <code>P:\QA\สำรองข้อมูล QA-APP</code>
+              จากนั้นเบราว์เซอร์จะจำโฟลเดอร์นี้ไว้เป็นค่าเริ่มต้นให้เองในครั้งถัดไป
               (เบราว์เซอร์ที่ไม่รองรับ เช่น Firefox จะดาวน์โหลดลงโฟลเดอร์ดาวน์โหลดตามปกติแทน)<br />
-              แนะนำให้สำรองข้อมูลทุก 3 วัน — ระบบจะแจ้งเตือนอัตโนมัติเมื่อครบกำหนดตอนเปิดแอป (เฉพาะเครื่อง/เบราว์เซอร์นี้)<br />
-              ไฟล์ที่ได้จะมีชีทแยกตามเมนู เช่น เงินสดย่อย, เคลมประกันภัย, ฐานข้อมูลหลัก (พนักงาน/รถ/ลูกค้า/ผู้เบิก/หน่วยงาน ฯลฯ), บันทึกอุบัติเหตุ, บันทึกปัญหาการทำงาน, เป่าวัดแอลกอฮอล์, บันทึกรถร่วม, GPS/CCTV<br />
+              แนะนำให้สำรองข้อมูลทุก 3 วัน — ระบบจะแจ้งเตือนอัตโนมัติเมื่อครบกำหนดตอนเปิดแอป
+              (เฉพาะเครื่อง/เบราว์เซอร์นี้)<br />
+              ไฟล์ที่ได้จะมีชีทแยกตามเมนู เช่น เงินสดย่อย, เคลมประกันภัย, ฐานข้อมูลหลัก
+              (พนักงาน/รถ/ลูกค้า/ผู้เบิก/หน่วยงาน ฯลฯ), บันทึกอุบัติเหตุ, บันทึกปัญหาการทำงาน, เป่าวัดแอลกอฮอล์,
+              บันทึกรถร่วม, GPS/CCTV<br />
               ⚠️ ข้อมูลจริงยังคงซิงค์อยู่บน Firebase ตามปกติ — ไฟล์นี้เป็นสำเนาสำรองเพิ่มเติมเผื่อกรณีฉุกเฉินเท่านั้น
             </p>
           </div>
@@ -2526,7 +2603,8 @@
   </div><!-- /appRoot -->
 
   <!-- Report save loading screen -->
-  <div id="inc-report-loading" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,31,56,.88);align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;">
+  <div id="inc-report-loading"
+    style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,31,56,.88);align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;">
     <div class="rptl-spinner"></div>
     <div style="font-family:'Kanit','Sarabun',sans-serif;font-size:1rem;font-weight:600;">กำลังสร้างรายงาน...</div>
   </div>
@@ -2546,10 +2624,22 @@
     </div>
     <div class="rpt-body">
       <div class="rpt-kpi">
-        <div class="rpt-kpi-card"><div class="rpt-kpi-label">ค่าเสียหายสะสม</div><div class="rpt-kpi-value" id="rpt-kpi-total">฿0</div></div>
-        <div class="rpt-kpi-card"><div class="rpt-kpi-label">จำนวนเหตุการณ์</div><div class="rpt-kpi-value" id="rpt-kpi-count">0</div></div>
-        <div class="rpt-kpi-card"><div class="rpt-kpi-label">พนักงานเกิดเหตุบ่อย</div><div class="rpt-kpi-value" id="rpt-kpi-emp" style="font-size:16px;line-height:1.2;">-</div></div>
-        <div class="rpt-kpi-card"><div class="rpt-kpi-label">ทะเบียนเกิดเหตุบ่อย</div><div class="rpt-kpi-value" id="rpt-kpi-veh">-</div></div>
+        <div class="rpt-kpi-card">
+          <div class="rpt-kpi-label">ค่าเสียหายสะสม</div>
+          <div class="rpt-kpi-value" id="rpt-kpi-total">฿0</div>
+        </div>
+        <div class="rpt-kpi-card">
+          <div class="rpt-kpi-label">จำนวนเหตุการณ์</div>
+          <div class="rpt-kpi-value" id="rpt-kpi-count">0</div>
+        </div>
+        <div class="rpt-kpi-card">
+          <div class="rpt-kpi-label">พนักงานเกิดเหตุบ่อย</div>
+          <div class="rpt-kpi-value" id="rpt-kpi-emp" style="font-size:16px;line-height:1.2;">-</div>
+        </div>
+        <div class="rpt-kpi-card">
+          <div class="rpt-kpi-label">ทะเบียนเกิดเหตุบ่อย</div>
+          <div class="rpt-kpi-value" id="rpt-kpi-veh">-</div>
+        </div>
       </div>
       <div class="rpt-chart-card">
         <div class="rpt-chart-title">สถิติรายเดือน</div>

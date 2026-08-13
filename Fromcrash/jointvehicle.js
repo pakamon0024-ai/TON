@@ -83,13 +83,14 @@ function jvSaveCase() {
   const joinDate = document.getElementById('jv-join-date').value;
   const lastWorkDate = document.getElementById('jv-lastwork-date').value;
   const leaveDate = document.getElementById('jv-leave-date').value;
+  const equipRemoveDate = document.getElementById('jv-equip-remove-date').value;
   const note = document.getElementById('jv-note').value.trim();
 
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
   if (!joinDate) { showToast('กรุณาระบุวันที่สมัครเข้าร่วม', 'warning'); return; }
 
   const record = {
-    plate, owner, joinDate, lastWorkDate, leaveDate, note,
+    plate, owner, joinDate, lastWorkDate, leaveDate, equipRemoveDate, note,
     costGps: parseFloat(document.getElementById('jv-cost-gps').value) || 0,
     costCctv: parseFloat(document.getElementById('jv-cost-cctv').value) || 0,
     costBreath: parseFloat(document.getElementById('jv-cost-breath').value) || 0,
@@ -130,6 +131,7 @@ function jvClearForm() {
   document.getElementById('jv-join-date').value = '';
   document.getElementById('jv-lastwork-date').value = '';
   document.getElementById('jv-leave-date').value = '';
+  document.getElementById('jv-equip-remove-date').value = '';
   document.getElementById('jv-note').value = '';
   document.getElementById('jv-cost-gps').value = '';
   document.getElementById('jv-cost-cctv').value = '';
@@ -150,6 +152,7 @@ function jvEditCase(id) {
   document.getElementById('jv-join-date').value = rec.joinDate || '';
   document.getElementById('jv-lastwork-date').value = rec.lastWorkDate || '';
   document.getElementById('jv-leave-date').value = rec.leaveDate || '';
+  document.getElementById('jv-equip-remove-date').value = rec.equipRemoveDate || '';
   document.getElementById('jv-note').value = rec.note || '';
   document.getElementById('jv-cost-gps').value = rec.costGps || '';
   document.getElementById('jv-cost-cctv').value = rec.costCctv || '';
@@ -196,7 +199,7 @@ function jvRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
@@ -207,6 +210,7 @@ function jvRenderList() {
       <td>${jvDocCount(r)}/${JV_DOC_FIELDS.length}</td>
       <td>${formatDate(r.joinDate)}</td>
       <td>${r.leaveDate ? formatDate(r.leaveDate) : '-'}</td>
+      <td>${r.equipRemoveDate ? formatDate(r.equipRemoveDate) : '-'}</td>
       <td>${jvStatusBadge(r)}</td>
       <td>${r.leaveDate ? formatMoney(jvRemovalCost(r)) : '-'}</td>
       <td>${escapeHtml(r.note || '-')}</td>
@@ -222,7 +226,7 @@ function jvRenderList() {
 const JV_XLSX_HEADERS = [
   'ทะเบียนรถ', 'เจ้าของรถ', 'วันที่สมัครเข้าร่วม (YYYY-MM-DD)',
   'บัตรประชาชนเจ้าของรถ', 'บัตรประชาชนคนขับ', 'ทะเบียนบ้าน', 'ใบขับขี่คนขับ', 'ประกันรถ', 'พรบ.', 'ประกันสินค้า',
-  'วันที่ทำงานวันสุดท้าย (YYYY-MM-DD)', 'วันที่ลาออก (YYYY-MM-DD)',
+  'วันที่ทำงานวันสุดท้าย (YYYY-MM-DD)', 'วันที่ลาออก (YYYY-MM-DD)', 'วันที่ถอดอุปกรณ์ (YYYY-MM-DD)',
   'ถอด GPS', 'ถอด CCTV', 'ถอดเครื่องเป่าแอลกอฮอล์', 'คืนบัตรน้ำมัน', 'ถอดสติ๊กเกอร์',
   'ค่าใช้จ่ายถอด GPS', 'ค่าใช้จ่ายถอด CCTV', 'ค่าใช้จ่ายถอดเครื่องเป่าแอลกอฮอล์', 'หมายเหตุ',
 ];
@@ -230,7 +234,7 @@ const JV_XLSX_HEADERS = [
 function jvDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     JV_XLSX_HEADERS,
-    ['70-1234', 'นายสมชาย ใจดี', '2026-01-15', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', '', '', '', '', '', '', '', 0, 0, 0, ''],
+    ['70-1234', 'นายสมชาย ใจดี', '2026-01-15', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', '', '', '', '', '', '', '', '', 0, 0, 0, ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'รถร่วม');
@@ -245,7 +249,7 @@ function jvExportExcel() {
     ...list.map(r => [
       r.plate, r.owner || '', r.joinDate || '',
       !!r.docIdOwner, !!r.docIdDriver, !!r.docHouseReg, !!r.docLicense, !!r.docVehIns, !!r.docCompulsory, !!r.docCargoIns,
-      r.lastWorkDate || '', r.leaveDate || '',
+      r.lastWorkDate || '', r.leaveDate || '', r.equipRemoveDate || '',
       !!r.leaveGps, !!r.leaveCctv, !!r.leaveBreath, !!r.leaveFuelCard, !!r.leaveSticker,
       r.costGps || 0, r.costCctv || 0, r.costBreath || 0, r.note || '',
     ]),
@@ -272,11 +276,11 @@ function jvImportExcel(event) {
         joinDate,
         docIdOwner: jvParseBool(row[3]), docIdDriver: jvParseBool(row[4]), docHouseReg: jvParseBool(row[5]),
         docLicense: jvParseBool(row[6]), docVehIns: jvParseBool(row[7]), docCompulsory: jvParseBool(row[8]), docCargoIns: jvParseBool(row[9]),
-        lastWorkDate: normalizeImportDate(row[10]), leaveDate: normalizeImportDate(row[11]),
-        leaveGps: jvParseBool(row[12]), leaveCctv: jvParseBool(row[13]), leaveBreath: jvParseBool(row[14]),
-        leaveFuelCard: jvParseBool(row[15]), leaveSticker: jvParseBool(row[16]),
-        costGps: parseFloat(row[17]) || 0, costCctv: parseFloat(row[18]) || 0, costBreath: parseFloat(row[19]) || 0,
-        note: String(row[20] || '').trim(),
+        lastWorkDate: normalizeImportDate(row[10]), leaveDate: normalizeImportDate(row[11]), equipRemoveDate: normalizeImportDate(row[12]),
+        leaveGps: jvParseBool(row[13]), leaveCctv: jvParseBool(row[14]), leaveBreath: jvParseBool(row[15]),
+        leaveFuelCard: jvParseBool(row[16]), leaveSticker: jvParseBool(row[17]),
+        costGps: parseFloat(row[18]) || 0, costCctv: parseFloat(row[19]) || 0, costBreath: parseFloat(row[20]) || 0,
+        note: String(row[21] || '').trim(),
       };
       // จับคู่ด้วยทะเบียน + วันที่สมัคร — ถ้าตรงกับรายการเดิม แก้ไขแทนเพิ่มใหม่ (รองรับแก้ไขผ่าน Excel)
       const idx = jvRecords.findIndex(r => r.plate === plate && r.joinDate === joinDate);
