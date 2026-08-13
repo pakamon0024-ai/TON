@@ -113,7 +113,8 @@ function showPage(page) {
     incidents: 'บันทึกอุบัติเหตุ',
     issues: 'บันทึกปัญหาการทำงาน',
     alcohol: 'บันทึกการเป่าวัดแอลกอฮอล์',
-    jointvehicle: 'บันทึกรถร่วม'
+    jointvehicle: 'บันทึกรถร่วม',
+    gpscctv: 'จัดการ GPS/CCTV'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
 
@@ -126,6 +127,7 @@ function showPage(page) {
   if (page === 'issues' && typeof wiOnPageShown === 'function') wiOnPageShown();
   if (page === 'alcohol' && typeof alcOnPageShown === 'function') alcOnPageShown();
   if (page === 'jointvehicle' && typeof jvOnPageShown === 'function') jvOnPageShown();
+  if (page === 'gpscctv' && typeof gcOnPageShown === 'function') gcOnPageShown();
   if (page === 'petty-cash') refreshCategoryDropdowns('pc');
   if (page === 'approval') refreshCategoryDropdowns('ap');
 

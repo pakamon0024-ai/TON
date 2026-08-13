@@ -129,6 +129,10 @@
           <span class="nav-icon">🚛</span>
           <span>บันทึกรถร่วม</span>
         </a>
+        <a href="#" class="nav-item" data-page="gpscctv" onclick="showPage('gpscctv')">
+          <span class="nav-icon">📡</span>
+          <span>จัดการ GPS/CCTV</span>
+        </a>
         <a href="#" class="nav-item" data-page="users" id="nav-users" onclick="showPage('users')" style="display:none;">
           <span class="nav-icon">👥</span>
           <span>จัดการผู้ใช้</span>
@@ -1856,6 +1860,194 @@
         </div>
       </div>
 
+      <!-- GPS/CCTV PAGE (จัดการ GPS/CCTV: ติดตั้ง/ถอด + แจ้งซ่อม) -->
+      <div class="page" id="page-gpscctv">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">📡</div>
+            <div>
+              <h2>จัดการ GPS/CCTV</h2>
+              <p>บันทึกการติดตั้ง/ถอด GPS และ CCTV รายคัน พร้อมรายการแจ้งซ่อม</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="gc-tab-list" onclick="gcSwitchTab('list')">📋 รายการติดตั้ง/ถอด</button>
+            <button class="subtab" id="gc-tab-add" onclick="gcSwitchTab('add')">➕ เพิ่มบันทึกติดตั้ง/ถอด</button>
+            <button class="subtab" id="gc-tab-replist" onclick="gcSwitchTab('replist')">🔧 รายการแจ้งซ่อม</button>
+            <button class="subtab" id="gc-tab-repadd" onclick="gcSwitchTab('repadd')">➕ เพิ่มแจ้งซ่อม</button>
+          </div>
+
+          <!-- LIST: ติดตั้ง/ถอด -->
+          <div class="subpage active" id="gc-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gc-f-plate" placeholder="ทะเบียนรถ..." oninput="gcRenderList()" /></div>
+              <div class="filter-group">
+                <label>ประเภทอุปกรณ์</label>
+                <select id="gc-f-device" onchange="gcRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="GPS">GPS</option>
+                  <option value="CCTV">CCTV</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>สถานะ</label>
+                <select id="gc-f-status" onchange="gcRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="active">ติดตั้งอยู่</option>
+                  <option value="removed">ถอดแล้ว</option>
+                </select>
+              </div>
+              <button class="btn-secondary" onclick="gcClearListFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="gcDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="gcImportExcel(event)"></label>
+              <button class="btn-secondary" onclick="gcExportExcel()">📊 Export Excel</button>
+            </div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่ติดตั้ง" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+            <div class="ctxt" id="gc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th><th>ทะเบียนรถ</th><th>เจ้าของรถ</th><th>อุปกรณ์</th><th>บริษัท</th><th>วันที่ติดตั้ง</th><th>วันที่ถอด</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="gc-list-body">
+                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD: ติดตั้ง/ถอด -->
+          <div class="subpage" id="gc-subpage-add">
+            <div class="edit-banner" id="gc-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="gc-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="gcCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลการติดตั้ง/ถอดอุปกรณ์</div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="gc-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="gcLookupVehicle()" />
+                </div>
+                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly /></div>
+                <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
+                  <select id="gc-device">
+                    <option value="GPS">GPS</option>
+                    <option value="CCTV">CCTV</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>บริษัท</label><input type="text" id="gc-company" placeholder="บริษัทผู้ติดตั้ง" /></div>
+                <div class="form-group"><label>วันที่ติดตั้ง <span class="req">*</span></label><input type="date" id="gc-install-date" /></div>
+                <div class="form-group"><label>วันที่ถอด</label><input type="date" id="gc-remove-date" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
+                  <textarea class="fta" id="gc-note" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="gcClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="gcSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIST: แจ้งซ่อม -->
+          <div class="subpage" id="gc-subpage-replist">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gr-f-plate" placeholder="ทะเบียนรถ..." oninput="grRenderList()" /></div>
+              <div class="filter-group">
+                <label>ประเภทอุปกรณ์</label>
+                <select id="gr-f-device" onchange="grRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="GPS">GPS</option>
+                  <option value="CCTV">CCTV</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>สถานะ</label>
+                <select id="gr-f-status" onchange="grRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="pending">รอซ่อม</option>
+                  <option value="done">ซ่อมเสร็จแล้ว</option>
+                </select>
+              </div>
+              <button class="btn-secondary" onclick="grClearListFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="grDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="grImportExcel(event)"></label>
+              <button class="btn-secondary" onclick="grExportExcel()">📊 Export Excel</button>
+            </div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่นัดซ่อม" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
+            <div class="ctxt" id="gr-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th><th>ทะเบียนรถ</th><th>เจ้าของรถ</th><th>อุปกรณ์</th><th>อาการ</th><th>วันที่นัดซ่อม</th><th>วันที่ช่างมาซ่อม</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="gr-list-body">
+                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD: แจ้งซ่อม -->
+          <div class="subpage" id="gc-subpage-repadd">
+            <div class="edit-banner" id="gr-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="gr-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="grCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลแจ้งซ่อม</div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="gr-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="grLookupVehicle()" />
+                </div>
+                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gr-owner" readonly /></div>
+                <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
+                  <select id="gr-device">
+                    <option value="GPS">GPS</option>
+                    <option value="CCTV">CCTV</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>อาการ <span class="req">*</span></label>
+                  <textarea class="fta" id="gr-symptom" rows="2" placeholder="อธิบายอาการที่พบ..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่นัดซ่อม</label><input type="date" id="gr-appointment-date" /></div>
+                <div class="form-group"><label>วันที่ช่างมาซ่อม</label><input type="date" id="gr-repair-date" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
+                  <textarea class="fta" id="gr-note" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="grClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="grSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- CLAIMS PAGE (เคลมประกันภัย) -->
       <div class="page" id="page-claims">
         <div id="ic-hdr" class="ic-toprow">
@@ -2355,6 +2547,7 @@
   <script src="issues.js"></script>
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
+  <script src="gpscctv.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
   <script src="auth.js"></script>
