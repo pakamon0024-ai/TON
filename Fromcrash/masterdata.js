@@ -148,23 +148,21 @@ function importDriverExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   readExcelRows(file, (err, rows) => {
     if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
-    let added = 0;
+    let added = 0, updated = 0;
     rows.forEach((row, i) => {
       const name = String(row[0] || '').trim();
       if (!name) return;
-      mdDrivers.push({
-        id: Date.now() + i,
-        name,
-        birthDate: normalizeImportDate(row[1]),
-        startDate: normalizeImportDate(row[2]),
-      });
-      added++;
+      const data = { name, birthDate: normalizeImportDate(row[1]), startDate: normalizeImportDate(row[2]) };
+      // จับคู่ด้วยชื่อ — ถ้ามีอยู่แล้วจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
+      const idx = mdDrivers.findIndex(d => d.name === name);
+      if (idx >= 0) { mdDrivers[idx] = { ...mdDrivers[idx], ...data }; updated++; }
+      else { mdDrivers.push({ id: Date.now() + i, ...data }); added++; }
     });
     saveDriversDB();
     renderDriversTable();
     updateDriverDatalist();
     mdPushIfReady();
-    showToast(`นำเข้าพนักงาน ${added} รายการ`, 'success');
+    showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
     event.target.value = '';
   });
 }
@@ -247,23 +245,21 @@ function importVehicleExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   readExcelRows(file, (err, rows) => {
     if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
-    let added = 0;
+    let added = 0, updated = 0;
     rows.forEach((row, i) => {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
-      mdVehicles.push({
-        id: Date.now() + i,
-        plate,
-        owner: String(row[1] || '').trim(),
-        registerDate: normalizeImportDate(row[2]),
-      });
-      added++;
+      const data = { plate, owner: String(row[1] || '').trim(), registerDate: normalizeImportDate(row[2]) };
+      // จับคู่ด้วยทะเบียน — ถ้ามีอยู่แล้วจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
+      const idx = mdVehicles.findIndex(v => v.plate === plate);
+      if (idx >= 0) { mdVehicles[idx] = { ...mdVehicles[idx], ...data }; updated++; }
+      else { mdVehicles.push({ id: Date.now() + i, ...data }); added++; }
     });
     saveVehiclesDB();
     renderVehiclesTable();
     updatePlateDatalist();
     mdPushIfReady();
-    showToast(`นำเข้ารถ ${added} รายการ`, 'success');
+    showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
     event.target.value = '';
   });
 }
@@ -644,23 +640,21 @@ function importAbcStaffExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   readExcelRows(file, (err, rows) => {
     if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
-    let added = 0;
+    let added = 0, updated = 0;
     rows.forEach((row, i) => {
       const name = String(row[0] || '').trim();
       if (!name) return;
-      if (mdAbcStaff.some(s => s.name === name)) return;
-      mdAbcStaff.push({
-        id: Date.now() + i,
-        name,
-        businessUnit: String(row[1] || '').trim(),
-      });
-      added++;
+      const businessUnit = String(row[1] || '').trim();
+      // จับคู่ด้วยชื่อ — ถ้ามีอยู่แล้วจะแก้ไขหน่วยงานแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
+      const idx = mdAbcStaff.findIndex(s => s.name === name);
+      if (idx >= 0) { mdAbcStaff[idx] = { ...mdAbcStaff[idx], businessUnit }; updated++; }
+      else { mdAbcStaff.push({ id: Date.now() + i, name, businessUnit }); added++; }
     });
     saveAbcStaffDB();
     renderAbcStaffTable();
     if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
     mdPushIfReady();
-    showToast(`นำเข้าพนักงาน ${added} รายการ`, 'success');
+    showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
     event.target.value = '';
   });
 }
