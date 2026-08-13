@@ -283,8 +283,8 @@ function renderVehiclesTable() {
 
 function downloadVehicleTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)'],
-    ['70-1234', 'AP', '2018-03-01'],
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง', 'GPS เลข S/N', 'GPS เบอร์ SIM', 'CCTV วันที่ติดตั้ง', 'ประเภท CCTV', 'CCTV เลข S/N', 'CCTV เบอร์ SIM'],
+    ['70-1234', 'AP', '2018-03-01', '2026-01-15', 'SN-12345', '081-234-5678', '2026-01-15', 'CCTV', 'SN-67890', '081-999-9999'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
@@ -306,23 +306,72 @@ function exportVehicleExcel() {
   XLSX.writeFile(wb, `ทะเบียนรถ_${new Date().toISOString().substring(0, 10)}.xlsx`);
 }
 
+// อัปเดตข้อมูล GPS/CCTV (วันที่ติดตั้ง/เลข S-N/เบอร์ SIM/ประเภท CCTV) ที่กรอกมาจากไฟล์ Excel ทะเบียนรถ
+// เข้าไปที่ gcRecords ตรงๆ (ข้อมูลจริงอยู่ที่เมนู "จัดการ GPS/CCTV") — แก้ไข "รายการที่ยังไม่ถอด" ของอุปกรณ์
+// ชนิดนั้นๆ ถ้ามีอยู่แล้ว ถ้ายังไม่มีและมีข้อมูลกรอกมาจะสร้างรายการติดตั้งใหม่ให้
+function mdUpsertGpsCctvFromVehicleImport(plate, device, installDate, serialNumber, simNumber, cctvType) {
+  if (typeof gcRecords === 'undefined') return false;
+  if (!installDate && !serialNumber && !simNumber) return false;
+  const idx = gcRecords.findIndex(r => r.plate === plate && r.device === device && !r.removeDate);
+  if (idx >= 0) {
+    gcRecords[idx] = {
+      ...gcRecords[idx],
+      installDate: installDate || gcRecords[idx].installDate,
+      serialNumber, simNumber,
+      ...(device === 'CCTV' ? { cctvType: cctvType || gcRecords[idx].cctvType || 'CCTV' } : {}),
+      updatedAt: new Date().toISOString(),
+    };
+  } else {
+    const veh = mdVehicles.find(v => v.plate === plate);
+    gcRecords.unshift({
+      id: 'GC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      runningNo: gcNextRunningNo(),
+      plate, owner: veh?.owner || '', device, company: '',
+      installDate, removeDate: '',
+      cctvType: device === 'CCTV' ? (cctvType || 'CCTV') : '',
+      serialNumber, simNumber, note: '',
+      createdAt: new Date().toISOString(),
+    });
+  }
+  return true;
+}
+
 function importVehicleExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   readExcelRows(file, (err, rows) => {
     if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
-    let added = 0, updated = 0;
+    let added = 0, updated = 0, gcChanged = false;
+    const gcSupported = typeof gcRecords !== 'undefined';
     rows.forEach((row, i) => {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
-      // หมายเหตุ: คอลัมน์ GPS/CCTV/S-N/SIM (ถ้ามีในไฟล์ที่ export มา) จะไม่ถูกนำเข้า เพราะข้อมูลชุดนี้
-      // เชื่อมกับเมนู "จัดการ GPS/CCTV" โดยตรงแล้ว แก้ไขที่เมนูนั้นแทน
       const data = { plate, owner: String(row[1] || '').trim(), registerDate: normalizeImportDate(row[2]) };
       // จับคู่ด้วยทะเบียน — ถ้ามีอยู่แล้วจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
       const idx = mdVehicles.findIndex(v => v.plate === plate);
       if (idx >= 0) { mdVehicles[idx] = { ...mdVehicles[idx], ...data }; updated++; }
       else { mdVehicles.push({ id: Date.now() + i, ...data }); added++; }
+
+      // คอลัมน์ GPS/CCTV (ถ้ามีในไฟล์ — ทั้งจากไฟล์ที่ export มาแล้วแก้ไข หรือกรอกเองตาม Template ใหม่)
+      // จะถูกนำเข้าไปอัปเดตที่เมนู "จัดการ GPS/CCTV" ให้ด้วย ไม่ใช่แค่ทิ้งไป
+      if (gcSupported) {
+        const gpsInstallDate = normalizeImportDate(row[3]);
+        const gpsSerial = String(row[4] || '').trim();
+        const gpsSim = String(row[5] || '').trim();
+        if (mdUpsertGpsCctvFromVehicleImport(plate, 'GPS', gpsInstallDate, gpsSerial, gpsSim, '')) gcChanged = true;
+
+        const cctvInstallDate = normalizeImportDate(row[6]);
+        const cctvType = String(row[7] || '').trim().toUpperCase() === 'AI' ? 'AI' : (row[7] ? 'CCTV' : '');
+        const cctvSerial = String(row[8] || '').trim();
+        const cctvSim = String(row[9] || '').trim();
+        if (mdUpsertGpsCctvFromVehicleImport(plate, 'CCTV', cctvInstallDate, cctvSerial, cctvSim, cctvType)) gcChanged = true;
+      }
     });
     saveVehiclesDB();
+    if (gcChanged) {
+      gcSave();
+      gcPushIfReady();
+      if (typeof gcRenderList === 'function') gcRenderList();
+    }
     renderVehiclesTable();
     updatePlateDatalist();
     mdPushIfReady();
