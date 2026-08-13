@@ -135,22 +135,6 @@
         </a>
       </nav>
 
-      <!-- Requester Manager Panel -->
-      <div class="requester-panel" id="requesterPanel">
-        <div class="requester-panel-header" onclick="toggleRequesterPanel()">
-          <span>👤 จัดการผู้เบิก</span>
-          <span class="requester-panel-arrow" id="requesterArrow">▾</span>
-        </div>
-        <div class="requester-panel-body" id="requesterPanelBody">
-          <div class="requester-add-row">
-            <input type="text" id="newRequesterInput" placeholder="พิมพ์ชื่อผู้เบิก..."
-              onkeydown="if(event.key==='Enter') addRequester()" />
-            <button class="btn-requester-add" onclick="addRequester()" title="เพิ่ม">+</button>
-          </div>
-          <ul class="requester-list" id="requesterList"></ul>
-        </div>
-      </div>
-
       <div class="sidebar-footer">
         <div class="org-info">
           <div class="org-avatar">A</div>
@@ -597,6 +581,7 @@
             <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
             <button class="subtab" id="md-tab-abcstaff" onclick="mdSwitchTopic('abcstaff')">🍃 พนักงานลาน ABC</button>
             <button class="subtab" id="md-tab-customer" onclick="mdSwitchTopic('customer')">🏢 ชื่อลูกค้า</button>
+            <button class="subtab" id="md-tab-requester" onclick="mdSwitchTopic('requester')">👤 ผู้เบิก</button>
             <button class="subtab" id="md-tab-category" onclick="mdSwitchTopic('category')">🏷️
               หมวดหมู่ค่าใช้จ่าย</button>
             <button class="subtab" id="md-tab-telegram" onclick="mdSwitchTopic('telegram')">🔔 แจ้งเตือน
@@ -981,6 +966,41 @@
             </div>
           </div>
 
+          <!-- ผู้เบิก -->
+          <div class="subpage" id="md-subpage-requester">
+            <div class="form-card" style="margin-bottom:24px;">
+              <div class="items-header">
+                <h3>👤 ผู้เบิก</h3>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>ชื่อผู้เบิก</label>
+                  <input type="text" id="md-requester-name" placeholder="ชื่อ-นามสกุล"
+                    onkeydown="if(event.key==='Enter') addRequesterDB()" />
+                </div>
+              </div>
+              <div class="form-actions" style="justify-content:flex-start;">
+                <button class="btn-primary" onclick="addRequesterDB()">+ เพิ่มผู้เบิก</button>
+                <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllRequestersDB()">🗑️ ลบทั้งหมด</button>
+              </div>
+              <div class="recent-table-wrap" style="margin-top:16px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ชื่อผู้เบิก</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="md-requester-body">
+                    <tr>
+                      <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
           <!-- Expense Categories -->
           <div class="subpage" id="md-subpage-category">
             <div class="form-card">
@@ -1110,7 +1130,8 @@
 
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage active" id="inc-subpage-dashboard">
-            <div class="filter-bar">
+            <!-- Navy header with filters -->
+            <div class="inc-dash-header">
               <div class="filter-group">
                 <label>ประเภทความเสียหาย</label>
                 <select id="inc-f-damagetype" onchange="incRenderDashboard()">
@@ -1125,8 +1146,7 @@
                   <option value="">ทั้งหมด</option>
                   <option value="ผิด">ผิด</option>
                   <option value="ถูก">ถูก</option>
-                  <option value="สินค้าเสียหาย">สิน
-                    เสียหาย</option>
+                  <option value="สินค้าเสียหาย">สินค้าเสียหาย</option>
                 </select>
               </div>
               <div class="filter-group">
@@ -1141,28 +1161,35 @@
                   <option value="">ทั้งหมด</option>
                 </select>
               </div>
-              <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้างตัวกรอง</button>
+              <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้าง</button>
+              <button class="inc-btn-report" onclick="incSaveReport()">📸 บันทึกภาพรายงาน</button>
             </div>
 
-            <div class="dashboard-grid" style="margin-bottom:20px;">
+            <!-- KPI cards -->
+            <div class="dashboard-grid" style="margin-bottom:12px;">
               <div class="kpi-card">
-                <div class="kpi-label">มูลค่าความเสียหายสะสม</div>
+                <span class="kpi-card-icon">💰</span>
+                <div class="kpi-label">ค่าเสียหายสะสม</div>
                 <div class="kpi-value" id="inc-kpi-total">฿0.00</div>
               </div>
               <div class="kpi-card">
+                <span class="kpi-card-icon">🚧</span>
                 <div class="kpi-label">จำนวนเหตุการณ์ทั้งหมด</div>
                 <div class="kpi-value" id="inc-kpi-count">0</div>
               </div>
               <div class="kpi-card">
+                <span class="kpi-card-icon">👤</span>
                 <div class="kpi-label">พนักงานที่เกิดเหตุบ่อยสุด</div>
-                <div class="kpi-value" id="inc-kpi-top-emp" style="font-size:0.95rem;">-</div>
+                <div class="kpi-value" id="inc-kpi-top-emp" style="font-size:1rem;">-</div>
               </div>
               <div class="kpi-card">
+                <span class="kpi-card-icon">🚛</span>
                 <div class="kpi-label">รถที่เกิดเหตุบ่อยสุด</div>
-                <div class="kpi-value" id="inc-kpi-top-veh" style="font-size:0.95rem;">-</div>
+                <div class="kpi-value" id="inc-kpi-top-veh" style="font-size:1.1rem;">-</div>
               </div>
             </div>
 
+            <!-- Chart grid -->
             <div class="chart-grid">
               <div class="chart-card">
                 <div class="chart-title">สถิติรายเดือน</div>
@@ -1172,17 +1199,17 @@
                 <div class="chart-title">ตามลานจอด</div>
                 <div class="chart-box"><canvas id="inc-chart-yard"></canvas></div>
               </div>
-              <div class="chart-card span-2">
-                <div class="chart-title">ลักษณะการเกิดเหตุ</div>
-                <div class="chart-box"><canvas id="inc-chart-pattern"></canvas></div>
-              </div>
               <div class="chart-card">
-                <div class="chart-title">ตามหน่วยธุรกิจ</div>
+                <div class="chart-title">หน่วยงาน</div>
                 <div class="chart-box"><canvas id="inc-chart-bu"></canvas></div>
               </div>
               <div class="chart-card">
                 <div class="chart-title">สถานะอุบัติเหตุ (พื้นที่)</div>
                 <div class="chart-box"><canvas id="inc-chart-area"></canvas></div>
+              </div>
+              <div class="chart-card span-2">
+                <div class="chart-title">ลักษณะการเกิดเหตุ (เรียงจากมากไปน้อย)</div>
+                <div class="chart-box" style="height:210px;"><canvas id="inc-chart-pattern"></canvas></div>
               </div>
             </div>
           </div>
@@ -1198,6 +1225,15 @@
                 <label>ลานจอด</label>
                 <select id="inc-lf-yard" onchange="incRenderList()">
                   <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>พื้นที่เกิดเหตุ</label>
+                <select id="inc-lf-area" onchange="incRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="On the way">On the way</option>
+                  <option value="In Plant">In Plant</option>
+                  <option value="In yard">In yard</option>
                 </select>
               </div>
               <div class="filter-group">
@@ -1217,6 +1253,7 @@
               <button class="btn-secondary" onclick="incDownloadTemplate()">📄 Template Excel</button>
               <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
                   style="display:none" onchange="incImportExcel(event)"></label>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="incDeleteAllIncidents()">🗑️ ลบทั้งหมด</button>
             </div>
             <div class="ctxt" id="inc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
@@ -1230,9 +1267,9 @@
                     <th>พนักงาน</th>
                     <th>ทะเบียน</th>
                     <th>ลานจอด</th>
+                    <th>หน่วยงาน</th>
                     <th>ถูก-ผิด</th>
                     <th>มูลค่ารวม</th>
-                    <th>สถานะเคส</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
@@ -1250,6 +1287,11 @@
             <div class="edit-banner" id="inc-edit-banner" style="display:none;">
               <span>✏️ กำลังแก้ไขบันทึก <strong id="inc-edit-no"></strong></span>
               <button class="btn-secondary" onclick="incCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="filter-bar" style="margin-bottom:16px;">
+              <button class="btn-secondary" onclick="incDownloadTemplate()">📄 ดาวน์โหลด Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 นำเข้า Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="incImportExcel(event)"></label>
             </div>
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลพื้นฐาน</div>
@@ -1446,36 +1488,40 @@
                 </select>
               </div>
               <div class="filter-group">
-                <label>สถานะ</label>
-                <select id="wi-f-status" onchange="wiRenderList()">
+                <label>ลานจอด</label>
+                <select id="wi-f-yard" onchange="wiRenderList()">
                   <option value="">ทั้งหมด</option>
-                  <option value="รอดำเนินการ">รอดำเนินการ</option>
-                  <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                  <option value="เสร็จสิ้น">เสร็จสิ้น</option>
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="wi-f-search"
-                  placeholder="หัวข้อ / ผู้แจ้ง / รายละเอียด..." oninput="wiRenderList()" /></div>
-              <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้างตัวกรอง</button>
+                  placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="wiRenderList()" /></div>
+              <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="wiExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="wiImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="wiDownloadTemplate()">📋 Template</button>
             </div>
-            <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
-            </div>
+            <div class="ctxt" id="wi-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
             <div class="recent-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
                     <th>เลขที่</th>
-                    <th>วันที่แจ้ง</th>
+                    <th>วันที่</th>
                     <th>หัวข้อปัญหา</th>
-                    <th>ผู้แจ้ง</th>
+                    <th>พนักงาน</th>
+                    <th>ทะเบียน</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
                     <th>รายละเอียด</th>
-                    <th>สถานะ</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="wi-list-body">
                   <tr>
-                    <td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -1491,46 +1537,39 @@
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลปัญหา</div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่แจ้งปัญหา <span class="req">*</span></label><input type="date"
-                    id="wi-date" /></div>
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="wi-date" /></div>
                 <div class="form-group">
                   <label>หัวข้อปัญหา <span class="req">*</span></label>
                   <div style="display:flex; gap:6px;">
-                    <select id="wi-topic" style="flex:1;">
-                      <option value="">-- เลือก --</option>
-                    </select>
-                    <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่"
-                      onclick="wiQuickAddTopic()">+</button>
+                    <input type="text" id="wi-topic" list="wi-topic-list" placeholder="พิมพ์หรือเลือก..." style="flex:1;" />
+                    <datalist id="wi-topic-list"></datalist>
+                    <button type="button" class="btn-secondary" title="เพิ่มหัวข้อใหม่" onclick="wiQuickAddTopic()">+</button>
                   </div>
                 </div>
-                <div class="form-group"><label>ผู้แจ้ง</label><input type="text" id="wi-reporter"
-                    placeholder="ชื่อผู้แจ้ง" /></div>
+                <div class="form-group"><label>ชื่อพนักงานขับรถ</label>
+                  <input type="text" id="wi-driver" list="wi-driver-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="wi-driver-list"></datalist>
+                </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span
-                      class="req">*</span></label>
+                <div class="form-group"><label>ทะเบียน</label>
+                  <input type="text" id="wi-plate" list="wi-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..." oninput="wiLookupVehicle()" />
+                  <datalist id="wi-plate-list"></datalist>
+                </div>
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="wi-bu" list="wi-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="wi-bu-list"></datalist>
+                </div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="wi-yard" list="wi-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="wi-yard-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span class="req">*</span></label>
                   <textarea class="fta" id="wi-detail" rows="3" placeholder="อธิบายรายละเอียดปัญหาที่พบ..."></textarea>
                 </div>
               </div>
-
-              <div class="fieldset-title">การติดตามแก้ไข</div>
-              <div class="form-row-3">
-                <div class="form-group"><label>สถานะ</label>
-                  <select id="wi-status">
-                    <option value="รอดำเนินการ">รอดำเนินการ</option>
-                    <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                    <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>วันที่แก้ไขเสร็จ</label><input type="date" id="wi-resolved-date" /></div>
-              </div>
-              <div class="form-row-3">
-                <div class="form-group full" style="grid-column:1/-1;"><label>แนวทางแก้ไข / ผลการแก้ไข</label>
-                  <textarea class="fta" id="wi-solution" rows="3"
-                    placeholder="บันทึกแนวทางหรือผลการแก้ไขปัญหา..."></textarea>
-                </div>
-              </div>
-
               <div class="form-actions">
                 <button class="btn-secondary" onclick="wiClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
@@ -2252,6 +2291,62 @@
 
   </div><!-- /appRoot -->
 
+  <!-- Report save loading screen -->
+  <div id="inc-report-loading" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(10,31,56,.88);align-items:center;justify-content:center;flex-direction:column;gap:14px;color:#fff;">
+    <div class="rptl-spinner"></div>
+    <div style="font-family:'Kanit','Sarabun',sans-serif;font-size:1rem;font-weight:600;">กำลังสร้างรายงาน...</div>
+  </div>
+
+  <!-- Report container 1080×1350 (off-screen, captured by html2canvas) -->
+  <div id="inc-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title">รายงานสถิติอุบัติเหตุ</div>
+        <div class="rpt-date-text" id="rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนเหตุการณ์</div>
+        <div class="rpt-count-val" id="rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <div class="rpt-kpi">
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">ค่าเสียหายสะสม</div><div class="rpt-kpi-value" id="rpt-kpi-total">฿0</div></div>
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">จำนวนเหตุการณ์</div><div class="rpt-kpi-value" id="rpt-kpi-count">0</div></div>
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">พนักงานเกิดเหตุบ่อย</div><div class="rpt-kpi-value" id="rpt-kpi-emp" style="font-size:16px;line-height:1.2;">-</div></div>
+        <div class="rpt-kpi-card"><div class="rpt-kpi-label">ทะเบียนเกิดเหตุบ่อย</div><div class="rpt-kpi-value" id="rpt-kpi-veh">-</div></div>
+      </div>
+      <div class="rpt-chart-card">
+        <div class="rpt-chart-title">สถิติรายเดือน</div>
+        <div class="rpt-chart-box" style="height:168px;"><canvas id="rpt-chart-month"></canvas></div>
+      </div>
+      <div class="rpt-chart-card">
+        <div class="rpt-chart-title">ลักษณะการเกิดเหตุ (เรียงจากมากไปน้อย)</div>
+        <div class="rpt-chart-box" style="height:210px;"><canvas id="rpt-chart-pattern"></canvas></div>
+      </div>
+      <div class="rpt-row-2">
+        <div class="rpt-chart-card">
+          <div class="rpt-chart-title">หน่วยงาน</div>
+          <div class="rpt-chart-box" style="height:168px;"><canvas id="rpt-chart-bu"></canvas></div>
+        </div>
+        <div class="rpt-chart-card">
+          <div class="rpt-chart-title">ตามลานจอด</div>
+          <div class="rpt-chart-box" style="height:168px;"><canvas id="rpt-chart-yard"></canvas></div>
+        </div>
+      </div>
+      <div class="rpt-chart-card">
+        <div class="rpt-chart-title">สถานะอุบัติเหตุ (พื้นที่)</div>
+        <div class="rpt-chart-box" style="height:148px;"><canvas id="rpt-chart-area"></canvas></div>
+      </div>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบบันทึกอุบัติเหตุ FormCrash · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">FORMCRASH · SAFETY REPORT</div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="app.js"></script>
   <script src="claims.js"></script>
   <script src="masterdata.js"></script>

@@ -1,11 +1,13 @@
-// ===== ฐานข้อมูลหลัก: พนักงานขับรถ / ทะเบียนรถ / ลูกค้า =====
+// ===== ฐานข้อมูลหลัก: พนักงานขับรถ / ทะเบียนรถ / ลูกค้า / ผู้เบิก =====
 let mdDrivers = JSON.parse(localStorage.getItem('finflow_drivers_db') || '[]');
 let mdVehicles = JSON.parse(localStorage.getItem('finflow_vehicles_db') || '[]');
 let mdCustomers = JSON.parse(localStorage.getItem('finflow_customers_db') || '[]');
+let mdRequesters = JSON.parse(localStorage.getItem('finflow_requesters') || '[]');
 
 function saveDriversDB() { localStorage.setItem('finflow_drivers_db', JSON.stringify(mdDrivers)); }
 function saveVehiclesDB() { localStorage.setItem('finflow_vehicles_db', JSON.stringify(mdVehicles)); }
 function saveCustomersDB() { localStorage.setItem('finflow_customers_db', JSON.stringify(mdCustomers)); }
+function saveRequestersDB() { localStorage.setItem('finflow_requesters', JSON.stringify(mdRequesters)); }
 
 // คำนวณอายุ/อายุงานแบบปี-เดือน-วัน จากวันที่ระบุถึงวันนี้
 function formatDuration(fromDateStr) {
@@ -351,6 +353,74 @@ function updateCustomerDatalist() {
   const dl = document.getElementById('customerNameList');
   if (!dl) return;
   dl.innerHTML = mdCustomers.map(c => `<option value="${escapeHtml(c.name)}"></option>`).join('');
+}
+
+// ===== ผู้เบิก =====
+function addRequesterDB() {
+  const input = document.getElementById('md-requester-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdRequesters.includes(name)) { showToast('มีชื่อผู้เบิกนี้อยู่แล้ว', 'warning'); return; }
+  mdRequesters.push(name);
+  saveRequestersDB();
+  input.value = '';
+  input.focus();
+  renderRequestersTable();
+  updateRequesterDatalist();
+  mdPushIfReady();
+  showToast(`เพิ่มผู้เบิก: ${name}`, 'success');
+}
+
+function deleteRequesterDB(name) {
+  if (!confirm(`ยืนยันการลบ "${name}"?`)) return;
+  mdRequesters = mdRequesters.filter(r => r !== name);
+  saveRequestersDB();
+  renderRequestersTable();
+  updateRequesterDatalist();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+
+function deleteAllRequestersDB() {
+  if (!mdConfirmDeleteAll('ผู้เบิก')) return;
+  mdRequesters = [];
+  saveRequestersDB();
+  renderRequestersTable();
+  updateRequesterDatalist();
+  mdPushIfReady();
+  showToast('ลบผู้เบิกทั้งหมดแล้ว', 'warning');
+}
+
+function renderRequestersTable() {
+  const tbody = document.getElementById('md-requester-body');
+  if (!tbody) return;
+  if (mdRequesters.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+  tbody.innerHTML = mdRequesters.map(name => `
+    <tr>
+      <td>${escapeHtml(name)}</td>
+      <td><button class="action-btn action-delete" onclick="deleteRequesterDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td>
+    </tr>
+  `).join('');
+}
+
+function updateRequesterDatalist() {
+  if (typeof syncRequesterDropdowns === 'function') {
+    syncRequesterDropdowns();
+    return;
+  }
+  // fallback ถ้า app.js ยังไม่โหลด
+  ['pc-requester', 'ap-requester', 'pc-reviewer', 'ap-reviewer'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const current = sel.value;
+    const placeholder = id.includes('reviewer') ? '-- เลือกผู้ตรวจสอบ --' : '-- เลือกผู้เบิก --';
+    sel.innerHTML = `<option value="">${placeholder}</option>` +
+      mdRequesters.map(r => `<option value="${escapeHtml(r)}" ${r === current ? 'selected' : ''}>${escapeHtml(r)}</option>`).join('');
+  });
+  if (typeof attachRequesterListeners === 'function') attachRequesterListeners();
 }
 
 // ===== หน่วยงาน / บริษัทประกัน / ลานจอด / ลักษณะการเกิดเหตุ =====
@@ -714,7 +784,7 @@ function renderCategoriesTable() {
 }
 
 // ===== เลือกหัวข้อที่จะบันทึก (แสดงเฉพาะส่วนที่เลือก) =====
-const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'abcstaff', 'customer', 'category', 'telegram'];
+const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'abcstaff', 'customer', 'requester', 'category', 'telegram'];
 function mdSwitchTopic(topic) {
   MD_TOPICS.forEach(t => {
     document.getElementById(`md-tab-${t}`).classList.toggle('active', t === topic);
@@ -735,6 +805,8 @@ function renderMasterData() {
   renderIncidentPatternsTable();
   renderIssueTopicsTable();
   renderAbcStaffTable();
+  renderRequestersTable();
+  updateRequesterDatalist();
   renderCategoriesTable();
   if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();

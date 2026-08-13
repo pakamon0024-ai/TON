@@ -82,7 +82,7 @@ function mdPushIfReady() {
   mdWriteSimpleList(mdYardRef, mdYards);
   mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
   mdWriteSimpleList(mdTopicRef, mdIssueTopics);
-  mdWriteSimpleList(mdReqRef, requesters);
+  mdWriteSimpleList(mdReqRef, mdRequesters);
 }
 
 function mdWaitForFirebase() {
@@ -101,7 +101,7 @@ function mdApplySimpleList(kind, arr) {
   if (kind === 'yard') { mdYards = arr; saveYardsDB(); renderYardsTable(); }
   if (kind === 'pattern') { mdIncidentPatterns = arr; savePatternsDB(); renderIncidentPatternsTable(); }
   if (kind === 'topic') { mdIssueTopics = arr; saveIssueTopicsDB(); renderIssueTopicsTable(); }
-  if (kind === 'requesters') { requesters = arr; saveRequesters(); renderRequesterList(); syncRequesterDropdowns(); }
+  if (kind === 'requesters') { mdRequesters = arr; saveRequestersDB(); renderRequestersTable(); updateRequesterDatalist(); }
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
 }
@@ -152,7 +152,7 @@ async function mdInit() {
     if (!patSnap.exists() && mdIncidentPatterns.length > 0) await mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
     if (!topicSnap.exists() && mdIssueTopics.length > 0) await mdWriteSimpleList(mdTopicRef, mdIssueTopics);
     if (!abcSnap.exists() && mdAbcStaff.length > 0) await mdWriteAbcStaff();
-    if (!reqSnap.exists() && requesters.length > 0) await mdWriteSimpleList(mdReqRef, requesters);
+    if (!reqSnap.exists() && mdRequesters.length > 0) await mdWriteSimpleList(mdReqRef, mdRequesters);
 
     onValue(mdEmpRef, snap => { if (snap.exists()) mdApplyServerDrivers(mdObjToRecords(snap.val())); });
     onValue(mdVehRef, snap => { if (snap.exists()) mdApplyServerVehicles(mdObjToRecords(snap.val())); });
