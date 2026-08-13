@@ -412,21 +412,22 @@ body {
 .alc-summary-table tbody tr:nth-child(4n+2) td { border-bottom: 2px solid var(--border-light); }
 
 /* ===== Alcohol Test Daily Report (รายงานตัวประจำวัน) ===== */
-.alc-daily-table { min-width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+/* ลดขนาดตารางลงครึ่งหนึ่ง (กว้างเดิม 100% ของ container) — ไม่ต้อง stretch เต็มจอ */
+.alc-daily-table { width: 50%; min-width: 460px; font-size: 0.72rem; border-collapse: collapse; }
 .alc-daily-table caption {
-  caption-side: top; text-align: left; font-weight: 700; font-size: 0.95rem;
-  padding: 10px 12px; color: var(--text-primary); background: var(--bg-secondary);
+  caption-side: top; text-align: left; font-weight: 700; font-size: 0.8rem;
+  padding: 5px 6px; color: var(--text-primary); background: var(--bg-secondary);
   border: 1px solid var(--border); border-bottom: none;
 }
 .alc-daily-table th, .alc-daily-table td {
-  padding: 8px 10px; text-align: center; border: 1px solid var(--border);
+  padding: 3px 4px; text-align: center; border: 1px solid var(--border);
 }
-.alc-daily-table th { background: var(--accent-primary); color: #fff; font-size: 0.72rem; }
+.alc-daily-table th { background: var(--accent-primary); color: #fff; font-size: 0.6rem; }
 .alc-daily-table td:first-child { text-align: left; white-space: nowrap; }
 .alc-daily-checked { color: var(--accent-blue); font-weight: 700; }
 .alc-daily-pct {
-  display: inline-block; min-width: 44px; padding: 2px 8px; border-radius: 4px;
-  background: var(--accent-primary); color: #fff; font-weight: 700; font-size: 0.78rem;
+  display: inline-block; min-width: 30px; padding: 1px 5px; border-radius: 4px;
+  background: var(--accent-primary); color: #fff; font-weight: 700; font-size: 0.64rem;
 }
 .alc-daily-empty td { background: var(--bg-hover); color: var(--text-muted); }
 
