@@ -26,6 +26,17 @@ const DOW_LABELS_TH = ['อาทิตย์','จันทร์','อัง�
 
 function incSave() { localStorage.setItem('finflow_incidents', JSON.stringify(incidents)); }
 
+// ทำให้ "พื้นที่เกิดเหตุ" เป็นรูปแบบเดียวกันเสมอ — ข้อมูลเก่าบางรายการเคยถูกบันทึกด้วยตัวพิมพ์เล็ก/ใหญ่
+// ไม่ตรงกัน (เช่น "In plant" vs "In Plant") ทำให้กราฟนับแยกเป็นคนละแท่งทั้งที่ควรเป็นอันเดียวกัน
+function incNormalizeArea(val) {
+  const v = String(val || '').trim();
+  const lower = v.toLowerCase();
+  if (lower === 'on the way') return 'On the way';
+  if (lower === 'in plant') return 'In Plant';
+  if (lower === 'in yard') return 'In yard';
+  return v;
+}
+
 // ===== Sub-tabs =====
 function incSwitchTab(tab) {
   ['dashboard','list','add'].forEach(t => {
@@ -156,7 +167,7 @@ function incSaveCase() {
     location: document.getElementById('inc-location').value.trim(),
     description: document.getElementById('inc-description').value.trim(),
     faultStatus: document.getElementById('inc-fault').value,
-    area: document.getElementById('inc-area').value,
+    area: incNormalizeArea(document.getElementById('inc-area').value),
     incidentPattern: document.getElementById('inc-pattern').value,
     severity: document.getElementById('inc-severity').value,
     repairShop: document.getElementById('inc-repair-shop').value.trim(),
@@ -248,7 +259,7 @@ function incEditCase(id) {
   document.getElementById('inc-location').value = rec.location || '';
   document.getElementById('inc-description').value = rec.description || '';
   document.getElementById('inc-fault').value = rec.faultStatus || '';
-  document.getElementById('inc-area').value = rec.area || '';
+  document.getElementById('inc-area').value = incNormalizeArea(rec.area) || '';
   document.getElementById('inc-severity').value = rec.severity || '';
   document.getElementById('inc-repair-shop').value = rec.repairShop || '';
   document.getElementById('inc-repair-in').value = rec.repairInDate || '';
@@ -309,7 +320,7 @@ function incFilteredList() {
   return incidents.filter(i => {
     if (dateFrom && i.incidentDate < dateFrom) return false;
     if (dateTo && i.incidentDate > dateTo) return false;
-    if (area && i.area !== area) return false;
+    if (area && incNormalizeArea(i.area) !== area) return false;
     if (yard && i.yard !== yard) return false;
     if (status && i.caseStatus !== status) return false;
     if (q && !((i.plate||'').toLowerCase().includes(q) || (i.employeeName||'').toLowerCase().includes(q))) return false;
@@ -426,7 +437,7 @@ function incRenderDashboard() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
-  const areaCount = {}; data.forEach(i => { if (i.area) areaCount[i.area] = (areaCount[i.area]||0)+1; });
+  const areaCount = {}; data.forEach(i => { const a = incNormalizeArea(i.area); if (a) areaCount[a] = (areaCount[a]||0)+1; });
   const areaSorted = Object.entries(areaCount).sort((a,b)=>b[1]-a[1]);
   incDestroyChart('area');
   incCharts.area = new Chart(document.getElementById('inc-chart-area'), {
@@ -453,7 +464,7 @@ function incExportExcel() {
   if (!incidents.length) { showToast('ไม่มีข้อมูล', 'error'); return; }
   const rows = incidents.map(i => [
     i.runningNo, i.tmsStatus, i.damageType, i.incidentDate, i.incidentTime, i.employeeName, i.plate, i.location, i.description,
-    i.faultStatus, i.area, i.incidentPattern, i.severity, i.repairShop, i.repairInDate, i.repairOutDate, i.score, i.claimNo, i.zone,
+    i.faultStatus, incNormalizeArea(i.area), i.incidentPattern, i.severity, i.repairShop, i.repairInDate, i.repairOutDate, i.score, i.claimNo, i.zone,
     i.companyDamageCost, i.companyPaid, i.towingCost, i.chargedToCustomer, i.chargedToEmployee, i.advanceAmount, i.insurancePaid,
     i.insuranceReportedAmount, i.insuranceClaimStatus, i.remarkCost, i.injuryStatus, i.otherPartyName, i.otherPartyPhone, i.otherPartyPlate,
     i.caseStatus, i.suspensionDays, i.insuranceCompany, i.yard, i.businessUnit,
@@ -482,7 +493,7 @@ function incParseImportRow(row) {
     businessUnit: String(row[37]||'').trim() || veh?.businessUnit||'',
     insuranceCompany: String(row[35]||'').trim() || veh?.insuranceCompany||'',
     location: String(row[7]||'').trim(), description: String(row[8]||'').trim(),
-    faultStatus: String(row[9]||'').trim(), area: String(row[10]||'').trim(), incidentPattern: String(row[11]||'').trim(), severity: String(row[12]||'').trim(),
+    faultStatus: String(row[9]||'').trim(), area: incNormalizeArea(row[10]), incidentPattern: String(row[11]||'').trim(), severity: String(row[12]||'').trim(),
     repairShop: String(row[13]||'').trim(), repairInDate: normalizeImportDate(row[14]), repairOutDate: normalizeImportDate(row[15]),
     score: row[16]||'', claimNo: String(row[17]||'').trim(), zone: String(row[18]||'').trim(),
     companyDamageCost: parseFloat(row[19])||0, companyPaid: parseFloat(row[20])||0, towingCost: parseFloat(row[21])||0,
@@ -545,7 +556,7 @@ function incBuildChartData(data) {
   const buSorted = Object.entries(buCount).sort((a,b)=>b[1]-a[1]);
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
   const yardSorted = Object.entries(yardCount).sort((a,b)=>b[1]-a[1]);
-  const areaCount = {}; data.forEach(i => { if (i.area) areaCount[i.area] = (areaCount[i.area]||0)+1; });
+  const areaCount = {}; data.forEach(i => { const a = incNormalizeArea(i.area); if (a) areaCount[a] = (areaCount[a]||0)+1; });
   const areaSorted = Object.entries(areaCount).sort((a,b)=>b[1]-a[1]);
   return { monthCount, patternSorted, buSorted, yardSorted, areaSorted };
 }
@@ -602,19 +613,10 @@ async function incSaveReport() {
   loading.style.display = 'flex';
 
   const data = incFilteredForDashboard();
-  const totalCost = data.reduce((s, i) => s + (i.total || 0), 0);
-  const empCount = {}; data.forEach(i => { if (i.employeeName) empCount[i.employeeName] = (empCount[i.employeeName]||0)+1; });
-  const topEmp = Object.entries(empCount).sort((a,b)=>b[1]-a[1])[0];
-  const vehCount = {}; data.forEach(i => { if (i.plate) vehCount[i.plate] = (vehCount[i.plate]||0)+1; });
-  const topVeh = Object.entries(vehCount).sort((a,b)=>b[1]-a[1])[0];
 
   const now = new Date();
   document.getElementById('rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('rpt-total-count').textContent = data.length;
-  document.getElementById('rpt-kpi-total').textContent = formatMoney(totalCost);
-  document.getElementById('rpt-kpi-count').textContent = data.length;
-  document.getElementById('rpt-kpi-emp').textContent = topEmp ? `${topEmp[0]} (${topEmp[1]} ครั้ง)` : '-';
-  document.getElementById('rpt-kpi-veh').textContent = topVeh ? `${topVeh[0]} (${topVeh[1]} ครั้ง)` : '-';
 
   const chartData = incBuildChartData(data);
 
