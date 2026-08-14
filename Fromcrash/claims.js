@@ -846,7 +846,7 @@ async function icPushIfOK() {
 }
 
 function icClearFbConfig() {
-  if (!confirm('ต้องการลบ Firebase Config นี้หรือไม่?')) return;
+  if (!confirmDeleteWithPin('ต้องการลบ Firebase Config นี้หรือไม่?')) return;
   localStorage.removeItem(FK);
   fbOK = false; fbReady = false; icSetFbDot('');
   icLoadSettingsForm();

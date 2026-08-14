@@ -300,7 +300,7 @@ function incCancelEdit() {
 }
 
 function incDeleteCase(id) {
-  if (!confirm('ยืนยันการลบบันทึกนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   incidents = incidents.filter(i => i.id !== id);
   incSave();
   incPushIfReady();
@@ -658,7 +658,7 @@ async function incSaveReport() {
 
 function incDeleteAllIncidents() {
   if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
-  if (!confirm(`ลบบันทึกอุบัติเหตุทั้งหมด ${incidents.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  if (!confirmDeleteWithPin(`ลบบันทึกอุบัติเหตุทั้งหมด ${incidents.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
   incidents = [];
   incSave();
   incPushIfReady();

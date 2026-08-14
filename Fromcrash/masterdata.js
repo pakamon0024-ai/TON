@@ -77,7 +77,7 @@ function mdApplyAdminOnlyVisibility() {
 
 function mdConfirmDeleteAll(label) {
   if (!mdIsAdmin()) { showToast('เฉพาะแอดมินเท่านั้นที่ลบทั้งหมดได้', 'error'); return false; }
-  return confirm(`ยืนยันลบข้อมูล "${label}" ทั้งหมด?\nการกระทำนี้ไม่สามารถย้อนกลับได้`);
+  return confirmDeleteWithPin(`ยืนยันลบข้อมูล "${label}" ทั้งหมด?\nการกระทำนี้ไม่สามารถย้อนกลับได้`);
 }
 
 // ===== พนักงานขับรถ =====
@@ -98,7 +98,7 @@ function addDriverDB() {
 }
 
 function deleteDriverDB(id) {
-  if (!confirm('ยืนยันการลบพนักงานคนนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบพนักงานคนนี้?')) return;
   mdDrivers = mdDrivers.filter(d => d.id !== id);
   saveDriversDB();
   renderDriversTable();
@@ -232,7 +232,7 @@ function mdVehicleGpsCctvInfo(plate) {
 }
 
 function deleteVehicleDB(id) {
-  if (!confirm('ยืนยันการลบรถคันนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบรถคันนี้?')) return;
   mdVehicles = mdVehicles.filter(v => v.id !== id);
   saveVehiclesDB();
   renderVehiclesTable();
@@ -400,6 +400,7 @@ function addCustomerDB() {
 }
 
 function deleteCustomerDB(id) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdCustomers = mdCustomers.filter(c => c.id !== id);
   saveCustomersDB();
   renderCustomersTable();
@@ -485,7 +486,7 @@ function addRequesterDB() {
 }
 
 function deleteRequesterDB(name) {
-  if (!confirm(`ยืนยันการลบ "${name}"?`)) return;
+  if (!confirmDeleteWithPin(`ยืนยันการลบ "${name}"?`)) return;
   mdRequesters = mdRequesters.filter(r => r !== name);
   saveRequestersDB();
   renderRequestersTable();
@@ -563,6 +564,7 @@ function addBusinessUnitDB() {
   showToast('เพิ่มหน่วยงานแล้ว', 'success');
 }
 function deleteBusinessUnitDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdBusinessUnits = mdBusinessUnits.filter(n => n !== name);
   saveBusinessUnitsDB();
   renderBusinessUnitsTable();
@@ -603,6 +605,7 @@ function addInsurerDB() {
   showToast('เพิ่มบริษัทประกันแล้ว', 'success');
 }
 function deleteInsurerDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdInsurers = mdInsurers.filter(n => n !== name);
   saveInsurersDB();
   renderInsurersTable();
@@ -643,6 +646,7 @@ function addYardDB() {
   showToast('เพิ่มลานจอดแล้ว', 'success');
 }
 function deleteYardDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdYards = mdYards.filter(n => n !== name);
   saveYardsDB();
   renderYardsTable();
@@ -683,6 +687,7 @@ function addIncidentPatternDB() {
   showToast('เพิ่มลักษณะการเกิดเหตุแล้ว', 'success');
 }
 function deleteIncidentPatternDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdIncidentPatterns = mdIncidentPatterns.filter(n => n !== name);
   savePatternsDB();
   renderIncidentPatternsTable();
@@ -727,6 +732,7 @@ function addIssueTopicDB() {
   showToast('เพิ่มหัวข้อปัญหาแล้ว', 'success');
 }
 function deleteIssueTopicDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdIssueTopics = mdIssueTopics.filter(n => n !== name);
   saveIssueTopicsDB();
   renderIssueTopicsTable();
@@ -778,7 +784,7 @@ function addAbcStaffDB() {
   showToast('เพิ่มพนักงานแล้ว', 'success');
 }
 function deleteAbcStaffDB(id) {
-  if (!confirm('ยืนยันการลบพนักงานคนนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบพนักงานคนนี้?')) return;
   mdAbcStaff = mdAbcStaff.filter(s => s.id !== id);
   saveAbcStaffDB();
   renderAbcStaffTable();
@@ -877,7 +883,7 @@ function addBreathalyzerDB() {
 }
 
 function deleteBreathalyzerDB(id) {
-  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   mdBreathalyzers = mdBreathalyzers.filter(b => b.id !== id);
   saveBreathalyzersDB();
   renderBreathalyzersTable();
@@ -988,6 +994,7 @@ function addCategoryDB() {
 }
 
 function deleteCategoryDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   saveCategoriesDB(loadCategoriesDB().filter(c => c !== name));
   renderCategoriesTable();
   showToast('ลบแล้ว', 'warning');

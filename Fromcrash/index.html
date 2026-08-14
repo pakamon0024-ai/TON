@@ -2041,6 +2041,8 @@
               <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
                   style="display:none" onchange="gcImportExcel(event)"></label>
               <button class="btn-secondary" onclick="gcExportExcel()">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="gcDeleteAllCases()">🗑️
+                ลบทั้งหมด</button>
             </div>
             <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่ติดตั้ง" เป็นตัวจับคู่ —
               ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
@@ -2093,7 +2095,7 @@
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly />
                 </div>
                 <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
-                  <select id="gc-device" onchange="gcToggleDeviceFields()">
+                  <select id="gc-device" onchange="gcToggleDeviceFields();gcAutoFillInstallInfo()">
                     <option value="GPS">GPS</option>
                     <option value="CCTV">CCTV</option>
                   </select>
@@ -2102,8 +2104,10 @@
               <div class="form-row-3">
                 <div class="form-group"><label>บริษัท</label><input type="text" id="gc-company"
                     placeholder="บริษัทผู้ติดตั้ง" /></div>
-                <div class="form-group"><label>วันที่ติดตั้ง <span class="req">*</span></label><input type="date"
-                    id="gc-install-date" /></div>
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date"
+                    id="gc-install-date" />
+                  <div class="readonly-hint" id="gc-install-auto-hint" style="display:none;margin:0;">ดึงจากรายการติดตั้งเดิมของรถคันนี้ — กรอกแค่ "วันที่ถอด" แล้วบันทึกได้เลย</div>
+                </div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="gc-remove-date" /></div>
               </div>
               <div class="form-row-3">

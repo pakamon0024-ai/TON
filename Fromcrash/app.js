@@ -671,15 +671,28 @@ function changeStatus(id, status) {
   if (rec) { rec.status = status; saveRecords(); rsPushIfReady(); renderDashboard(); }
 }
 
+// ===== ยืนยันการลบด้วยรหัส (ใช้แทน confirm() ธรรมดาทุกจุดที่มีการลบข้อมูลในระบบ) =====
+const DELETE_CONFIRM_PIN = '1234';
+function confirmDeleteWithPin(message) {
+  if (!confirm(message)) return false;
+  const pin = prompt('กรุณาใส่รหัสยืนยันการลบ (4 หลัก):');
+  if (pin === null) return false;
+  if (pin.trim() !== DELETE_CONFIRM_PIN) {
+    showToast('รหัสไม่ถูกต้อง ยกเลิกการลบ', 'error');
+    return false;
+  }
+  return true;
+}
+
 function deleteRecord(id) {
-  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   records = records.filter(r => r.id !== id);
   saveRecords(); rsPushIfReady(); renderHistory(); renderDashboard();
   showToast('ลบรายการแล้ว', 'warning');
 }
 
 function clearAllHistory() {
-  if (!confirm('ยืนยันการล้างประวัติทั้งหมด?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการล้างประวัติทั้งหมด?')) return;
   records = []; saveRecords(); rsPushIfReady(); renderHistory(); renderDashboard();
   showToast('ล้างประวัติทั้งหมดแล้ว', 'warning');
 }

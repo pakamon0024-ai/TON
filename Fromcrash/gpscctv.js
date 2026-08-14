@@ -55,7 +55,7 @@ function gcRenderPlateOptions(prefix) {
 function gcPickPlate(prefix, plate) {
   document.getElementById(`${prefix}-plate`).value = plate;
   document.getElementById(`${prefix}-plate-list`).classList.remove('show');
-  if (prefix === 'gc') { gcLookupVehicle(); } else { grLookupVehicle(); }
+  if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallInfo(); } else { grLookupVehicle(); }
 }
 
 // ตอนออกจากช่อง (blur) ถ้าพิมพ์มาไม่ตรงกับทะเบียนที่มีจริงในฐานข้อมูลหลัก ให้ล้างค่าทิ้ง
@@ -72,9 +72,35 @@ function gcCommitPlateInput(prefix) {
       showToast('กรุณาเลือกทะเบียนรถจากรายการเท่านั้น', 'warning');
     } else if (val) {
       // พิมพ์ทะเบียนที่มีจริงมาครบแล้วออกจากช่องเลย (ไม่ได้กดเลือกจากลิสต์) ก็ให้เติมเจ้าของรถให้เหมือนกัน
-      if (prefix === 'gc') { gcLookupVehicle(); } else { grLookupVehicle(); }
+      if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallInfo(); } else { grLookupVehicle(); }
     }
   }, 150);
+}
+
+// ถ้าทะเบียน+ประเภทอุปกรณ์ที่เลือก มีรายการติดตั้งอยู่แล้ว (ยังไม่ถอด) ให้ดึง "วันที่ติดตั้ง" (พร้อมบริษัท/
+// เลข S-N/เบอร์ SIM เพื่อความสะดวก) มาแสดงอัตโนมัติ โดยล็อกช่องวันที่ติดตั้งไว้ไม่ให้แก้ — ผู้ใช้กรอกแค่
+// "วันที่ถอด" แล้วกดบันทึก ระบบจะสร้างเป็น "แถวสถิติใหม่" เสมอ (ไม่ใช่การแก้ไขรายการติดตั้งเดิม)
+// ถ้าทะเบียน+อุปกรณ์นั้นไม่เคยมีรายการติดตั้งมาก่อน จะปลดล็อกให้กรอกวันที่ติดตั้งเองตามปกติ (กรณีติดตั้งใหม่จริงๆ)
+function gcAutoFillInstallInfo() {
+  const plate = document.getElementById('gc-plate').value.trim();
+  const device = document.getElementById('gc-device').value;
+  const installDateInput = document.getElementById('gc-install-date');
+  const hint = document.getElementById('gc-install-auto-hint');
+  if (!plate) { installDateInput.readOnly = false; if (hint) hint.style.display = 'none'; return; }
+
+  const existing = gcRecords.find(r => r.plate === plate && r.device === device && !r.removeDate);
+  if (existing) {
+    document.getElementById('gc-company').value = existing.company || '';
+    installDateInput.value = existing.installDate || '';
+    installDateInput.readOnly = true;
+    document.getElementById('gc-serial').value = existing.serialNumber || '';
+    document.getElementById('gc-sim').value = existing.simNumber || '';
+    if (device === 'CCTV') document.getElementById('gc-cctv-type').value = existing.cctvType || 'CCTV';
+    if (hint) hint.style.display = '';
+  } else {
+    installDateInput.readOnly = false;
+    if (hint) hint.style.display = 'none';
+  }
 }
 
 function gcLookupVehicle() {
@@ -157,6 +183,9 @@ function gcClearForm() {
   document.getElementById('gc-device').value = 'GPS';
   document.getElementById('gc-company').value = '';
   document.getElementById('gc-install-date').value = '';
+  document.getElementById('gc-install-date').readOnly = false;
+  const acHint = document.getElementById('gc-install-auto-hint');
+  if (acHint) acHint.style.display = 'none';
   document.getElementById('gc-remove-date').value = '';
   document.getElementById('gc-cctv-type').value = 'CCTV';
   document.getElementById('gc-serial').value = '';
@@ -176,6 +205,9 @@ function gcEditCase(id) {
   document.getElementById('gc-device').value = rec.device || 'GPS';
   document.getElementById('gc-company').value = rec.company || '';
   document.getElementById('gc-install-date').value = rec.installDate || '';
+  document.getElementById('gc-install-date').readOnly = false;
+  const acHint = document.getElementById('gc-install-auto-hint');
+  if (acHint) acHint.style.display = 'none';
   document.getElementById('gc-remove-date').value = rec.removeDate || '';
   document.getElementById('gc-cctv-type').value = rec.cctvType || 'CCTV';
   document.getElementById('gc-serial').value = rec.serialNumber || '';
@@ -189,13 +221,24 @@ function gcEditCase(id) {
 function gcCancelEdit() { gcClearForm(); }
 
 function gcDeleteCase(id) {
-  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   gcRecords = gcRecords.filter(r => r.id !== id);
   gcSave();
   gcPushIfReady();
   gcRenderList();
   if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
   showToast('ลบแล้ว', 'warning');
+}
+
+function gcDeleteAllCases() {
+  if (typeof mdIsAdmin === 'function' && !mdIsAdmin()) { showToast('เฉพาะแอดมินเท่านั้นที่ลบทั้งหมดได้', 'error'); return; }
+  if (!confirmDeleteWithPin(`ลบรายการติดตั้ง/ถอดทั้งหมด ${gcRecords.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  gcRecords = [];
+  gcSave();
+  gcPushIfReady();
+  gcRenderList();
+  if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
+  showToast('ลบรายการติดตั้ง/ถอดทั้งหมดแล้ว', 'warning');
 }
 
 function gcFilteredList() {
@@ -329,7 +372,7 @@ function grEditCase(id) {
 function grCancelEdit() { grClearForm(); }
 
 function grDeleteCase(id) {
-  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   grRecords = grRecords.filter(r => r.id !== id);
   grSave();
   grPushIfReady();

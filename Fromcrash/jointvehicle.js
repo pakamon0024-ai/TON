@@ -167,7 +167,7 @@ function jvEditCase(id) {
 function jvCancelEdit() { jvClearForm(); }
 
 function jvDeleteCase(id) {
-  if (!confirm('ยืนยันการลบรายการนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   jvRecords = jvRecords.filter(r => r.id !== id);
   jvSave();
   jvPushIfReady();

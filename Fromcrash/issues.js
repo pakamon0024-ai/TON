@@ -157,7 +157,7 @@ function wiEditCase(id) {
 function wiCancelEdit() { wiClearForm(); }
 
 function wiDeleteCase(id) {
-  if (!confirm('ยืนยันการลบบันทึกนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   workIssues = workIssues.filter(i => i.id !== id);
   wiSave();
   wiPushIfReady();

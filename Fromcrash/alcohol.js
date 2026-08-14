@@ -199,7 +199,7 @@ function alcEditCase(id) {
 }
 
 function alcDeleteCase(id) {
-  if (!confirm('ยืนยันการลบบันทึกนี้?')) return;
+  if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   alcTests = alcTests.filter(t => t.id !== id);
   alcSave();
   alcPushIfReady();
