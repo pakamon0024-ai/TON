@@ -2083,11 +2083,12 @@
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลการติดตั้ง/ถอดอุปกรณ์</div>
               <div class="form-row-3">
-                <div class="form-group">
+                <div class="form-group combo-wrap" id="gc-plate-wrap">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <select id="gc-plate" onchange="gcLookupVehicle()">
-                    <option value="">-- เลือกทะเบียนรถ --</option>
-                  </select>
+                  <input type="text" id="gc-plate" autocomplete="off" placeholder="พิมพ์เพื่อค้นหาทะเบียนรถ..."
+                    oninput="gcRenderPlateOptions('gc')" onfocus="gcRenderPlateOptions('gc')"
+                    onblur="gcCommitPlateInput('gc')" />
+                  <div class="combo-list" id="gc-plate-list"></div>
                 </div>
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly />
                 </div>
@@ -2194,11 +2195,12 @@
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลแจ้งซ่อม</div>
               <div class="form-row-3">
-                <div class="form-group">
+                <div class="form-group combo-wrap" id="gr-plate-wrap">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
-                  <select id="gr-plate" onchange="grLookupVehicle()">
-                    <option value="">-- เลือกทะเบียนรถ --</option>
-                  </select>
+                  <input type="text" id="gr-plate" autocomplete="off" placeholder="พิมพ์เพื่อค้นหาทะเบียนรถ..."
+                    oninput="gcRenderPlateOptions('gr')" onfocus="gcRenderPlateOptions('gr')"
+                    onblur="gcCommitPlateInput('gr')" />
+                  <div class="combo-list" id="gr-plate-list"></div>
                 </div>
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gr-owner" readonly />
                 </div>

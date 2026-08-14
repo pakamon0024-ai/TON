@@ -383,7 +383,6 @@ function importVehicleExcel(event) {
 function updatePlateDatalist() {
   const dl = document.getElementById('plateNoList');
   if (dl) dl.innerHTML = mdVehicles.map(v => `<option value="${escapeHtml(v.plate)}"></option>`).join('');
-  if (typeof gcUpdatePlateDropdown === 'function') gcUpdatePlateDropdown();
 }
 
 // ===== ลูกค้า =====

@@ -28,24 +28,50 @@ function gcSwitchTab(tab) {
   if (tab === 'repadd' && !grEditingId) grClearForm();
 }
 
-function gcOnPageShown() { gcUpdatePlateDropdown(); gcRenderList(); grRenderList(); }
+function gcOnPageShown() { gcRenderList(); grRenderList(); }
 
-// ===== ทะเบียนรถ: เลือกจากฐานข้อมูลหลัก (mdVehicles) เท่านั้น — ดึงเจ้าของรถให้อัตโนมัติ =====
+// ===== ทะเบียนรถ: ช่องพิมพ์ค้นหา + เลือกจากฐานข้อมูลหลัก (mdVehicles) เท่านั้น =====
 // รวมทะเบียนที่เคยบันทึกไว้ในรายการเดิมด้วย เผื่อรถถูกลบออกจากฐานข้อมูลหลักไปแล้วจะได้ไม่หายจากตัวเลือกตอนแก้ไข
-function gcUpdatePlateDropdown() {
-  if (typeof mdVehicles === 'undefined') return;
-  const platesFromMaster = mdVehicles.map(v => v.plate);
+function gcAllKnownPlates() {
+  const platesFromMaster = typeof mdVehicles !== 'undefined' ? mdVehicles.map(v => v.plate) : [];
   const platesFromRecords = [...gcRecords.map(r => r.plate), ...grRecords.map(r => r.plate)];
-  const allPlates = Array.from(new Set([...platesFromMaster, ...platesFromRecords])).filter(Boolean).sort();
-  const options = '<option value="">-- เลือกทะเบียนรถ --</option>' +
-    allPlates.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
-  ['gc-plate', 'gr-plate'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const current = sel.value;
-    sel.innerHTML = options;
-    if (allPlates.includes(current)) sel.value = current;
-  });
+  return Array.from(new Set([...platesFromMaster, ...platesFromRecords])).filter(Boolean).sort();
+}
+
+// แสดงรายการทะเบียนที่ตรงกับคำที่พิมพ์ (prefix คือ 'gc' หรือ 'gr') — เรียกตอนพิมพ์และตอน focus ช่อง
+function gcRenderPlateOptions(prefix) {
+  const input = document.getElementById(`${prefix}-plate`);
+  const list = document.getElementById(`${prefix}-plate-list`);
+  if (!input || !list) return;
+  const term = input.value.trim().toLowerCase();
+  const all = gcAllKnownPlates();
+  const filtered = term ? all.filter(p => p.toLowerCase().includes(term)) : all;
+  list.innerHTML = filtered.length
+    ? filtered.map(p => `<div class="combo-item" onmousedown="event.preventDefault();gcPickPlate('${prefix}','${escapeHtml(p).replace(/'/g, "\\'")}')">${escapeHtml(p)}</div>`).join('')
+    : '<div class="combo-item combo-empty">ไม่พบทะเบียนที่ตรงกัน</div>';
+  list.classList.add('show');
+}
+
+function gcPickPlate(prefix, plate) {
+  document.getElementById(`${prefix}-plate`).value = plate;
+  document.getElementById(`${prefix}-plate-list`).classList.remove('show');
+  if (prefix === 'gc') gcLookupVehicle(); else grLookupVehicle();
+}
+
+// ตอนออกจากช่อง (blur) ถ้าพิมพ์มาไม่ตรงกับทะเบียนที่มีจริงในฐานข้อมูลหลัก ให้ล้างค่าทิ้ง
+// (บังคับว่าต้องเลือกจากลิสต์เท่านั้น พิมพ์เองมั่วๆ ไม่ได้)
+function gcCommitPlateInput(prefix) {
+  setTimeout(() => {
+    const input = document.getElementById(`${prefix}-plate`);
+    const list = document.getElementById(`${prefix}-plate-list`);
+    list.classList.remove('show');
+    const val = input.value.trim();
+    if (val && !gcAllKnownPlates().includes(val)) {
+      input.value = '';
+      document.getElementById(`${prefix}-owner`).value = '';
+      showToast('กรุณาเลือกทะเบียนรถจากรายการเท่านั้น', 'warning');
+    }
+  }, 150);
 }
 
 function gcLookupVehicle() {
@@ -467,7 +493,7 @@ function grImportExcel(event) {
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function gcRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function gcObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
-function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); gcUpdatePlateDropdown(); if (typeof renderVehiclesTable === 'function') renderVehiclesTable(); }
+function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); if (typeof renderVehiclesTable === 'function') renderVehiclesTable(); }
 async function gcWriteFB() {
   if (!gcRef) return;
   try {
@@ -477,7 +503,7 @@ async function gcWriteFB() {
 }
 function gcPushIfReady() { if (gcReady) gcWriteFB(); }
 
-function grApplyServer(serverRecords) { grRecords = serverRecords; grSave(); grRenderList(); gcUpdatePlateDropdown(); }
+function grApplyServer(serverRecords) { grRecords = serverRecords; grSave(); grRenderList(); }
 async function grWriteFB() {
   if (!grRef) return;
   try {
@@ -520,7 +546,6 @@ async function gcInit() {
 document.addEventListener('DOMContentLoaded', () => {
   gcClearForm();
   grClearForm();
-  gcUpdatePlateDropdown();
   gcRenderList();
   grRenderList();
   gcInit();

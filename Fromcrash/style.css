@@ -532,6 +532,21 @@ body {
   transition: border-color var(--transition), box-shadow var(--transition);
   resize: vertical;
 }
+/* ===== ช่องพิมพ์ค้นหา + เลือกจากรายการ (เช่น ทะเบียนรถในเมนู GPS/CCTV) ===== */
+/* พิมพ์กรองรายการได้ แต่ค่าที่บันทึกได้ต้องเป็นตัวเลือกจากลิสต์เท่านั้น (บังคับผ่าน onblur) */
+.combo-wrap { position: relative; }
+.combo-list {
+  display: none; position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40;
+  max-height: 220px; overflow-y: auto;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+.combo-list.show { display: block; }
+.combo-item { padding: 8px 14px; font-size: 0.88rem; color: var(--text-primary); cursor: pointer; }
+.combo-item:hover { background: var(--bg-hover); }
+.combo-item.combo-empty { color: var(--text-muted); cursor: default; }
+.combo-item.combo-empty:hover { background: transparent; }
+
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
