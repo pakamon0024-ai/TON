@@ -55,7 +55,7 @@ function gcRenderPlateOptions(prefix) {
 function gcPickPlate(prefix, plate) {
   document.getElementById(`${prefix}-plate`).value = plate;
   document.getElementById(`${prefix}-plate-list`).classList.remove('show');
-  if (prefix === 'gc') gcLookupVehicle(); else grLookupVehicle();
+  if (prefix === 'gc') { gcLookupVehicle(); } else { grLookupVehicle(); }
 }
 
 // ตอนออกจากช่อง (blur) ถ้าพิมพ์มาไม่ตรงกับทะเบียนที่มีจริงในฐานข้อมูลหลัก ให้ล้างค่าทิ้ง
@@ -70,6 +70,9 @@ function gcCommitPlateInput(prefix) {
       input.value = '';
       document.getElementById(`${prefix}-owner`).value = '';
       showToast('กรุณาเลือกทะเบียนรถจากรายการเท่านั้น', 'warning');
+    } else if (val) {
+      // พิมพ์ทะเบียนที่มีจริงมาครบแล้วออกจากช่องเลย (ไม่ได้กดเลือกจากลิสต์) ก็ให้เติมเจ้าของรถให้เหมือนกัน
+      if (prefix === 'gc') { gcLookupVehicle(); } else { grLookupVehicle(); }
     }
   }, 150);
 }
