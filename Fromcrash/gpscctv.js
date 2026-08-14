@@ -99,15 +99,8 @@ function grLookupVehicle() {
   document.getElementById('gr-owner').value = veh?.owner || '';
 }
 
-// ===== ติดตั้ง/ถอด: Running number / สถานะ =====
+// ===== ติดตั้ง/ถอด: Running number =====
 function gcNextRunningNo() { return gcRecords.length ? Math.max(...gcRecords.map(r => r.runningNo || 0)) + 1 : 1; }
-function gcStatusOf(rec) { return rec.removeDate ? 'removed' : 'active'; }
-
-function gcStatusBadge(rec) {
-  return gcStatusOf(rec) === 'removed'
-    ? `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ถอดแล้ว</span>`
-    : `<span class="badge badge-green">ติดตั้งอยู่</span>`;
-}
 
 function gcSaveCase() {
   const plate = document.getElementById('gc-plate').value.trim();
@@ -204,14 +197,15 @@ function gcDeleteAllCases() {
   showToast('ลบรายการติดตั้ง/ถอดทั้งหมดแล้ว', 'warning');
 }
 
+// หน้านี้เป็น "สถิติจากบันทึกการถอด" เท่านั้น — แสดงเฉพาะรายการที่บันทึกวันที่ถอดแล้ว (สร้างจากฟอร์ม
+// "เพิ่มบันทึกติดตั้ง/ถอด") ไม่โชว์ข้อมูลติดตั้งดิบของรถทุกคันที่มีอยู่ในระบบ
 function gcFilteredList() {
   const plate = (document.getElementById('gc-f-plate')?.value || '').trim().toLowerCase();
   const device = document.getElementById('gc-f-device')?.value || '';
-  const status = document.getElementById('gc-f-status')?.value || '';
   return gcRecords.filter(r => {
+    if (!r.removeDate) return false;
     if (plate && !r.plate.toLowerCase().includes(plate)) return false;
     if (device && r.device !== device) return false;
-    if (status && gcStatusOf(r) !== status) return false;
     return true;
   });
 }
@@ -219,7 +213,6 @@ function gcFilteredList() {
 function gcClearListFilters() {
   document.getElementById('gc-f-plate').value = '';
   document.getElementById('gc-f-device').value = '';
-  document.getElementById('gc-f-status').value = '';
   gcRenderList();
 }
 
@@ -230,7 +223,7 @@ function gcRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
@@ -241,8 +234,7 @@ function gcRenderList() {
       <td>${escapeHtml(r.device || '-')}</td>
       <td>${escapeHtml(r.company || '-')}</td>
       <td>${formatDate(r.installDate)}</td>
-      <td>${r.removeDate ? formatDate(r.removeDate) : '-'}</td>
-      <td>${gcStatusBadge(r)}</td>
+      <td>${formatDate(r.removeDate)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
       <td>
         <button class="action-btn action-view" onclick="gcEditCase('${r.id}')">แก้ไข</button>
@@ -403,8 +395,8 @@ function gcExportExcel() {
   const list = gcFilteredList();
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'สถานะ', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
+    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'หมายเหตุ'],
+    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
