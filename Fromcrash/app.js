@@ -148,6 +148,8 @@ function syncRequesterDropdowns() {
     'ap-requester': '-- เลือกผู้ขออนุมัติ --',
     'pc-reviewer': '-- เลือกผู้ตรวจสอบ --',
     'ap-reviewer': '-- เลือกผู้ตรวจสอบ --',
+    'pc-approver': '-- เลือกผู้อนุมัติ --',
+    'ap-approver': '-- เลือกผู้อนุมัติ --',
   };
   const list = (typeof mdRequesters !== 'undefined') ? mdRequesters : [];
   Object.keys(placeholders).forEach(id => {
@@ -165,6 +167,8 @@ function attachRequesterListeners() {
   const apSel = document.getElementById('ap-requester');
   const pcReviewerSel = document.getElementById('pc-reviewer');
   const apReviewerSel = document.getElementById('ap-reviewer');
+  const pcApproverSel = document.getElementById('pc-approver');
+  const apApproverSel = document.getElementById('ap-approver');
   if (pcSel) {
     pcSel.onchange = () => updateSignature('pc');
     // trigger if already has value
@@ -182,11 +186,19 @@ function attachRequesterListeners() {
     apReviewerSel.onchange = () => updateSignature('ap', 'reviewer');
     updateSignature('ap', 'reviewer');
   }
+  if (pcApproverSel) {
+    pcApproverSel.onchange = () => updateSignature('pc', 'approver');
+    updateSignature('pc', 'approver');
+  }
+  if (apApproverSel) {
+    apApproverSel.onchange = () => updateSignature('ap', 'approver');
+    updateSignature('ap', 'approver');
+  }
 }
 
 function updateSignature(prefix, field = 'requester') {
-  const sel = document.getElementById(field === 'requester' ? `${prefix}-requester` : `${prefix}-reviewer`);
-  const idBase = field === 'requester' ? prefix : `${prefix}-reviewer`;
+  const sel = document.getElementById(field === 'requester' ? `${prefix}-requester` : `${prefix}-${field}`);
+  const idBase = field === 'requester' ? prefix : `${prefix}-${field}`;
   const sigName = document.getElementById(`${idBase}-sig-name`);
   const sigDate = document.getElementById(`${idBase}-sig-date`);
   if (!sel || !sigName || !sigDate) return;
@@ -294,6 +306,7 @@ function getPettyData() {
     date: document.getElementById('pc-date').value,
     requester: document.getElementById('pc-requester').value,
     reviewer: document.getElementById('pc-reviewer').value,
+    approver: document.getElementById('pc-approver').value,
     purpose: document.getElementById('pc-purpose').value,
     detail: document.getElementById('pc-detail').value,
     items, total
@@ -313,7 +326,7 @@ function savePettyCash() {
     if (idx >= 0) {
       records[idx] = {
         ...records[idx],
-        docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer,
+        docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer, approver: data.approver,
         purpose: data.purpose, detail: data.detail, date: data.date, items: data.items, total: data.total,
       };
     }
@@ -327,6 +340,7 @@ function savePettyCash() {
       dept: data.dept,
       requester: data.requester,
       reviewer: data.reviewer,
+      approver: data.approver,
       purpose: data.purpose,
       detail: data.detail,
       date: data.date,
@@ -377,6 +391,8 @@ function loadPettyCashForEdit(rec) {
   document.getElementById('pc-detail').value = rec.detail || '';
   setSelectValueSafe('pc-reviewer', rec.reviewer || '');
   updateSignature('pc', 'reviewer');
+  setSelectValueSafe('pc-approver', rec.approver || '');
+  updateSignature('pc', 'approver');
 
   pettyRows = (rec.items || []).map((item, i) => ({ id: Date.now() + i }));
   if (pettyRows.length === 0) pettyRows = [{ id: Date.now() }];
@@ -489,6 +505,7 @@ function getApprovalData() {
     subject: document.getElementById('ap-subject').value,
     requester: document.getElementById('ap-requester').value,
     reviewer: document.getElementById('ap-reviewer').value,
+    approver: document.getElementById('ap-approver').value,
     reason: document.getElementById('ap-reason').value,
     note1: document.getElementById('ap-note1').value,
     note2: document.getElementById('ap-note2').value,
@@ -507,7 +524,7 @@ function saveApproval() {
     if (idx >= 0) {
       records[idx] = {
         ...records[idx],
-        docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer,
+        docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer, approver: data.approver,
         subject: data.subject, date: data.date, items: data.items, total: data.total,
         data: data,
       };
@@ -522,6 +539,7 @@ function saveApproval() {
       dept: data.dept,
       requester: data.requester,
       reviewer: data.reviewer,
+      approver: data.approver,
       subject: data.subject,
       date: data.date,
       items: data.items,
@@ -580,6 +598,8 @@ function loadApprovalForEdit(data, recordId) {
   updateSignature('ap');
   setSelectValueSafe('ap-reviewer', data.reviewer || '');
   updateSignature('ap', 'reviewer');
+  setSelectValueSafe('ap-approver', data.approver || '');
+  updateSignature('ap', 'approver');
   if (data.note1) document.getElementById('ap-note1').value = data.note1;
   if (data.note2) document.getElementById('ap-note2').value = data.note2;
 
@@ -794,7 +814,7 @@ function buildPettyCashDoc(data) {
       <div class="print-sigs">
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้จัดทำ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">${escapeHtml(data.reviewer || '')}</div><div class="print-sig-date">วันที่ ${data.reviewer ? todayThaiDate() : '.............'}</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">คุณนิธิโรจน์ คำภานุช</div><div class="print-sig-position">ประธานบริษัท</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">${escapeHtml(data.approver || '')}</div><div class="print-sig-date">วันที่ ${data.approver ? todayThaiDate() : '.............'}</div></div>
       </div>
     </div>
   `;
@@ -833,7 +853,7 @@ function buildApprovalDoc(data) {
       <div class="print-sigs">
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ขออนุมัติ</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-date">วันที่ ${data.requester ? todayThaiDate() : '.............'}</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">${escapeHtml(data.reviewer || '')}</div><div class="print-sig-date">วันที่ ${data.reviewer ? todayThaiDate() : '.............'}</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">คุณนิธิโรจน์ คำภานุช</div><div class="print-sig-position">ประธานบริษัท</div><div class="print-sig-date">วันที่ .............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้อนุมัติ</div><div class="print-sig-name">${escapeHtml(data.approver || '')}</div><div class="print-sig-date">วันที่ ${data.approver ? todayThaiDate() : '.............'}</div></div>
       </div>
     </div>
   `;

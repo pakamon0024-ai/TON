@@ -299,6 +299,15 @@
               </div>
             </div>
 
+            <div class="form-row-3">
+              <div class="form-group">
+                <label>ผู้อนุมัติ</label>
+                <select id="pc-approver">
+                  <option value="">-- เลือกผู้อนุมัติ --</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-group" style="margin-bottom:18px;">
               <label>รายละเอียด</label>
               <textarea id="pc-detail" rows="2" placeholder="รายละเอียดเพิ่มเติม..."></textarea>
@@ -351,9 +360,8 @@
               <div class="sig-box">
                 <div class="sig-line"></div>
                 <div class="sig-label">ผู้อนุมัติ</div>
-                <div class="sig-name">คุณนิธิโรจน์ คำภานุช</div>
-                <div class="sig-position">ประธานบริษัท</div>
-                <div class="sig-date">วันที่ ........./........./.........</div>
+                <div class="sig-name" id="pc-approver-sig-name"></div>
+                <div class="sig-date" id="pc-approver-sig-date">วันที่ ........./........./.........</div>
               </div>
             </div>
 
@@ -417,7 +425,7 @@
             <div class="form-row-3">
               <div class="form-group">
                 <label>เรียน (ผู้มีอำนาจอนุมัติ)</label>
-                <input type="text" id="ap-to" value="คุณนิธิโรจน์ คำภานุช" placeholder="เรียน" />
+                <input type="text" id="ap-to" value="" placeholder="เรียน" />
               </div>
               <div class="form-group">
                 <label>ผู้ขออนุมัติ</label>
@@ -429,6 +437,15 @@
                 <label>ผู้ตรวจสอบ</label>
                 <select id="ap-reviewer">
                   <option value="">-- เลือกผู้ตรวจสอบ --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group">
+                <label>ผู้อนุมัติ</label>
+                <select id="ap-approver">
+                  <option value="">-- เลือกผู้อนุมัติ --</option>
                 </select>
               </div>
             </div>
@@ -502,9 +519,8 @@
               <div class="sig-box">
                 <div class="sig-line"></div>
                 <div class="sig-label">ผู้อนุมัติ</div>
-                <div class="sig-name">คุณนิธิโรจน์ คำภานุช</div>
-                <div class="sig-position">ประธานบริษัท</div>
-                <div class="sig-date">วันที่ ........./........./.........</div>
+                <div class="sig-name" id="ap-approver-sig-name"></div>
+                <div class="sig-date" id="ap-approver-sig-date">วันที่ ........./........./.........</div>
               </div>
             </div>
 
