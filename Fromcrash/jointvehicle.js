@@ -54,16 +54,23 @@ function jvLookupVehicle() {
   document.getElementById('jv-owner').value = veh?.owner || '';
 }
 
+// สลับส่วนของฟอร์มตามประเภทบันทึกที่เลือก (สมัครเข้าร่วม / ลาออก) — กรอกแค่ส่วนที่เกี่ยวข้อง
+// ข้อมูลจะถูกแยกเก็บเป็นคนละ record กันไปเลยตามประเภท ไม่ปนกัน
+function jvToggleTypeFields() {
+  const type = document.getElementById('jv-type').value;
+  document.getElementById('jv-join-section').style.display = type === 'join' ? '' : 'none';
+  document.getElementById('jv-leave-section').style.display = type === 'leave' ? '' : 'none';
+}
+
 // ===== Running number =====
 function jvNextRunningNo() {
   return jvRecords.length ? Math.max(...jvRecords.map(r => r.runningNo || 0)) + 1 : 1;
 }
 
-function jvStatusOf(rec) { return rec.leaveDate ? 'left' : 'active'; }
-function jvStatusBadge(rec) {
-  return jvStatusOf(rec) === 'left'
-    ? `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ลาออกแล้ว</span>`
-    : `<span class="badge badge-green">ร่วมอยู่</span>`;
+function jvTypeBadge(rec) {
+  return rec.type === 'leave'
+    ? `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ลาออก</span>`
+    : `<span class="badge badge-green">สมัครเข้าร่วม</span>`;
 }
 function jvDocCount(rec) { return JV_DOC_FIELDS.filter(([, key]) => rec[key]).length; }
 function jvRemovalCost(rec) { return (parseFloat(rec.costGps) || 0) + (parseFloat(rec.costCctv) || 0) + (parseFloat(rec.costBreath) || 0); }
@@ -78,30 +85,38 @@ function jvCalcRemovalCost() {
 
 // ===== Save / Edit / Delete =====
 function jvSaveCase() {
+  const type = document.getElementById('jv-type').value === 'leave' ? 'leave' : 'join';
   const plate = document.getElementById('jv-plate').value.trim();
   const owner = document.getElementById('jv-owner').value.trim();
-  const joinDate = document.getElementById('jv-join-date').value;
-  const lastWorkDate = document.getElementById('jv-lastwork-date').value;
-  const leaveDate = document.getElementById('jv-leave-date').value;
-  const equipRemoveDate = document.getElementById('jv-equip-remove-date').value;
   const note = document.getElementById('jv-note').value.trim();
 
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
-  if (!joinDate) { showToast('กรุณาระบุวันที่สมัครเข้าร่วม', 'warning'); return; }
 
-  const record = {
-    plate, owner, joinDate, lastWorkDate, leaveDate, equipRemoveDate, note,
-    costGps: parseFloat(document.getElementById('jv-cost-gps').value) || 0,
-    costCctv: parseFloat(document.getElementById('jv-cost-cctv').value) || 0,
-    costBreath: parseFloat(document.getElementById('jv-cost-breath').value) || 0,
-  };
-  JV_DOC_FIELDS.forEach(([id, key]) => { record[key] = document.getElementById(id).checked; });
-  JV_LEAVE_CHECK_FIELDS.forEach(([id, key]) => { record[key] = document.getElementById(id).checked; });
+  let record;
+  if (type === 'join') {
+    const joinDate = document.getElementById('jv-join-date').value;
+    if (!joinDate) { showToast('กรุณาระบุวันที่สมัครเข้าร่วม', 'warning'); return; }
+    record = { type, plate, owner, joinDate, note };
+    JV_DOC_FIELDS.forEach(([id, key]) => { record[key] = document.getElementById(id).checked; });
+  } else {
+    const leaveDate = document.getElementById('jv-leave-date').value;
+    if (!leaveDate) { showToast('กรุณาระบุวันที่ลาออก', 'warning'); return; }
+    record = {
+      type, plate, owner, note,
+      lastWorkDate: document.getElementById('jv-lastwork-date').value,
+      leaveDate,
+      equipRemoveDate: document.getElementById('jv-equip-remove-date').value,
+      costGps: parseFloat(document.getElementById('jv-cost-gps').value) || 0,
+      costCctv: parseFloat(document.getElementById('jv-cost-cctv').value) || 0,
+      costBreath: parseFloat(document.getElementById('jv-cost-breath').value) || 0,
+    };
+    JV_LEAVE_CHECK_FIELDS.forEach(([id, key]) => { record[key] = document.getElementById(id).checked; });
+  }
 
   if (jvEditingId) {
     const idx = jvRecords.findIndex(r => r.id === jvEditingId);
     if (idx >= 0) {
-      jvRecords[idx] = { ...jvRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      jvRecords[idx] = { ...record, id: jvRecords[idx].id, runningNo: jvRecords[idx].runningNo, createdAt: jvRecords[idx].createdAt, updatedAt: new Date().toISOString() };
       showToast('✅ บันทึกการแก้ไขแล้ว', 'success');
     }
     jvCancelEdit();
@@ -112,9 +127,10 @@ function jvSaveCase() {
     jvRecords.unshift(record);
     showToast('✅ บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
-      sendTelegramNotification(
-        `🚛 <b>บันทึกรถร่วมใหม่</b>\nทะเบียน: ${escapeHtml(plate)}\nเจ้าของรถ: ${escapeHtml(owner || '-')}\nวันที่สมัครเข้าร่วม: ${formatDate(joinDate)}\nเอกสารครบ: ${jvDocCount(record)}/${JV_DOC_FIELDS.length}${leaveDate ? `\nวันที่ลาออก: ${formatDate(leaveDate)}` : ''}`
-      );
+      const msg = type === 'join'
+        ? `🚛 <b>บันทึกรถร่วมใหม่ (สมัครเข้าร่วม)</b>\nทะเบียน: ${escapeHtml(plate)}\nเจ้าของรถ: ${escapeHtml(owner || '-')}\nวันที่สมัครเข้าร่วม: ${formatDate(record.joinDate)}\nเอกสารครบ: ${jvDocCount(record)}/${JV_DOC_FIELDS.length}`
+        : `🚛 <b>บันทึกรถร่วมใหม่ (ลาออก)</b>\nทะเบียน: ${escapeHtml(plate)}\nเจ้าของรถ: ${escapeHtml(owner || '-')}\nวันที่ลาออก: ${formatDate(record.leaveDate)}`;
+      sendTelegramNotification(msg);
     }
     jvClearForm();
   }
@@ -126,6 +142,7 @@ function jvSaveCase() {
 function jvClearForm() {
   jvEditingId = null;
   document.getElementById('jv-edit-banner').style.display = 'none';
+  document.getElementById('jv-type').value = 'join';
   document.getElementById('jv-plate').value = '';
   document.getElementById('jv-owner').value = '';
   document.getElementById('jv-join-date').value = '';
@@ -139,6 +156,7 @@ function jvClearForm() {
   JV_DOC_FIELDS.forEach(([id]) => { document.getElementById(id).checked = false; });
   JV_LEAVE_CHECK_FIELDS.forEach(([id]) => { document.getElementById(id).checked = false; });
   jvCalcRemovalCost();
+  jvToggleTypeFields();
 }
 
 function jvEditCase(id) {
@@ -147,6 +165,7 @@ function jvEditCase(id) {
   jvEditingId = id;
   document.getElementById('jv-edit-banner').style.display = 'flex';
   document.getElementById('jv-edit-no').textContent = rec.runningNo;
+  document.getElementById('jv-type').value = rec.type === 'leave' ? 'leave' : 'join';
   document.getElementById('jv-plate').value = rec.plate || '';
   document.getElementById('jv-owner').value = rec.owner || '';
   document.getElementById('jv-join-date').value = rec.joinDate || '';
@@ -160,6 +179,7 @@ function jvEditCase(id) {
   JV_DOC_FIELDS.forEach(([id, key]) => { document.getElementById(id).checked = !!rec[key]; });
   JV_LEAVE_CHECK_FIELDS.forEach(([id, key]) => { document.getElementById(id).checked = !!rec[key]; });
   jvCalcRemovalCost();
+  jvToggleTypeFields();
   jvSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -178,17 +198,17 @@ function jvDeleteCase(id) {
 // ===== List / Filter =====
 function jvFilteredList() {
   const plate = (document.getElementById('jv-f-plate')?.value || '').trim().toLowerCase();
-  const status = document.getElementById('jv-f-status')?.value || '';
+  const type = document.getElementById('jv-f-type')?.value || '';
   return jvRecords.filter(r => {
     if (plate && !r.plate.toLowerCase().includes(plate)) return false;
-    if (status && jvStatusOf(r) !== status) return false;
+    if (type && (r.type || 'join') !== type) return false;
     return true;
   });
 }
 
 function jvClearListFilters() {
   document.getElementById('jv-f-plate').value = '';
-  document.getElementById('jv-f-status').value = '';
+  document.getElementById('jv-f-type').value = '';
   jvRenderList();
 }
 
@@ -205,14 +225,14 @@ function jvRenderList() {
   tbody.innerHTML = list.map(r => `
     <tr>
       <td>${r.runningNo}</td>
+      <td>${jvTypeBadge(r)}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.owner || '-')}</td>
-      <td>${jvDocCount(r)}/${JV_DOC_FIELDS.length}</td>
-      <td>${formatDate(r.joinDate)}</td>
+      <td>${r.type === 'leave' ? '-' : `${jvDocCount(r)}/${JV_DOC_FIELDS.length}`}</td>
+      <td>${r.joinDate ? formatDate(r.joinDate) : '-'}</td>
       <td>${r.leaveDate ? formatDate(r.leaveDate) : '-'}</td>
       <td>${r.equipRemoveDate ? formatDate(r.equipRemoveDate) : '-'}</td>
-      <td>${jvStatusBadge(r)}</td>
-      <td>${r.leaveDate ? formatMoney(jvRemovalCost(r)) : '-'}</td>
+      <td>${r.type === 'leave' ? formatMoney(jvRemovalCost(r)) : '-'}</td>
       <td>${escapeHtml(r.note || '-')}</td>
       <td>
         <button class="action-btn action-view" onclick="jvEditCase('${r.id}')">แก้ไข</button>
@@ -224,7 +244,7 @@ function jvRenderList() {
 
 // ===== Excel Template / Export / Import (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+วันที่สมัคร) =====
 const JV_XLSX_HEADERS = [
-  'ทะเบียนรถ', 'เจ้าของรถ', 'วันที่สมัครเข้าร่วม (YYYY-MM-DD)',
+  'ประเภท (สมัคร/ลาออก)', 'ทะเบียนรถ', 'เจ้าของรถ', 'วันที่สมัครเข้าร่วม (YYYY-MM-DD)',
   'บัตรประชาชนเจ้าของรถ', 'บัตรประชาชนคนขับ', 'ทะเบียนบ้าน', 'ใบขับขี่คนขับ', 'ประกันรถ', 'พรบ.', 'ประกันสินค้า',
   'วันที่ทำงานวันสุดท้าย (YYYY-MM-DD)', 'วันที่ลาออก (YYYY-MM-DD)', 'วันที่ถอดอุปกรณ์ (YYYY-MM-DD)',
   'ถอด GPS', 'ถอด CCTV', 'ถอดเครื่องเป่าแอลกอฮอล์', 'คืนบัตรน้ำมัน', 'ถอดสติ๊กเกอร์',
@@ -234,7 +254,8 @@ const JV_XLSX_HEADERS = [
 function jvDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     JV_XLSX_HEADERS,
-    ['70-1234', 'นายสมชาย ใจดี', '2026-01-15', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', '', '', '', '', '', '', '', '', 0, 0, 0, ''],
+    ['สมัคร', '70-1234', 'นายสมชาย ใจดี', '2026-01-15', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', '', '', '', '', '', '', '', '', 0, 0, 0, ''],
+    ['ลาออก', '70-5678', 'นายสมหมาย ตั้งใจ', '', '', '', '', '', '', '', '', '2026-06-01', '2026-06-10', '2026-06-12', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 500, 300, 200, ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'รถร่วม');
@@ -247,7 +268,7 @@ function jvExportExcel() {
   const rows = [
     JV_XLSX_HEADERS,
     ...list.map(r => [
-      r.plate, r.owner || '', r.joinDate || '',
+      r.type === 'leave' ? 'ลาออก' : 'สมัคร', r.plate, r.owner || '', r.joinDate || '',
       !!r.docIdOwner, !!r.docIdDriver, !!r.docHouseReg, !!r.docLicense, !!r.docVehIns, !!r.docCompulsory, !!r.docCargoIns,
       r.lastWorkDate || '', r.leaveDate || '', r.equipRemoveDate || '',
       !!r.leaveGps, !!r.leaveCctv, !!r.leaveBreath, !!r.leaveFuelCard, !!r.leaveSticker,
@@ -266,26 +287,36 @@ function jvImportExcel(event) {
     if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
     let added = 0, updated = 0;
     rows.forEach((row, i) => {
-      const plate = String(row[0] || '').trim();
+      const plate = String(row[1] || '').trim();
       if (!plate) return;
-      const joinDate = normalizeImportDate(row[2]);
+      const type = String(row[0] || '').trim() === 'ลาออก' ? 'leave' : 'join';
       const veh = mdVehicles.find(v => v.plate === plate);
-      const record = {
-        plate,
-        owner: String(row[1] || '').trim() || veh?.owner || '',
-        joinDate,
-        docIdOwner: jvParseBool(row[3]), docIdDriver: jvParseBool(row[4]), docHouseReg: jvParseBool(row[5]),
-        docLicense: jvParseBool(row[6]), docVehIns: jvParseBool(row[7]), docCompulsory: jvParseBool(row[8]), docCargoIns: jvParseBool(row[9]),
-        lastWorkDate: normalizeImportDate(row[10]), leaveDate: normalizeImportDate(row[11]), equipRemoveDate: normalizeImportDate(row[12]),
-        leaveGps: jvParseBool(row[13]), leaveCctv: jvParseBool(row[14]), leaveBreath: jvParseBool(row[15]),
-        leaveFuelCard: jvParseBool(row[16]), leaveSticker: jvParseBool(row[17]),
-        costGps: parseFloat(row[18]) || 0, costCctv: parseFloat(row[19]) || 0, costBreath: parseFloat(row[20]) || 0,
-        note: String(row[21] || '').trim(),
-      };
-      // จับคู่ด้วยทะเบียน + วันที่สมัคร — ถ้าตรงกับรายการเดิม แก้ไขแทนเพิ่มใหม่ (รองรับแก้ไขผ่าน Excel)
-      const idx = jvRecords.findIndex(r => r.plate === plate && r.joinDate === joinDate);
-      if (idx >= 0) {
-        jvRecords[idx] = { ...jvRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      const owner = String(row[2] || '').trim() || veh?.owner || '';
+      const joinDate = normalizeImportDate(row[3]);
+      const leaveDate = normalizeImportDate(row[12]);
+      let record, matchIdx;
+      if (type === 'join') {
+        record = {
+          type, plate, owner, joinDate,
+          docIdOwner: jvParseBool(row[4]), docIdDriver: jvParseBool(row[5]), docHouseReg: jvParseBool(row[6]),
+          docLicense: jvParseBool(row[7]), docVehIns: jvParseBool(row[8]), docCompulsory: jvParseBool(row[9]), docCargoIns: jvParseBool(row[10]),
+          note: String(row[21] || '').trim(),
+        };
+        matchIdx = jvRecords.findIndex(r => (r.type || 'join') === 'join' && r.plate === plate && r.joinDate === joinDate);
+      } else {
+        record = {
+          type, plate, owner,
+          lastWorkDate: normalizeImportDate(row[11]), leaveDate, equipRemoveDate: normalizeImportDate(row[13]),
+          leaveGps: jvParseBool(row[14]), leaveCctv: jvParseBool(row[15]), leaveBreath: jvParseBool(row[16]),
+          leaveFuelCard: jvParseBool(row[17]), leaveSticker: jvParseBool(row[18]),
+          costGps: parseFloat(row[19]) || 0, costCctv: parseFloat(row[20]) || 0, costBreath: parseFloat(row[21]) || 0,
+          note: String(row[22] || '').trim(),
+        };
+        matchIdx = jvRecords.findIndex(r => r.type === 'leave' && r.plate === plate && r.leaveDate === leaveDate);
+      }
+      // จับคู่ด้วยทะเบียน + ประเภท + วันที่ (สมัคร/ลาออก) — ถ้าตรงกับรายการเดิม แก้ไขแทนเพิ่มใหม่ (รองรับแก้ไขผ่าน Excel)
+      if (matchIdx >= 0) {
+        jvRecords[matchIdx] = { ...jvRecords[matchIdx], ...record, updatedAt: new Date().toISOString() };
         updated++;
       } else {
         jvRecords.unshift({ id: 'JV_' + Date.now() + '_' + i, runningNo: jvNextRunningNo(), ...record, createdAt: new Date().toISOString() });

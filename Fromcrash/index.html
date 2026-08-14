@@ -1896,11 +1896,11 @@
               <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="jv-f-plate"
                   placeholder="ทะเบียนรถ..." oninput="jvRenderList()" /></div>
               <div class="filter-group">
-                <label>สถานะ</label>
-                <select id="jv-f-status" onchange="jvRenderList()">
+                <label>ประเภท</label>
+                <select id="jv-f-type" onchange="jvRenderList()">
                   <option value="">ทั้งหมด</option>
-                  <option value="active">ร่วมอยู่</option>
-                  <option value="left">ลาออกแล้ว</option>
+                  <option value="join">สมัครเข้าร่วม</option>
+                  <option value="leave">ลาออก</option>
                 </select>
               </div>
               <button class="btn-secondary" onclick="jvClearListFilters()">🔄 ล้างตัวกรอง</button>
@@ -1911,7 +1911,7 @@
                   style="display:none" onchange="jvImportExcel(event)"></label>
               <button class="btn-secondary" onclick="jvExportExcel()">📊 Export Excel</button>
             </div>
-            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + วันที่สมัครเข้าร่วม" เป็นตัวจับคู่ —
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภท + วันที่ (สมัคร/ลาออก)" เป็นตัวจับคู่ —
               ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (แก้ในไฟล์ Excel แล้ว Import กลับมาได้)</p>
             <div class="ctxt" id="jv-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
@@ -1920,13 +1920,13 @@
                 <thead>
                   <tr>
                     <th>เลขที่</th>
+                    <th>ประเภท</th>
                     <th>ทะเบียนรถ</th>
                     <th>เจ้าของรถ</th>
                     <th>เอกสารสมัคร</th>
                     <th>วันที่สมัครเข้าร่วม</th>
                     <th>วันที่ลาออก</th>
                     <th>วันที่ถอดอุปกรณ์</th>
-                    <th>สถานะ</th>
                     <th>ค่าใช้จ่ายถอด</th>
                     <th>หมายเหตุ</th>
                     <th>จัดการ</th>
@@ -1951,6 +1951,13 @@
               <div class="fieldset-title">ข้อมูลรถร่วม</div>
               <div class="form-row-3">
                 <div class="form-group">
+                  <label>ประเภทบันทึก <span class="req">*</span></label>
+                  <select id="jv-type" onchange="jvToggleTypeFields()">
+                    <option value="join">สมัครเข้าร่วม</option>
+                    <option value="leave">ลาออก</option>
+                  </select>
+                </div>
+                <div class="form-group">
                   <label>ทะเบียนรถ <span class="req">*</span></label>
                   <input type="text" id="jv-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..."
                     oninput="jvLookupVehicle()" />
@@ -1958,47 +1965,52 @@
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="jv-owner" readonly />
                 </div>
               </div>
-              <div class="form-row-3">
-                <div class="form-group"><label>วันที่สมัครเข้าร่วม <span class="req">*</span></label><input type="date"
-                    id="jv-join-date" /></div>
-              </div>
 
-              <div class="fieldset-title">เช็คลิสต์เอกสารที่ใช้สมัครเข้าร่วม</div>
-              <div class="jv-check-grid">
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-idowner" /> บัตรประชาชนเจ้าของรถ</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-iddriver" /> บัตรประชาชนคนขับ</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-housereg" /> ทะเบียนบ้าน</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-license" /> ใบขับขี่คนขับ</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-vehins" /> ประกันรถ</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-compulsory" /> พรบ.</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-doc-cargoins" /> ประกันสินค้า</label>
-              </div>
-
-              <div class="fieldset-title">รายการตอนลาออก</div>
-              <div class="form-row-3">
-                <div class="form-group"><label>วันที่ทำงานวันสุดท้าย</label><input type="date" id="jv-lastwork-date" />
+              <div id="jv-join-section">
+                <div class="form-row-3">
+                  <div class="form-group"><label>วันที่สมัครเข้าร่วม <span class="req">*</span></label><input type="date"
+                      id="jv-join-date" /></div>
                 </div>
-                <div class="form-group"><label>วันที่ลาออก</label><input type="date" id="jv-leave-date" /></div>
-                <div class="form-group"><label>วันที่ถอดอุปกรณ์</label><input type="date" id="jv-equip-remove-date" />
+
+                <div class="fieldset-title">เช็คลิสต์เอกสารที่ใช้สมัครเข้าร่วม</div>
+                <div class="jv-check-grid">
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-idowner" /> บัตรประชาชนเจ้าของรถ</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-iddriver" /> บัตรประชาชนคนขับ</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-housereg" /> ทะเบียนบ้าน</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-license" /> ใบขับขี่คนขับ</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-vehins" /> ประกันรถ</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-compulsory" /> พรบ.</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-doc-cargoins" /> ประกันสินค้า</label>
                 </div>
               </div>
-              <div class="jv-check-grid">
-                <label class="jv-check-item"><input type="checkbox" id="jv-leave-gps" /> ถอด GPS</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-leave-cctv" /> ถอด CCTV</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-leave-breath" />
-                  ถอดเครื่องเป่าแอลกอฮอล์</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-leave-fuelcard" /> คืนบัตรน้ำมัน</label>
-                <label class="jv-check-item"><input type="checkbox" id="jv-leave-sticker" /> ถอดสติ๊กเกอร์</label>
+
+              <div id="jv-leave-section" style="display:none;">
+                <div class="fieldset-title">รายการตอนลาออก</div>
+                <div class="form-row-3">
+                  <div class="form-group"><label>วันที่ทำงานวันสุดท้าย</label><input type="date" id="jv-lastwork-date" />
+                  </div>
+                  <div class="form-group"><label>วันที่ลาออก <span class="req">*</span></label><input type="date" id="jv-leave-date" /></div>
+                  <div class="form-group"><label>วันที่ถอดอุปกรณ์</label><input type="date" id="jv-equip-remove-date" />
+                  </div>
+                </div>
+                <div class="jv-check-grid">
+                  <label class="jv-check-item"><input type="checkbox" id="jv-leave-gps" /> ถอด GPS</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-leave-cctv" /> ถอด CCTV</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-leave-breath" />
+                    ถอดเครื่องเป่าแอลกอฮอล์</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-leave-fuelcard" /> คืนบัตรน้ำมัน</label>
+                  <label class="jv-check-item"><input type="checkbox" id="jv-leave-sticker" /> ถอดสติ๊กเกอร์</label>
+                </div>
+                <div class="form-row-3">
+                  <div class="form-group"><label>ค่าใช้จ่ายถอด GPS</label><input type="number" min="0" step="0.01"
+                      id="jv-cost-gps" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
+                  <div class="form-group"><label>ค่าใช้จ่ายถอด CCTV</label><input type="number" min="0" step="0.01"
+                      id="jv-cost-cctv" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
+                  <div class="form-group"><label>ค่าใช้จ่ายถอดเครื่องเป่าแอลกอฮอล์</label><input type="number" min="0"
+                      step="0.01" id="jv-cost-breath" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
+                </div>
+                <div class="jv-cost-total">รวมค่าใช้จ่ายถอดอุปกรณ์: <span id="jv-cost-total-display">฿0.00</span></div>
               </div>
-              <div class="form-row-3">
-                <div class="form-group"><label>ค่าใช้จ่ายถอด GPS</label><input type="number" min="0" step="0.01"
-                    id="jv-cost-gps" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
-                <div class="form-group"><label>ค่าใช้จ่ายถอด CCTV</label><input type="number" min="0" step="0.01"
-                    id="jv-cost-cctv" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
-                <div class="form-group"><label>ค่าใช้จ่ายถอดเครื่องเป่าแอลกอฮอล์</label><input type="number" min="0"
-                    step="0.01" id="jv-cost-breath" placeholder="0.00" oninput="jvCalcRemovalCost()" /></div>
-              </div>
-              <div class="jv-cost-total">รวมค่าใช้จ่ายถอดอุปกรณ์: <span id="jv-cost-total-display">฿0.00</span></div>
 
               <div class="fieldset-title">หมายเหตุ</div>
               <div class="form-row-3">
