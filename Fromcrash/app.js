@@ -738,11 +738,12 @@ function showPettyCashPrint(data) {
   currentPrintFn = () => {
     const el = document.getElementById('modalBody');
     html2pdf().set({
-      margin: [10, 10, 10, 10],
+      margin: [8, 8, 8, 8],
       filename: `เงินสดย่อย_${data.docno}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'avoid-all'] }
     }).from(el).save();
   };
 }
@@ -760,11 +761,12 @@ function showApprovalPrint(data) {
   currentPrintFn = () => {
     const el = document.getElementById('modalBody');
     html2pdf().set({
-      margin: [10, 10, 10, 10],
+      margin: [8, 8, 8, 8],
       filename: `อนุมัติสำรองจ่าย_${data.docno}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'avoid-all'] }
     }).from(el).save();
   };
 }
