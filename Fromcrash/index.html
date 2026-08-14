@@ -671,8 +671,7 @@
               </div>
               <p class="readonly-hint">Export ข้อมูลปัจจุบันออกมาแก้ไขได้ แล้ว Import กลับเข้ามา —
                 ระบบจะจับคู่ด้วยทะเบียนรถ ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ<br />
-                คอลัมน์ GPS/CCTV/เลข S/N/เบอร์ SIM แสดงข้อมูลจากเมนู "จัดการ GPS/CCTV" — กรอกแก้ไขแล้ว Import
-                กลับเข้ามาได้เลย ระบบจะอัปเดตให้ทั้งสองที่</p>
+                วันที่ติดตั้ง GPS/CCTV ที่กรอกไว้ตรงนี้ จะถูกดึงไปใช้อัตโนมัติที่เมนู "จัดการ GPS/CCTV" ตอนบันทึกการถอด</p>
               <div class="form-row-3">
                 <div class="form-group">
                   <label>ทะเบียนรถ</label>
@@ -690,6 +689,16 @@
                 <div class="form-group">
                   <label>วันที่จดทะเบียน</label>
                   <input type="date" id="md-vehicle-date" />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>GPS วันที่ติดตั้ง</label>
+                  <input type="date" id="md-vehicle-gps-date" />
+                </div>
+                <div class="form-group">
+                  <label>CCTV วันที่ติดตั้ง</label>
+                  <input type="date" id="md-vehicle-cctv-date" />
                 </div>
               </div>
               <div class="form-actions" style="justify-content:flex-start;">
@@ -711,18 +720,13 @@
                       <th>วันที่จดทะเบียน</th>
                       <th>อายุรถ</th>
                       <th>GPS วันที่ติดตั้ง</th>
-                      <th>GPS เลข S/N</th>
-                      <th>GPS เบอร์ SIM</th>
                       <th>CCTV วันที่ติดตั้ง</th>
-                      <th>ประเภท CCTV</th>
-                      <th>CCTV เลข S/N</th>
-                      <th>CCTV เบอร์ SIM</th>
                       <th>จัดการ</th>
                     </tr>
                   </thead>
                   <tbody id="md-vehicle-body">
                     <tr>
-                      <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
+                      <td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td>
                     </tr>
                   </tbody>
                 </table>
@@ -2056,12 +2060,9 @@
                     <th>ทะเบียนรถ</th>
                     <th>เจ้าของรถ</th>
                     <th>อุปกรณ์</th>
-                    <th>ประเภทย่อย</th>
                     <th>บริษัท</th>
                     <th>วันที่ติดตั้ง</th>
                     <th>วันที่ถอด</th>
-                    <th>เลข S/N</th>
-                    <th>เบอร์ SIM</th>
                     <th>สถานะ</th>
                     <th>หมายเหตุ</th>
                     <th>จัดการ</th>
@@ -2069,7 +2070,7 @@
                 </thead>
                 <tbody id="gc-list-body">
                   <tr>
-                    <td colspan="13" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -2095,31 +2096,19 @@
                 <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gc-owner" readonly />
                 </div>
                 <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
-                  <select id="gc-device" onchange="gcToggleDeviceFields();gcAutoFillInstallInfo()">
+                  <select id="gc-device" onchange="gcAutoFillInstallDate()">
                     <option value="GPS">GPS</option>
                     <option value="CCTV">CCTV</option>
                   </select>
                 </div>
               </div>
-              <div id="gc-install-candidates" style="display:none;margin:-6px 0 16px;"></div>
               <div class="form-row-3">
                 <div class="form-group"><label>บริษัท</label><input type="text" id="gc-company"
                     placeholder="บริษัทผู้ติดตั้ง" /></div>
-                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date"
-                    id="gc-install-date" />
-                  <div class="readonly-hint" id="gc-install-auto-hint" style="display:none;margin:0;">ดึงจากรายการติดตั้งเดิมของรถคันนี้ — กรอกแค่ "วันที่ถอด" แล้วบันทึกได้เลย</div>
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="gc-install-date" readonly />
+                  <div class="readonly-hint" style="margin:0;">ดึงจากฐานข้อมูลหลัก (ทะเบียนรถ) อัตโนมัติตามประเภทอุปกรณ์ที่เลือก — แก้ไขที่หน้าฐานข้อมูลหลักแทน</div>
                 </div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="gc-remove-date" /></div>
-              </div>
-              <div class="form-row-3">
-                <div class="form-group" id="gc-cctv-type-wrap" style="display:none;"><label>ประเภท CCTV</label>
-                  <select id="gc-cctv-type">
-                    <option value="CCTV">CCTV</option>
-                    <option value="AI">AI</option>
-                  </select>
-                </div>
-                <div class="form-group"><label>เลข S/N</label><input type="text" id="gc-serial" placeholder="เลข S/N อุปกรณ์" /></div>
-                <div class="form-group"><label>เบอร์ SIM</label><input type="text" id="gc-sim" placeholder="เบอร์ SIM ที่ใช้กับอุปกรณ์" /></div>
               </div>
               <div class="form-row-3">
                 <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>

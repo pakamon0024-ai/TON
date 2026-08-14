@@ -198,37 +198,19 @@ function addVehicleDB() {
     plate,
     owner: document.getElementById('md-vehicle-owner').value,
     registerDate: document.getElementById('md-vehicle-date').value,
+    gpsInstallDate: document.getElementById('md-vehicle-gps-date').value,
+    cctvInstallDate: document.getElementById('md-vehicle-cctv-date').value,
   });
   saveVehiclesDB();
   document.getElementById('md-vehicle-plate').value = '';
   document.getElementById('md-vehicle-owner').value = '';
   document.getElementById('md-vehicle-date').value = '';
+  document.getElementById('md-vehicle-gps-date').value = '';
+  document.getElementById('md-vehicle-cctv-date').value = '';
   renderVehiclesTable();
   updatePlateDatalist();
   mdPushIfReady();
   showToast('เพิ่มรถแล้ว', 'success');
-}
-
-// ดึงสถานะ GPS/CCTV ล่าสุดของรถแต่ละคันจากเมนู "จัดการ GPS/CCTV" (gcRecords ใน gpscctv.js)
-// นับเฉพาะรายการที่ยังไม่ถอด (ไม่มี removeDate) และเอาวันที่ติดตั้งล่าสุดของแต่ละประเภทอุปกรณ์
-// แยกเลข S/N และเบอร์ SIM ของ GPS กับ CCTV ออกจากกัน เพราะเป็นอุปกรณ์คนละตัว
-function mdVehicleGpsCctvInfo(plate) {
-  if (typeof gcRecords === 'undefined') {
-    return { gpsInstallDate: '', gpsSerialNumber: '', gpsSimNumber: '', cctvInstallDate: '', cctvType: '', cctvSerialNumber: '', cctvSimNumber: '' };
-  }
-  const active = gcRecords.filter(r => r.plate === plate && !r.removeDate);
-  const pick = device => active.filter(r => r.device === device).sort((a, b) => (b.installDate || '').localeCompare(a.installDate || ''))[0];
-  const gps = pick('GPS');
-  const cctv = pick('CCTV');
-  return {
-    gpsInstallDate: gps?.installDate || '',
-    gpsSerialNumber: gps?.serialNumber || '',
-    gpsSimNumber: gps?.simNumber || '',
-    cctvInstallDate: cctv?.installDate || '',
-    cctvType: cctv?.cctvType || '',
-    cctvSerialNumber: cctv?.serialNumber || '',
-    cctvSimNumber: cctv?.simNumber || '',
-  };
 }
 
 function deleteVehicleDB(id) {
@@ -257,34 +239,26 @@ function renderVehiclesTable() {
   const search = (document.getElementById('md-vehicle-search')?.value || '').trim().toLowerCase();
   const list = search ? mdVehicles.filter(v => (v.plate || '').toLowerCase().includes(search) || (v.owner || '').toLowerCase().includes(search)) : mdVehicles;
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
     return;
   }
-  tbody.innerHTML = list.map(v => {
-    const gc = mdVehicleGpsCctvInfo(v.plate);
-    return `
+  tbody.innerHTML = list.map(v => `
     <tr>
       <td style="font-family:monospace">${escapeHtml(v.plate)}</td>
       <td>${escapeHtml(v.owner || '-')}</td>
       <td>${formatDate(v.registerDate)}</td>
       <td>${formatDuration(v.registerDate)}</td>
-      <td>${gc.gpsInstallDate ? formatDate(gc.gpsInstallDate) : '-'}</td>
-      <td>${escapeHtml(gc.gpsSerialNumber || '-')}</td>
-      <td>${escapeHtml(gc.gpsSimNumber || '-')}</td>
-      <td>${gc.cctvInstallDate ? formatDate(gc.cctvInstallDate) : '-'}</td>
-      <td>${escapeHtml(gc.cctvType || '-')}</td>
-      <td>${escapeHtml(gc.cctvSerialNumber || '-')}</td>
-      <td>${escapeHtml(gc.cctvSimNumber || '-')}</td>
+      <td>${v.gpsInstallDate ? formatDate(v.gpsInstallDate) : '-'}</td>
+      <td>${v.cctvInstallDate ? formatDate(v.cctvInstallDate) : '-'}</td>
       <td><button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button></td>
     </tr>
-  `;
-  }).join('');
+  `).join('');
 }
 
 function downloadVehicleTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง', 'GPS เลข S/N', 'GPS เบอร์ SIM', 'CCTV วันที่ติดตั้ง', 'ประเภท CCTV', 'CCTV เลข S/N', 'CCTV เบอร์ SIM'],
-    ['70-1234', 'AP', '2018-03-01', '2026-01-15', 'SN-12345', '081-234-5678', '2026-01-15', 'CCTV', 'SN-67890', '081-999-9999'],
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง (YYYY-MM-DD)', 'CCTV วันที่ติดตั้ง (YYYY-MM-DD)'],
+    ['70-1234', 'AP', '2018-03-01', '2026-01-15', '2026-01-15'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
@@ -294,11 +268,8 @@ function downloadVehicleTemplate() {
 function exportVehicleExcel() {
   if (mdVehicles.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง', 'GPS เลข S/N', 'GPS เบอร์ SIM', 'CCTV วันที่ติดตั้ง', 'ประเภท CCTV', 'CCTV เลข S/N', 'CCTV เบอร์ SIM'],
-    ...mdVehicles.map(v => {
-      const gc = mdVehicleGpsCctvInfo(v.plate);
-      return [v.plate, v.owner || '', v.registerDate || '', gc.gpsInstallDate || '', gc.gpsSerialNumber || '', gc.gpsSimNumber || '', gc.cctvInstallDate || '', gc.cctvType || '', gc.cctvSerialNumber || '', gc.cctvSimNumber || ''];
-    }),
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง (YYYY-MM-DD)', 'CCTV วันที่ติดตั้ง (YYYY-MM-DD)'],
+    ...mdVehicles.map(v => [v.plate, v.owner || '', v.registerDate || '', v.gpsInstallDate || '', v.cctvInstallDate || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -306,72 +277,24 @@ function exportVehicleExcel() {
   XLSX.writeFile(wb, `ทะเบียนรถ_${new Date().toISOString().substring(0, 10)}.xlsx`);
 }
 
-// อัปเดตข้อมูล GPS/CCTV (วันที่ติดตั้ง/เลข S-N/เบอร์ SIM/ประเภท CCTV) ที่กรอกมาจากไฟล์ Excel ทะเบียนรถ
-// เข้าไปที่ gcRecords ตรงๆ (ข้อมูลจริงอยู่ที่เมนู "จัดการ GPS/CCTV") — แก้ไข "รายการที่ยังไม่ถอด" ของอุปกรณ์
-// ชนิดนั้นๆ ถ้ามีอยู่แล้ว ถ้ายังไม่มีและมีข้อมูลกรอกมาจะสร้างรายการติดตั้งใหม่ให้
-function mdUpsertGpsCctvFromVehicleImport(plate, device, installDate, serialNumber, simNumber, cctvType) {
-  if (typeof gcRecords === 'undefined') return false;
-  if (!installDate && !serialNumber && !simNumber) return false;
-  const idx = gcRecords.findIndex(r => r.plate === plate && r.device === device && !r.removeDate);
-  if (idx >= 0) {
-    gcRecords[idx] = {
-      ...gcRecords[idx],
-      installDate: installDate || gcRecords[idx].installDate,
-      serialNumber, simNumber,
-      ...(device === 'CCTV' ? { cctvType: cctvType || gcRecords[idx].cctvType || 'CCTV' } : {}),
-      updatedAt: new Date().toISOString(),
-    };
-  } else {
-    const veh = mdVehicles.find(v => v.plate === plate);
-    gcRecords.unshift({
-      id: 'GC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-      runningNo: gcNextRunningNo(),
-      plate, owner: veh?.owner || '', device, company: '',
-      installDate, removeDate: '',
-      cctvType: device === 'CCTV' ? (cctvType || 'CCTV') : '',
-      serialNumber, simNumber, note: '',
-      createdAt: new Date().toISOString(),
-    });
-  }
-  return true;
-}
-
 function importVehicleExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   readExcelRows(file, (err, rows) => {
     if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
-    let added = 0, updated = 0, gcChanged = false;
-    const gcSupported = typeof gcRecords !== 'undefined';
+    let added = 0, updated = 0;
     rows.forEach((row, i) => {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
-      const data = { plate, owner: String(row[1] || '').trim(), registerDate: normalizeImportDate(row[2]) };
+      const data = {
+        plate, owner: String(row[1] || '').trim(), registerDate: normalizeImportDate(row[2]),
+        gpsInstallDate: normalizeImportDate(row[3]), cctvInstallDate: normalizeImportDate(row[4]),
+      };
       // จับคู่ด้วยทะเบียน — ถ้ามีอยู่แล้วจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
       const idx = mdVehicles.findIndex(v => v.plate === plate);
       if (idx >= 0) { mdVehicles[idx] = { ...mdVehicles[idx], ...data }; updated++; }
       else { mdVehicles.push({ id: Date.now() + i, ...data }); added++; }
-
-      // คอลัมน์ GPS/CCTV (ถ้ามีในไฟล์ — ทั้งจากไฟล์ที่ export มาแล้วแก้ไข หรือกรอกเองตาม Template ใหม่)
-      // จะถูกนำเข้าไปอัปเดตที่เมนู "จัดการ GPS/CCTV" ให้ด้วย ไม่ใช่แค่ทิ้งไป
-      if (gcSupported) {
-        const gpsInstallDate = normalizeImportDate(row[3]);
-        const gpsSerial = String(row[4] || '').trim();
-        const gpsSim = String(row[5] || '').trim();
-        if (mdUpsertGpsCctvFromVehicleImport(plate, 'GPS', gpsInstallDate, gpsSerial, gpsSim, '')) gcChanged = true;
-
-        const cctvInstallDate = normalizeImportDate(row[6]);
-        const cctvType = String(row[7] || '').trim().toUpperCase() === 'AI' ? 'AI' : (row[7] ? 'CCTV' : '');
-        const cctvSerial = String(row[8] || '').trim();
-        const cctvSim = String(row[9] || '').trim();
-        if (mdUpsertGpsCctvFromVehicleImport(plate, 'CCTV', cctvInstallDate, cctvSerial, cctvSim, cctvType)) gcChanged = true;
-      }
     });
     saveVehiclesDB();
-    if (gcChanged) {
-      gcSave();
-      gcPushIfReady();
-      if (typeof gcRenderList === 'function') gcRenderList();
-    }
     renderVehiclesTable();
     updatePlateDatalist();
     mdPushIfReady();

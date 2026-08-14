@@ -55,7 +55,7 @@ function gcRenderPlateOptions(prefix) {
 function gcPickPlate(prefix, plate) {
   document.getElementById(`${prefix}-plate`).value = plate;
   document.getElementById(`${prefix}-plate-list`).classList.remove('show');
-  if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallInfo(); } else { grLookupVehicle(); }
+  if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallDate(); } else { grLookupVehicle(); }
 }
 
 // ตอนออกจากช่อง (blur) ถ้าพิมพ์มาไม่ตรงกับทะเบียนที่มีจริงในฐานข้อมูลหลัก ให้ล้างค่าทิ้ง
@@ -72,104 +72,20 @@ function gcCommitPlateInput(prefix) {
       showToast('กรุณาเลือกทะเบียนรถจากรายการเท่านั้น', 'warning');
     } else if (val) {
       // พิมพ์ทะเบียนที่มีจริงมาครบแล้วออกจากช่องเลย (ไม่ได้กดเลือกจากลิสต์) ก็ให้เติมเจ้าของรถให้เหมือนกัน
-      if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallInfo(); } else { grLookupVehicle(); }
+      if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallDate(); } else { grLookupVehicle(); }
     }
   }, 150);
 }
 
-// เทียบทะเบียน/ประเภทอุปกรณ์แบบไม่สนช่องว่าง/เครื่องหมายขีด/ตัวพิมพ์เล็ก-ใหญ่เลย — ตัดทุกอย่างที่ไม่ใช่
-// ตัวอักษร/ตัวเลขทิ้งก่อนเทียบ เพราะข้อมูลเก่าบางรายการ (นำเข้าจาก Excel/พิมพ์ต่างเวลากัน) อาจใช้ขีดคนละแบบ
-// (เช่น "-" กับ "–") หรือมีช่องว่างเกิน ทำให้จับคู่ไม่เจอถ้าเทียบแบบตรงตัวเป๊ะๆ
-function gcNormalizePlate(p) { return String(p || '').replace(/[^\p{L}\p{N}]/gu, '').toUpperCase(); }
-function gcNormalizeDevice(d) { return String(d || '').replace(/[^\p{L}\p{N}]/gu, '').toUpperCase(); }
-
-// ถ้าทะเบียน+ประเภทอุปกรณ์ที่เลือก มีรายการติดตั้งอยู่แล้ว (ยังไม่ถอด) ให้ดึง "วันที่ติดตั้ง" (พร้อมบริษัท/
-// เลข S-N/เบอร์ SIM เพื่อความสะดวก) มาแสดงอัตโนมัติ โดยล็อกช่องวันที่ติดตั้งไว้ไม่ให้แก้ — ผู้ใช้กรอกแค่
-// "วันที่ถอด" แล้วกดบันทึก ระบบจะสร้างเป็น "แถวสถิติใหม่" เสมอ (ไม่ใช่การแก้ไขรายการติดตั้งเดิม)
-// ถ้าทะเบียน+อุปกรณ์นั้นไม่เคยมีรายการติดตั้งมาก่อน จะปลดล็อกให้กรอกวันที่ติดตั้งเองตามปกติ (กรณีติดตั้งใหม่จริงๆ)
-function gcApplyInstallRecord(existing) {
-  const installDateInput = document.getElementById('gc-install-date');
-  const hint = document.getElementById('gc-install-auto-hint');
-  document.getElementById('gc-device').value = existing.device === 'CCTV' ? 'CCTV' : 'GPS';
-  gcToggleDeviceFields();
-  document.getElementById('gc-company').value = existing.company || '';
-  installDateInput.value = existing.installDate || '';
-  installDateInput.readOnly = true;
-  document.getElementById('gc-serial').value = existing.serialNumber || '';
-  document.getElementById('gc-sim').value = existing.simNumber || '';
-  if (existing.device === 'CCTV') document.getElementById('gc-cctv-type').value = existing.cctvType || 'CCTV';
-  if (hint) hint.style.display = '';
-  const box = document.getElementById('gc-install-candidates');
-  if (box) box.style.display = 'none';
-}
-
-function gcApplyInstallCandidate(id) {
-  const existing = gcRecords.find(r => r.id === id);
-  if (existing) gcApplyInstallRecord(existing);
-}
-
-function gcRenderInstallCandidates(list) {
-  const box = document.getElementById('gc-install-candidates');
-  if (!box) return;
-  if (!list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
-  box.style.display = '';
-  box.innerHTML = `
-    <div class="gc-candidates-box">
-      <div class="gc-candidates-title">⚠️ ไม่พบรายการติดตั้งที่ตรงกับ "${escapeHtml(document.getElementById('gc-device').value)}" เป๊ะๆ
-        แต่พบรายการใกล้เคียงของทะเบียนนี้ — กดเลือกถ้าใช่</div>
-      ${list.map(r => `
-        <div class="gc-candidate-item" onclick="gcApplyInstallCandidate('${r.id}')">
-          <span><span class="gc-cand-plate">${escapeHtml(r.plate)}</span> — ${escapeHtml(r.device || '-')}
-            ติดตั้ง ${r.installDate ? formatDate(r.installDate) : '-'} ${r.removeDate ? '(ถอดแล้ว ' + formatDate(r.removeDate) + ')' : '(ยังไม่ถอด)'}</span>
-          <span class="action-btn action-view">ใช้รายการนี้</span>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
-
-// ถ้าทะเบียน+ประเภทอุปกรณ์ที่เลือก มีรายการติดตั้งอยู่แล้ว (ยังไม่ถอด) ให้ดึง "วันที่ติดตั้ง" (พร้อมบริษัท/
-// เลข S-N/เบอร์ SIM เพื่อความสะดวก) มาแสดงอัตโนมัติ โดยล็อกช่องวันที่ติดตั้งไว้ไม่ให้แก้ — ผู้ใช้กรอกแค่
-// "วันที่ถอด" แล้วกดบันทึก ระบบจะสร้างเป็น "แถวสถิติใหม่" เสมอ (ไม่ใช่การแก้ไขรายการติดตั้งเดิม)
-// ถ้าทะเบียน+อุปกรณ์นั้นไม่เคยมีรายการติดตั้งมาก่อน จะปลดล็อกให้กรอกวันที่ติดตั้งเองตามปกติ (กรณีติดตั้งใหม่จริงๆ)
-// ถ้าจับคู่แบบเป๊ะๆ ไม่เจอ (เช่น ข้อมูลเดิมพิมพ์ทะเบียน/ประเภทอุปกรณ์ไม่ตรงเป๊ะ) จะค้นหาแบบใกล้เคียง (เทียบแค่
-// บางส่วนของทะเบียน) มาให้เลือกเองแทน กันกรณีจับคู่อัตโนมัติพลาดแบบเงียบๆ
-function gcAutoFillInstallInfo() {
+// วันที่ติดตั้งดึงจาก "ฐานข้อมูลหลัก" (mdVehicles) ตรงๆ เสมอ — ทะเบียนแต่ละคันมีช่อง "GPS วันที่ติดตั้ง"
+// และ "CCTV วันที่ติดตั้ง" แยกกันในหน้าฐานข้อมูลหลัก แก้ไขที่นั่นเท่านั้น ช่องนี้จึงล็อกไว้เสมอไม่ให้พิมพ์เอง
+function gcAutoFillInstallDate() {
   const plate = document.getElementById('gc-plate').value.trim();
   const device = document.getElementById('gc-device').value;
   const installDateInput = document.getElementById('gc-install-date');
-  const hint = document.getElementById('gc-install-auto-hint');
-  const candidatesBox = document.getElementById('gc-install-candidates');
-  if (!plate) {
-    installDateInput.readOnly = false;
-    if (hint) hint.style.display = 'none';
-    if (candidatesBox) candidatesBox.style.display = 'none';
-    return;
-  }
-
-  const normPlate = gcNormalizePlate(plate);
-  const existing = gcRecords.find(r =>
-    gcNormalizePlate(r.plate) === normPlate &&
-    gcNormalizeDevice(r.device) === gcNormalizeDevice(device) &&
-    !String(r.removeDate || '').trim()
-  );
-  if (existing) {
-    gcApplyInstallRecord(existing);
-    return;
-  }
-
-  installDateInput.readOnly = false;
-  if (hint) hint.style.display = 'none';
-
-  // ไม่เจอที่ตรงเป๊ะ — ลองหาแบบใกล้เคียง (ทะเบียนมีส่วนที่ตรงกัน ไม่ว่าจะอุปกรณ์ไหน/ถอดไปแล้วหรือยัง)
-  // เผื่อข้อมูลเดิมพิมพ์ทะเบียนหรือประเภทอุปกรณ์ไม่ตรงเป๊ะ จะได้ไม่พลาดแบบไม่รู้ตัว
-  const near = normPlate.length >= 4
-    ? gcRecords.filter(r => {
-        const rp = gcNormalizePlate(r.plate);
-        return rp && (rp.includes(normPlate) || normPlate.includes(rp));
-      }).slice(0, 5)
-    : [];
-  gcRenderInstallCandidates(near);
+  installDateInput.readOnly = true;
+  const veh = typeof mdVehicles !== 'undefined' ? mdVehicles.find(v => v.plate === plate) : null;
+  installDateInput.value = (device === 'CCTV' ? veh?.cctvInstallDate : veh?.gpsInstallDate) || '';
 }
 
 function gcLookupVehicle() {
@@ -187,11 +103,6 @@ function grLookupVehicle() {
 function gcNextRunningNo() { return gcRecords.length ? Math.max(...gcRecords.map(r => r.runningNo || 0)) + 1 : 1; }
 function gcStatusOf(rec) { return rec.removeDate ? 'removed' : 'active'; }
 
-// ช่อง "ประเภท CCTV (CCTV/AI)" มีความหมายเฉพาะตอนอุปกรณ์เป็น CCTV เท่านั้น
-function gcToggleDeviceFields() {
-  const isCctv = document.getElementById('gc-device').value === 'CCTV';
-  document.getElementById('gc-cctv-type-wrap').style.display = isCctv ? '' : 'none';
-}
 function gcStatusBadge(rec) {
   return gcStatusOf(rec) === 'removed'
     ? `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">ถอดแล้ว</span>`
@@ -205,16 +116,13 @@ function gcSaveCase() {
   const company = document.getElementById('gc-company').value.trim();
   const installDate = document.getElementById('gc-install-date').value;
   const removeDate = document.getElementById('gc-remove-date').value;
-  const cctvType = device === 'CCTV' ? document.getElementById('gc-cctv-type').value : '';
-  const serialNumber = document.getElementById('gc-serial').value.trim();
-  const simNumber = document.getElementById('gc-sim').value.trim();
   const note = document.getElementById('gc-note').value.trim();
 
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
   // ไม่บังคับว่าต้องกรอกวันที่ติดตั้งเสมอไป — บันทึกแค่วันที่ติดตั้ง หรือแค่วันที่ถอด อย่างใดอย่างหนึ่งก็ได้
   if (!installDate && !removeDate) { showToast('กรุณาระบุวันที่ติดตั้งหรือวันที่ถอดอย่างน้อยหนึ่งอย่าง', 'warning'); return; }
 
-  const record = { plate, owner, device, company, installDate, removeDate, cctvType, serialNumber, simNumber, note };
+  const record = { plate, owner, device, company, installDate, removeDate, note };
 
   if (gcEditingId) {
     const idx = gcRecords.findIndex(r => r.id === gcEditingId);
@@ -241,7 +149,6 @@ function gcSaveCase() {
   gcSave();
   gcPushIfReady();
   gcRenderList();
-  if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
 }
 
 function gcClearForm() {
@@ -252,17 +159,9 @@ function gcClearForm() {
   document.getElementById('gc-device').value = 'GPS';
   document.getElementById('gc-company').value = '';
   document.getElementById('gc-install-date').value = '';
-  document.getElementById('gc-install-date').readOnly = false;
-  const acHint = document.getElementById('gc-install-auto-hint');
-  if (acHint) acHint.style.display = 'none';
-  const acBox = document.getElementById('gc-install-candidates');
-  if (acBox) acBox.style.display = 'none';
+  document.getElementById('gc-install-date').readOnly = true;
   document.getElementById('gc-remove-date').value = '';
-  document.getElementById('gc-cctv-type').value = 'CCTV';
-  document.getElementById('gc-serial').value = '';
-  document.getElementById('gc-sim').value = '';
   document.getElementById('gc-note').value = '';
-  gcToggleDeviceFields();
 }
 
 function gcEditCase(id) {
@@ -276,17 +175,10 @@ function gcEditCase(id) {
   document.getElementById('gc-device').value = rec.device || 'GPS';
   document.getElementById('gc-company').value = rec.company || '';
   document.getElementById('gc-install-date').value = rec.installDate || '';
+  // ตอนแก้ไขรายการที่มีอยู่แล้ว ให้แก้วันที่ติดตั้งของรายการนั้นตรงๆ ได้ (ไม่ล็อก) ต่างจากตอนเพิ่มใหม่
   document.getElementById('gc-install-date').readOnly = false;
-  const acHint = document.getElementById('gc-install-auto-hint');
-  if (acHint) acHint.style.display = 'none';
-  const acBox = document.getElementById('gc-install-candidates');
-  if (acBox) acBox.style.display = 'none';
   document.getElementById('gc-remove-date').value = rec.removeDate || '';
-  document.getElementById('gc-cctv-type').value = rec.cctvType || 'CCTV';
-  document.getElementById('gc-serial').value = rec.serialNumber || '';
-  document.getElementById('gc-sim').value = rec.simNumber || '';
   document.getElementById('gc-note').value = rec.note || '';
-  gcToggleDeviceFields();
   gcSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -299,7 +191,6 @@ function gcDeleteCase(id) {
   gcSave();
   gcPushIfReady();
   gcRenderList();
-  if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
   showToast('ลบแล้ว', 'warning');
 }
 
@@ -310,7 +201,6 @@ function gcDeleteAllCases() {
   gcSave();
   gcPushIfReady();
   gcRenderList();
-  if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
   showToast('ลบรายการติดตั้ง/ถอดทั้งหมดแล้ว', 'warning');
 }
 
@@ -340,7 +230,7 @@ function gcRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="13" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
@@ -349,12 +239,9 @@ function gcRenderList() {
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.owner || '-')}</td>
       <td>${escapeHtml(r.device || '-')}</td>
-      <td>${escapeHtml(r.device === 'CCTV' ? (r.cctvType || 'CCTV') : '-')}</td>
       <td>${escapeHtml(r.company || '-')}</td>
       <td>${formatDate(r.installDate)}</td>
       <td>${r.removeDate ? formatDate(r.removeDate) : '-'}</td>
-      <td>${escapeHtml(r.serialNumber || '-')}</td>
-      <td>${escapeHtml(r.simNumber || '-')}</td>
       <td>${gcStatusBadge(r)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
       <td>
@@ -504,9 +391,8 @@ function grRenderList() {
 // ===== Excel: ติดตั้ง/ถอด (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่ติดตั้ง) =====
 function gcDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'ประเภทย่อย CCTV (CCTV/AI)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'เลข S/N', 'เบอร์ SIM', 'หมายเหตุ'],
-    ['70-1234', 'นายสมชาย ใจดี', 'GPS', '', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', 'SN-12345', '081-234-5678', ''],
-    ['70-1234', 'นายสมชาย ใจดี', 'CCTV', 'AI', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', 'SN-67890', '081-999-9999', ''],
+    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'หมายเหตุ'],
+    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ติดตั้ง-ถอด');
@@ -517,8 +403,8 @@ function gcExportExcel() {
   const list = gcFilteredList();
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'ประเภทย่อย CCTV', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'เลข S/N', 'เบอร์ SIM', 'สถานะ', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.device === 'CCTV' ? (r.cctvType || 'CCTV') : '', r.company || '', r.installDate || '', r.removeDate || '', r.serialNumber || '', r.simNumber || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
+    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'สถานะ', 'หมายเหตุ'],
+    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', gcStatusOf(r) === 'removed' ? 'ถอดแล้ว' : 'ติดตั้งอยู่', r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -535,14 +421,12 @@ function gcImportExcel(event) {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
       const device = String(row[2] || '').trim().toUpperCase() === 'CCTV' ? 'CCTV' : 'GPS';
-      const cctvType = device === 'CCTV' && String(row[3] || '').trim().toUpperCase() === 'AI' ? 'AI' : (device === 'CCTV' ? 'CCTV' : '');
-      const installDate = normalizeImportDate(row[5]);
+      const installDate = normalizeImportDate(row[4]);
       const veh = mdVehicles.find(v => v.plate === plate);
       const record = {
-        plate, owner: String(row[1] || '').trim() || veh?.owner || '', device, cctvType,
-        company: String(row[4] || '').trim(), installDate, removeDate: normalizeImportDate(row[6]),
-        serialNumber: String(row[7] || '').trim(), simNumber: String(row[8] || '').trim(),
-        note: String(row[9] || '').trim(),
+        plate, owner: String(row[1] || '').trim() || veh?.owner || '', device,
+        company: String(row[3] || '').trim(), installDate, removeDate: normalizeImportDate(row[5]),
+        note: String(row[6] || '').trim(),
       };
       const idx = gcRecords.findIndex(r => r.plate === plate && r.device === device && r.installDate === installDate);
       if (idx >= 0) { gcRecords[idx] = { ...gcRecords[idx], ...record, updatedAt: new Date().toISOString() }; updated++; }
@@ -551,7 +435,6 @@ function gcImportExcel(event) {
     gcSave();
     gcPushIfReady();
     gcRenderList();
-    if (typeof renderVehiclesTable === 'function') renderVehiclesTable();
     showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
     event.target.value = '';
   });
@@ -612,7 +495,7 @@ function grImportExcel(event) {
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function gcRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function gcObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
-function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); if (typeof renderVehiclesTable === 'function') renderVehiclesTable(); }
+function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); }
 async function gcWriteFB() {
   if (!gcRef) return;
   try {
