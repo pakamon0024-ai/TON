@@ -77,39 +77,99 @@ function gcCommitPlateInput(prefix) {
   }, 150);
 }
 
-// เทียบทะเบียน/ประเภทอุปกรณ์แบบไม่สนตัวพิมพ์เล็ก-ใหญ่และช่องว่างเกิน — ข้อมูลเก่าบางรายการ (เช่นที่นำเข้าจาก
-// Excel มาก่อนหน้านี้) อาจมีช่องว่างเกินหรือพิมพ์ไม่ตรงเป๊ะ ทำให้จับคู่ไม่เจอถ้าเทียบแบบตรงตัวเป๊ะๆ
-function gcNormalizePlate(p) { return String(p || '').trim().replace(/\s+/g, ''); }
-function gcNormalizeDevice(d) { return String(d || '').trim().toUpperCase(); }
+// เทียบทะเบียน/ประเภทอุปกรณ์แบบไม่สนช่องว่าง/เครื่องหมายขีด/ตัวพิมพ์เล็ก-ใหญ่เลย — ตัดทุกอย่างที่ไม่ใช่
+// ตัวอักษร/ตัวเลขทิ้งก่อนเทียบ เพราะข้อมูลเก่าบางรายการ (นำเข้าจาก Excel/พิมพ์ต่างเวลากัน) อาจใช้ขีดคนละแบบ
+// (เช่น "-" กับ "–") หรือมีช่องว่างเกิน ทำให้จับคู่ไม่เจอถ้าเทียบแบบตรงตัวเป๊ะๆ
+function gcNormalizePlate(p) { return String(p || '').replace(/[^\p{L}\p{N}]/gu, '').toUpperCase(); }
+function gcNormalizeDevice(d) { return String(d || '').replace(/[^\p{L}\p{N}]/gu, '').toUpperCase(); }
 
 // ถ้าทะเบียน+ประเภทอุปกรณ์ที่เลือก มีรายการติดตั้งอยู่แล้ว (ยังไม่ถอด) ให้ดึง "วันที่ติดตั้ง" (พร้อมบริษัท/
 // เลข S-N/เบอร์ SIM เพื่อความสะดวก) มาแสดงอัตโนมัติ โดยล็อกช่องวันที่ติดตั้งไว้ไม่ให้แก้ — ผู้ใช้กรอกแค่
 // "วันที่ถอด" แล้วกดบันทึก ระบบจะสร้างเป็น "แถวสถิติใหม่" เสมอ (ไม่ใช่การแก้ไขรายการติดตั้งเดิม)
 // ถ้าทะเบียน+อุปกรณ์นั้นไม่เคยมีรายการติดตั้งมาก่อน จะปลดล็อกให้กรอกวันที่ติดตั้งเองตามปกติ (กรณีติดตั้งใหม่จริงๆ)
+function gcApplyInstallRecord(existing) {
+  const installDateInput = document.getElementById('gc-install-date');
+  const hint = document.getElementById('gc-install-auto-hint');
+  document.getElementById('gc-device').value = existing.device === 'CCTV' ? 'CCTV' : 'GPS';
+  gcToggleDeviceFields();
+  document.getElementById('gc-company').value = existing.company || '';
+  installDateInput.value = existing.installDate || '';
+  installDateInput.readOnly = true;
+  document.getElementById('gc-serial').value = existing.serialNumber || '';
+  document.getElementById('gc-sim').value = existing.simNumber || '';
+  if (existing.device === 'CCTV') document.getElementById('gc-cctv-type').value = existing.cctvType || 'CCTV';
+  if (hint) hint.style.display = '';
+  const box = document.getElementById('gc-install-candidates');
+  if (box) box.style.display = 'none';
+}
+
+function gcApplyInstallCandidate(id) {
+  const existing = gcRecords.find(r => r.id === id);
+  if (existing) gcApplyInstallRecord(existing);
+}
+
+function gcRenderInstallCandidates(list) {
+  const box = document.getElementById('gc-install-candidates');
+  if (!box) return;
+  if (!list.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  box.style.display = '';
+  box.innerHTML = `
+    <div class="gc-candidates-box">
+      <div class="gc-candidates-title">⚠️ ไม่พบรายการติดตั้งที่ตรงกับ "${escapeHtml(document.getElementById('gc-device').value)}" เป๊ะๆ
+        แต่พบรายการใกล้เคียงของทะเบียนนี้ — กดเลือกถ้าใช่</div>
+      ${list.map(r => `
+        <div class="gc-candidate-item" onclick="gcApplyInstallCandidate('${r.id}')">
+          <span><span class="gc-cand-plate">${escapeHtml(r.plate)}</span> — ${escapeHtml(r.device || '-')}
+            ติดตั้ง ${r.installDate ? formatDate(r.installDate) : '-'} ${r.removeDate ? '(ถอดแล้ว ' + formatDate(r.removeDate) + ')' : '(ยังไม่ถอด)'}</span>
+          <span class="action-btn action-view">ใช้รายการนี้</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ถ้าทะเบียน+ประเภทอุปกรณ์ที่เลือก มีรายการติดตั้งอยู่แล้ว (ยังไม่ถอด) ให้ดึง "วันที่ติดตั้ง" (พร้อมบริษัท/
+// เลข S-N/เบอร์ SIM เพื่อความสะดวก) มาแสดงอัตโนมัติ โดยล็อกช่องวันที่ติดตั้งไว้ไม่ให้แก้ — ผู้ใช้กรอกแค่
+// "วันที่ถอด" แล้วกดบันทึก ระบบจะสร้างเป็น "แถวสถิติใหม่" เสมอ (ไม่ใช่การแก้ไขรายการติดตั้งเดิม)
+// ถ้าทะเบียน+อุปกรณ์นั้นไม่เคยมีรายการติดตั้งมาก่อน จะปลดล็อกให้กรอกวันที่ติดตั้งเองตามปกติ (กรณีติดตั้งใหม่จริงๆ)
+// ถ้าจับคู่แบบเป๊ะๆ ไม่เจอ (เช่น ข้อมูลเดิมพิมพ์ทะเบียน/ประเภทอุปกรณ์ไม่ตรงเป๊ะ) จะค้นหาแบบใกล้เคียง (เทียบแค่
+// บางส่วนของทะเบียน) มาให้เลือกเองแทน กันกรณีจับคู่อัตโนมัติพลาดแบบเงียบๆ
 function gcAutoFillInstallInfo() {
   const plate = document.getElementById('gc-plate').value.trim();
   const device = document.getElementById('gc-device').value;
   const installDateInput = document.getElementById('gc-install-date');
   const hint = document.getElementById('gc-install-auto-hint');
-  if (!plate) { installDateInput.readOnly = false; if (hint) hint.style.display = 'none'; return; }
+  const candidatesBox = document.getElementById('gc-install-candidates');
+  if (!plate) {
+    installDateInput.readOnly = false;
+    if (hint) hint.style.display = 'none';
+    if (candidatesBox) candidatesBox.style.display = 'none';
+    return;
+  }
 
+  const normPlate = gcNormalizePlate(plate);
   const existing = gcRecords.find(r =>
-    gcNormalizePlate(r.plate) === gcNormalizePlate(plate) &&
+    gcNormalizePlate(r.plate) === normPlate &&
     gcNormalizeDevice(r.device) === gcNormalizeDevice(device) &&
     !String(r.removeDate || '').trim()
   );
   if (existing) {
-    document.getElementById('gc-company').value = existing.company || '';
-    installDateInput.value = existing.installDate || '';
-    installDateInput.readOnly = true;
-    document.getElementById('gc-serial').value = existing.serialNumber || '';
-    document.getElementById('gc-sim').value = existing.simNumber || '';
-    if (device === 'CCTV') document.getElementById('gc-cctv-type').value = existing.cctvType || 'CCTV';
-    if (hint) hint.style.display = '';
-  } else {
-    installDateInput.readOnly = false;
-    if (hint) hint.style.display = 'none';
+    gcApplyInstallRecord(existing);
+    return;
   }
+
+  installDateInput.readOnly = false;
+  if (hint) hint.style.display = 'none';
+
+  // ไม่เจอที่ตรงเป๊ะ — ลองหาแบบใกล้เคียง (ทะเบียนมีส่วนที่ตรงกัน ไม่ว่าจะอุปกรณ์ไหน/ถอดไปแล้วหรือยัง)
+  // เผื่อข้อมูลเดิมพิมพ์ทะเบียนหรือประเภทอุปกรณ์ไม่ตรงเป๊ะ จะได้ไม่พลาดแบบไม่รู้ตัว
+  const near = normPlate.length >= 4
+    ? gcRecords.filter(r => {
+        const rp = gcNormalizePlate(r.plate);
+        return rp && (rp.includes(normPlate) || normPlate.includes(rp));
+      }).slice(0, 5)
+    : [];
+  gcRenderInstallCandidates(near);
 }
 
 function gcLookupVehicle() {
@@ -195,6 +255,8 @@ function gcClearForm() {
   document.getElementById('gc-install-date').readOnly = false;
   const acHint = document.getElementById('gc-install-auto-hint');
   if (acHint) acHint.style.display = 'none';
+  const acBox = document.getElementById('gc-install-candidates');
+  if (acBox) acBox.style.display = 'none';
   document.getElementById('gc-remove-date').value = '';
   document.getElementById('gc-cctv-type').value = 'CCTV';
   document.getElementById('gc-serial').value = '';
@@ -217,6 +279,8 @@ function gcEditCase(id) {
   document.getElementById('gc-install-date').readOnly = false;
   const acHint = document.getElementById('gc-install-auto-hint');
   if (acHint) acHint.style.display = 'none';
+  const acBox = document.getElementById('gc-install-candidates');
+  if (acBox) acBox.style.display = 'none';
   document.getElementById('gc-remove-date').value = rec.removeDate || '';
   document.getElementById('gc-cctv-type').value = rec.cctvType || 'CCTV';
   document.getElementById('gc-serial').value = rec.serialNumber || '';

@@ -547,6 +547,21 @@ body {
 .combo-item.combo-empty { color: var(--text-muted); cursor: default; }
 .combo-item.combo-empty:hover { background: transparent; }
 
+/* ===== รายการ "รายการติดตั้งเดิม" ที่ค้นเจอแบบใกล้เคียง (fallback เวลาจับคู่อัตโนมัติเป๊ะๆ ไม่เจอ) ===== */
+.gc-candidates-box {
+  border: 1px solid var(--accent-orange); border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent-orange) 10%, transparent);
+  padding: 10px 12px;
+}
+.gc-candidates-title { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+.gc-candidate-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 10px; border-radius: var(--radius-sm); cursor: pointer;
+  background: var(--bg-card); border: 1px solid var(--border); margin-top: 6px; font-size: 0.84rem;
+}
+.gc-candidate-item:hover { border-color: var(--accent-primary); }
+.gc-candidate-item span.gc-cand-plate { font-family: monospace; font-weight: 700; }
+
 .form-group input[readonly] { background: var(--bg-hover); color: var(--text-secondary); cursor: not-allowed; }
 
 .form-group input:focus,
