@@ -77,6 +77,11 @@ function gcCommitPlateInput(prefix) {
   }, 150);
 }
 
+// เทียบทะเบียน/ประเภทอุปกรณ์แบบไม่สนตัวพิมพ์เล็ก-ใหญ่และช่องว่างเกิน — ข้อมูลเก่าบางรายการ (เช่นที่นำเข้าจาก
+// Excel มาก่อนหน้านี้) อาจมีช่องว่างเกินหรือพิมพ์ไม่ตรงเป๊ะ ทำให้จับคู่ไม่เจอถ้าเทียบแบบตรงตัวเป๊ะๆ
+function gcNormalizePlate(p) { return String(p || '').trim().replace(/\s+/g, ''); }
+function gcNormalizeDevice(d) { return String(d || '').trim().toUpperCase(); }
+
 // ถ้าทะเบียน+ประเภทอุปกรณ์ที่เลือก มีรายการติดตั้งอยู่แล้ว (ยังไม่ถอด) ให้ดึง "วันที่ติดตั้ง" (พร้อมบริษัท/
 // เลข S-N/เบอร์ SIM เพื่อความสะดวก) มาแสดงอัตโนมัติ โดยล็อกช่องวันที่ติดตั้งไว้ไม่ให้แก้ — ผู้ใช้กรอกแค่
 // "วันที่ถอด" แล้วกดบันทึก ระบบจะสร้างเป็น "แถวสถิติใหม่" เสมอ (ไม่ใช่การแก้ไขรายการติดตั้งเดิม)
@@ -88,7 +93,11 @@ function gcAutoFillInstallInfo() {
   const hint = document.getElementById('gc-install-auto-hint');
   if (!plate) { installDateInput.readOnly = false; if (hint) hint.style.display = 'none'; return; }
 
-  const existing = gcRecords.find(r => r.plate === plate && r.device === device && !r.removeDate);
+  const existing = gcRecords.find(r =>
+    gcNormalizePlate(r.plate) === gcNormalizePlate(plate) &&
+    gcNormalizeDevice(r.device) === gcNormalizeDevice(device) &&
+    !String(r.removeDate || '').trim()
+  );
   if (existing) {
     document.getElementById('gc-company').value = existing.company || '';
     installDateInput.value = existing.installDate || '';
