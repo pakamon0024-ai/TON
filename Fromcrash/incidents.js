@@ -562,8 +562,13 @@ function incDestroyReportChart(id) {
 }
 
 function incBuildChartData(data) {
+  const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
-  data.forEach(i => { if (i.incidentDate) { const m = new Date(i.incidentDate).getMonth(); if (!isNaN(m)) monthCount[m]++; } });
+  data.forEach(i => {
+    if (!i.incidentDate) return;
+    const d = new Date(i.incidentDate);
+    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
+  });
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
   const patternSorted = Object.entries(patternCount).sort((a,b)=>b[1]-a[1]);
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
@@ -584,12 +589,21 @@ function incRenderReportCharts(chartData) {
     responsive: true, maintainAspectRatio: false, animation: false,
     plugins: { legend: { display: false }, datalabels: rptDL }, ...extra
   });
+  const curYear = new Date().getFullYear();
 
   incDestroyReportChart('month');
   incReportCharts.month = new Chart(document.getElementById('rpt-chart-month'), {
-    type: 'bar',
-    data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: chartData.monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
-    options: rptOpts({ scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } } })
+    data: {
+      labels: MONTH_LABELS_TH,
+      datasets: [
+        { type: 'bar', label: `จำนวนเหตุ ${curYear}`, data: chartData.monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5, order: 2 },
+        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1 },
+      ],
+    },
+    options: rptOpts({
+      plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: rptFont, boxWidth: 14 } }, datalabels: rptDL },
+      scales: { y: { beginAtZero: true, grace: '15%', grid: rptGrid, ticks: { ...rptTick, precision: 0 } }, x: { grid: { display: false }, ticks: rptTick } }
+    })
   });
 
   incDestroyReportChart('pattern');
