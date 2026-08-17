@@ -22,6 +22,9 @@ const INC_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
 const INC_DL_OPTS = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' }, formatter: v => v > 0 ? v : '' };
 
 const MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+// จำนวนอุบัติเหตุรายเดือนของปี 2025 (ปีที่แล้ว) — ใช้เทียบกับปีปัจจุบันในกราฟแดชบอร์ด ไม่มีข้อมูลดิบในระบบ
+// (ระบบเริ่มบันทึกปี 2026) จึงใส่ตัวเลขอ้างอิงตรงๆ ตามที่ผู้ใช้ให้มา
+const INC_LAST_YEAR_MONTHLY = [15, 10, 17, 5, 12, 21, 23, 10, 13, 20, 10, 10];
 const DOW_LABELS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 
 function incSave() { localStorage.setItem('finflow_incidents', JSON.stringify(incidents)); }
@@ -401,13 +404,24 @@ function incRenderDashboard() {
   const topVeh = Object.entries(vehCount).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('inc-kpi-top-veh').textContent = topVeh ? `${topVeh[0]} (${topVeh[1]} ครั้ง)` : '-';
 
+  // นับเฉพาะปีปัจจุบัน (แท่ง) ไม่ปนกับข้อมูลปีอื่นที่อาจมีอยู่ในระบบ — ปีที่แล้วใช้ตัวเลขอ้างอิงคงที่ (เส้น)
+  const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
-  data.forEach(i => { if (i.incidentDate) { const m = new Date(i.incidentDate).getMonth(); if (!isNaN(m)) monthCount[m]++; } });
+  data.forEach(i => {
+    if (!i.incidentDate) return;
+    const d = new Date(i.incidentDate);
+    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
+  });
   incDestroyChart('month');
   incCharts.month = new Chart(document.getElementById('inc-chart-month'), {
-    type: 'bar',
-    data: { labels: MONTH_LABELS_TH, datasets: [{ label: 'จำนวนเหตุ', data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    data: {
+      labels: MONTH_LABELS_TH,
+      datasets: [
+        { type: 'bar', label: `จำนวนเหตุ ${curYear}`, data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5, order: 2 },
+        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1 },
+      ],
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: INC_CHART_FONT, boxWidth: 14 } }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
 
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
