@@ -445,8 +445,10 @@ function alcRenderSummary() {
     const countCells = days.map(d => {
       const rec = byDay[d];
       if (!rec) return '<td class="alc-sum-cell"></td>';
-      const c = alcTestedCount(rec);
-      return `<td class="alc-sum-cell${c < 2 ? ' alc-sum-flag' : ''}">${c || ''}</td>`;
+      const cell = alcSummaryCountCell(rec);
+      const isText = typeof cell === 'string';
+      const c = isText ? 0 : cell;
+      return `<td class="alc-sum-cell${isText || c < 2 ? ' alc-sum-flag' : ''}">${isText ? escapeHtml(cell) : (c || '')}</td>`;
     }).join('');
     const levelCells = days.map(d => {
       const rec = byDay[d];
