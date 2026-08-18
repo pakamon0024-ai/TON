@@ -293,16 +293,23 @@ function alcExportListExcel() {
   XLSX.writeFile(wb, `บันทึกเป่าแอลกอฮอล์_${new Date().toISOString().substring(0, 10)}.xlsx`);
 }
 
-const ALC_XLSX_HEADERS = ['เลขที่', 'วันที่', 'เวลา', 'พนักงาน', 'หน่วยงาน', 'ผลตรวจ (ขาไป)', 'ผลตรวจ (ขากลับ)', 'ค่าที่วัดได้ (มก.)', 'หมายเหตุ'];
+// รูปแบบไฟล์ตาราง matrix (No./ชื่อ/หน่วยงาน x วันที่ 1-31) ใช้ทั้ง Template/Export/Import ให้ตรงกัน
+// ต่อพนักงาน 1 คน = 2 แถว: จำนวนตรวจ (ค่าเดียวต่อวัน — ใช้ได้ทั้งขาไป/ขากลับ) / แอลกอฮอล์ (มก.)
+const ALC_SUMMARY_ROW_LABELS = ['จำนวนตรวจ', 'แอลกอฮอล์ (มก.)'];
 
 function alcDownloadTemplate() {
-  const ws = XLSX.utils.aoa_to_sheet([
-    ALC_XLSX_HEADERS,
-    ['1', '2026-01-15', '07:30', 'นายสมชาย ใจดี', 'หน่วยงาน 1', 'ผ่าน', 'ผ่าน', '0', ''],
-  ]);
+  if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
+  const monthVal = alcSummaryMonthValue();
+  const { days } = alcSummaryDataForMonth(monthVal);
+  const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', ...days.map(String)]];
+  mdAbcStaff.forEach((emp, i) => {
+    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', ALC_SUMMARY_ROW_LABELS[0], '-', ...days.map(() => '')]);
+    sheetRows.push(['', '', '', ALC_SUMMARY_ROW_LABELS[1], '', ...days.map(() => '')]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(sheetRows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'เป่าวัดแอลกอฮอล์');
-  XLSX.writeFile(wb, 'template_เป่าวัดแอลกอฮอล์.xlsx');
+  XLSX.utils.book_append_sheet(wb, ws, 'สรุปแอลกอฮอล์');
+  XLSX.writeFile(wb, `template_เป่าวัดแอลกอฮอล์_${monthVal}.xlsx`);
 }
 
 function alcNormalizeResult(v) {
@@ -310,6 +317,20 @@ function alcNormalizeResult(v) {
   return ALC_RESULT_OPTIONS.includes(s) ? s : ALC_RESULT_OPTIONS[0];
 }
 
+// ตีความค่าในช่อง "จำนวนตรวจ" ของ 1 วัน: อาจเป็นตัวเลข (0/1/2 = จำนวนรอบที่เป่า)
+// หรือคำสถานะตรงๆ (ผ่าน/ไม่ผ่าน/ขาด-ลา/ต่อเนื่อง) ที่พิมพ์ทับไว้เอง — คืน status เดียวใช้กับทั้งขาไป/ขากลับ
+// null = ไม่มีข้อมูลวันนั้น (0 หรือว่าง) ให้ข้าม ไม่สร้างบันทึก
+function alcParseCountCell(v) {
+  const s = String(v || '').trim();
+  if (!s) return null;
+  if (ALC_RESULT_OPTIONS.includes(s)) return s;
+  const n = parseFloat(s);
+  if (isNaN(n) || n <= 0) return null;
+  return 'ผ่าน'; // เป่าแล้ว (1 หรือ 2 ครั้ง) แต่ไม่ได้ระบุผลไว้ ถือว่าผ่าน
+}
+
+// นำเข้าไฟล์ตาราง matrix เดียวกับที่ได้จากปุ่ม "Export Excel" ของแท็บสรุปรายเดือน
+// ใช้เดือนที่เลือกอยู่ในตัวเลือก "เดือน" ของแท็บนี้เป็นเดือนอ้างอิง (ไฟล์มีแค่เลขวันที่ ไม่มีปี-เดือนในตัว)
 function alcImportExcel(event) {
   const file = event.target.files[0]; if (!file) return;
   const reader = new FileReader();
@@ -317,36 +338,45 @@ function alcImportExcel(event) {
     try {
       const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }).slice(1);
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      const header = rows[0] || [];
+      const dayCols = header.map((v, col) => ({ day: parseInt(v), col })).filter(d => !isNaN(d.day) && d.col >= 5);
+      const monthVal = alcSummaryMonthValue();
+      const [y, m] = monthVal.split('-').map(Number);
+
       let updated = 0, added = 0;
       const now = new Date();
-      rows.forEach(row => {
-        const employee = String(row[3] || '').trim();
-        const date = normalizeImportDate(row[1]);
-        if (!employee || !date) return;
-        const businessUnit = String(row[4] || '').trim() || mdAbcStaff.find(s => s.name === employee)?.businessUnit || '';
-        const resultOut = alcNormalizeResult(row[5]);
-        const resultReturn = alcNormalizeResult(row[6]);
-        const levelRaw = parseFloat(row[7]);
-        const level = isNaN(levelRaw) ? ALC_FIXED_LEVEL : levelRaw;
-        const note = String(row[8] || '').trim();
-        const time = String(row[2] || '').trim();
+      for (let i = 1; i < rows.length; i += 2) {
+        const countRow = rows[i];
+        if (!countRow) break;
+        const employee = String(countRow[1] || '').trim();
+        if (!employee) continue;
+        const levelRow = rows[i + 1] || [];
+        const businessUnit = String(countRow[2] || '').trim() || mdAbcStaff.find(s => s.name === employee)?.businessUnit || '';
 
-        const idx = alcTests.findIndex(t => t.date === date && t.employee === employee);
-        if (idx >= 0) {
-          alcTests[idx] = { ...alcTests[idx], time: time || alcTests[idx].time, businessUnit, resultOut, resultReturn, level, note, updatedAt: now.toISOString() };
-          delete alcTests[idx].result;
-          updated++;
-        } else {
-          alcTests.unshift({
-            id: 'ALC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-            runningNo: alcNextRunningNo(),
-            date, time, employee, businessUnit, level, resultOut, resultReturn, note,
-            createdAt: now.toISOString(),
-          });
-          added++;
-        }
-      });
+        dayCols.forEach(({ day, col }) => {
+          const status = alcParseCountCell(countRow[col]);
+          if (!status) return; // ไม่มีข้อมูลวันนั้น ข้าม
+          const levelRaw = parseFloat(levelRow[col]);
+          const level = isNaN(levelRaw) ? ALC_FIXED_LEVEL : levelRaw;
+          const date = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+          const idx = alcTests.findIndex(t => t.date === date && t.employee === employee);
+          if (idx >= 0) {
+            alcTests[idx] = { ...alcTests[idx], businessUnit, resultOut: status, resultReturn: status, level, updatedAt: now.toISOString() };
+            delete alcTests[idx].result;
+            updated++;
+          } else {
+            alcTests.unshift({
+              id: 'ALC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+              runningNo: alcNextRunningNo(),
+              date, time: '', employee, businessUnit, level, resultOut: status, resultReturn: status, note: '',
+              createdAt: now.toISOString(),
+            });
+            added++;
+          }
+        });
+      }
       alcSave();
       alcPushIfReady();
       alcRenderList();
@@ -354,7 +384,7 @@ function alcImportExcel(event) {
       alcRenderSummary();
       alcRenderDailyReport();
       const msg = [updated ? `อัปเดต ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
-      showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
+      showToast(msg || `ไม่มีข้อมูลใหม่ (เช็คว่าตัวเลือก "เดือน" ตรงกับเดือน ${monthVal} ของไฟล์หรือไม่)`, msg ? 'success' : 'warning');
     } catch (err) {
       showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error');
     }
@@ -453,6 +483,16 @@ function alcRenderSummary() {
   `;
 }
 
+// ค่าที่ลงในช่อง "จำนวนตรวจ" ของ 1 วัน — ถ้าทั้งขาไป/ขากลับผลตรงกันและไม่ใช่ "ผ่าน" (เช่น ขาด/ลา, ต่อเนื่อง, ไม่ผ่าน)
+// ให้ export เป็นคำสถานะตรงๆ (ตรงกับที่ผู้ใช้เคยพิมพ์ทับเองในไฟล์จริง) ไม่งั้นใช้ตัวเลขจำนวนรอบตามเดิม
+function alcSummaryCountCell(rec) {
+  if (!rec) return '';
+  const out = rec.resultOut || rec.result || ALC_RESULT_OPTIONS[0];
+  const ret = rec.resultReturn || ALC_RESULT_OPTIONS[0];
+  if (out === ret && out !== 'ผ่าน' && out !== ALC_RESULT_OPTIONS[0]) return out;
+  return alcTestedCount(rec);
+}
+
 function alcExportSummaryExcel() {
   const monthVal = alcSummaryMonthValue();
   const { days, rows } = alcSummaryDataForMonth(monthVal);
@@ -460,8 +500,8 @@ function alcExportSummaryExcel() {
 
   const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', ...days.map(String)]];
   rows.forEach(({ emp, byDay, maxLevel }, i) => {
-    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', 'จำนวนตรวจ', maxLevel === null ? '-' : maxLevel, ...days.map(d => byDay[d] ? alcTestedCount(byDay[d]) : '')]);
-    sheetRows.push(['', '', '', 'แอลกอฮอล์ (มก.)', '', ...days.map(d => byDay[d] ? (byDay[d].level ?? 0) : '')]);
+    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', ALC_SUMMARY_ROW_LABELS[0], maxLevel === null ? '-' : maxLevel, ...days.map(d => byDay[d] ? alcSummaryCountCell(byDay[d]) : '')]);
+    sheetRows.push(['', '', '', ALC_SUMMARY_ROW_LABELS[1], '', ...days.map(d => byDay[d] ? (byDay[d].level ?? 0) : '')]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(sheetRows);
