@@ -42,13 +42,14 @@ function incNormalizeArea(val) {
 
 // ===== Sub-tabs =====
 function incSwitchTab(tab) {
-  ['dashboard','list','add'].forEach(t => {
+  ['dashboard','list','add','trouble'].forEach(t => {
     document.getElementById(`inc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`inc-subpage-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'dashboard') incRenderDashboard();
   if (tab === 'list') incRenderList();
   if (tab === 'add' && !incEditingId) incClearForm();
+  if (tab === 'trouble') incRenderTroubleReport();
 }
 
 // เรียกจาก showPage('incidents') ของ app.js — บังคับ redraw กราฟให้ถูกขนาด
@@ -464,6 +465,67 @@ function incRenderDashboard() {
     data: { labels: areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
+}
+
+// ===== การจัดส่งรายงาน Trouble Report (ติดตามเคสที่สถานะ TMS = NG ยังไม่ได้ส่ง) =====
+// กำหนดส่ง = วันที่เกิดเหตุ + 5 วัน, เกินกำหนด = วันนี้ - กำหนดส่ง (ไม่ต่ำกว่า 0)
+const INC_TROUBLE_DUE_DAYS = 5;
+
+function incTroubleDamageLabel(damageType) {
+  if (damageType === 'Accident') return 'อุบัติเหตุ';
+  if (damageType === 'Part damage') return 'สินค้าเสียหาย';
+  return damageType || '-';
+}
+
+function incTroubleReportRows() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  return incidents
+    .filter(i => (i.tmsStatus || 'OK') === 'NG' && i.incidentDate)
+    .map(i => {
+      const incidentDate = new Date(i.incidentDate);
+      const dueDate = new Date(incidentDate); dueDate.setDate(dueDate.getDate() + INC_TROUBLE_DUE_DAYS);
+      const overdueDays = Math.max(0, Math.round((today - dueDate) / 86400000));
+      return { ...i, dueDate, overdueDays };
+    })
+    .sort((a, b) => new Date(a.incidentDate) - new Date(b.incidentDate));
+}
+
+function incRenderTroubleReport() {
+  const tbody = document.getElementById('inc-trouble-body');
+  if (!tbody) return;
+  const rows = incTroubleReportRows();
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ไม่มีเคสค้างส่ง (TMS ครบ OK ทั้งหมด)</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${formatDate(r.incidentDate)}</td>
+      <td>Trouble Report</td>
+      <td>-</td>
+      <td>${escapeHtml(r.employeeName || '-')}</td>
+      <td>${escapeHtml(r.yard || '-')}</td>
+      <td>${escapeHtml(r.businessUnit || '-')}</td>
+      <td class="inc-trouble-due">${formatDate(r.dueDate.toISOString().slice(0, 10))}</td>
+      <td class="inc-trouble-overdue">${r.overdueDays}</td>
+      <td class="inc-trouble-note">${escapeHtml(incTroubleDamageLabel(r.damageType))}</td>
+    </tr>
+  `).join('');
+}
+
+async function incSaveTroubleReportImage() {
+  const el = document.getElementById('inc-trouble-capture');
+  if (!el) return;
+  try {
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
+    const link = document.createElement('a');
+    link.download = 'Trouble_Report_' + new Date().toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพไม่ได้: ' + e.message, 'error');
+  }
 }
 
 // ===== Excel Import / Export / Template =====

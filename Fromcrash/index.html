@@ -1252,6 +1252,8 @@
               แดชบอร์ด</button>
             <button class="subtab" id="inc-tab-list" onclick="incSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="inc-tab-add" onclick="incSwitchTab('add')">➕ เพิ่มบันทึก</button>
+            <button class="subtab" id="inc-tab-trouble" onclick="incSwitchTab('trouble')">📨 จัดส่งรายงาน Trouble
+              Report</button>
           </div>
 
           <!-- DASHBOARD SUBPAGE -->
@@ -1598,6 +1600,34 @@
               <div class="form-actions">
                 <button class="btn-secondary" onclick="incClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="incSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TROUBLE REPORT SUBPAGE: ติดตามเคสที่สถานะ TMS = NG ยังไม่ได้ส่งรายงาน -->
+          <div class="subpage" id="inc-subpage-trouble">
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="incSaveTroubleReportImage()">📸 บันทึกภาพหน้าจอ</button>
+            </div>
+            <div class="inc-trouble-capture" id="inc-trouble-capture">
+              <h3 class="inc-trouble-title">รายงานสถานะติดตามเอกสาร</h3>
+              <div class="recent-table-wrap">
+                <table class="data-table inc-trouble-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Detail</th>
+                      <th>ID.</th>
+                      <th>Name</th>
+                      <th>Yard</th>
+                      <th>Project</th>
+                      <th class="inc-trouble-due">Duedate</th>
+                      <th class="inc-trouble-overdue">เอกสารเกินกำหนด<br />(วัน)</th>
+                      <th>หมายเหตุ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="inc-trouble-body"></tbody>
+                </table>
               </div>
             </div>
           </div>
