@@ -1784,9 +1784,6 @@
             </div>
             <div class="filter-bar">
               <button class="btn-secondary" onclick="alcExportListExcel()">📊 Export Excel</button>
-              <button class="btn-secondary" onclick="alcDownloadTemplate()">📄 Template Excel</button>
-              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
-                  style="display:none" onchange="alcImportExcel(event)"></label>
             </div>
             <div class="ctxt" id="alc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
@@ -1872,6 +1869,9 @@
                 <input type="month" id="alc-summary-month" onchange="alcRenderSummary()" />
               </div>
               <button class="btn-secondary" onclick="alcExportSummaryExcel()">📊 Export Excel</button>
+              <button class="btn-secondary" onclick="alcDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="alcImportExcel(event)"></label>
             </div>
             <div class="recent-table-wrap" id="alc-summary-table-wrap" style="margin-top:10px;"></div>
           </div>
