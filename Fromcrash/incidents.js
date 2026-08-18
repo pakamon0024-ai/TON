@@ -132,6 +132,7 @@ function incRefreshLookupDropdowns() {
   incFillSelect('inc-pattern', mdIncidentPatterns);
   incFillSelect('inc-f-bu', mdBusinessUnits);
   incFillSelect('inc-f-yard', mdYards);
+  incFillSelect('inc-f-pattern', mdIncidentPatterns);
   incFillSelect('inc-lf-yard', mdYards);
 }
 
@@ -372,17 +373,21 @@ function incFilteredForDashboard() {
   const fault = document.getElementById('inc-f-fault')?.value;
   const yard = document.getElementById('inc-f-yard')?.value;
   const bu = document.getElementById('inc-f-bu')?.value;
+  const area = document.getElementById('inc-f-area')?.value;
+  const pattern = document.getElementById('inc-f-pattern')?.value;
   return incidents.filter(i => {
     if (damageType && i.damageType !== damageType) return false;
     if (fault && i.faultStatus !== fault) return false;
     if (yard && i.yard !== yard) return false;
     if (bu && i.businessUnit !== bu) return false;
+    if (area && incNormalizeArea(i.area) !== area) return false;
+    if (pattern && i.incidentPattern !== pattern) return false;
     return true;
   });
 }
 
 function incClearDashFilters() {
-  ['inc-f-damagetype','inc-f-fault','inc-f-yard','inc-f-bu'].forEach(id => { document.getElementById(id).value = ''; });
+  ['inc-f-damagetype','inc-f-fault','inc-f-yard','inc-f-bu','inc-f-area','inc-f-pattern'].forEach(id => { document.getElementById(id).value = ''; });
   incRenderDashboard();
 }
 
@@ -418,7 +423,7 @@ function incRenderDashboard() {
       labels: MONTH_LABELS_TH,
       datasets: [
         { type: 'bar', label: `จำนวนเหตุ ${curYear}`, data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5, order: 2 },
-        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1 },
+        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
       ],
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: INC_CHART_FONT, boxWidth: 14 } }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
@@ -597,7 +602,7 @@ function incRenderReportCharts(chartData) {
       labels: MONTH_LABELS_TH,
       datasets: [
         { type: 'bar', label: `จำนวนเหตุ ${curYear}`, data: chartData.monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5, order: 2 },
-        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1 },
+        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
       ],
     },
     options: rptOpts({

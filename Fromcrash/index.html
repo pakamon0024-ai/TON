@@ -1287,6 +1287,21 @@
                   <option value="">ทั้งหมด</option>
                 </select>
               </div>
+              <div class="filter-group">
+                <label>สถานะอุบัติเหตุ (พื้นที่)</label>
+                <select id="inc-f-area" onchange="incRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="On the way">On the way</option>
+                  <option value="In Plant">In Plant</option>
+                  <option value="In yard">In yard</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>ลักษณะการเกิดเหตุ</label>
+                <select id="inc-f-pattern" onchange="incRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
               <button class="btn-secondary" onclick="incClearDashFilters()">🔄 ล้าง</button>
               <button class="inc-btn-report" onclick="incSaveReport()">📸 บันทึกภาพรายงาน</button>
             </div>
@@ -1769,6 +1784,9 @@
             </div>
             <div class="filter-bar">
               <button class="btn-secondary" onclick="alcExportListExcel()">📊 Export Excel</button>
+              <button class="btn-secondary" onclick="alcDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="alcImportExcel(event)"></label>
             </div>
             <div class="ctxt" id="alc-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>

@@ -293,6 +293,76 @@ function alcExportListExcel() {
   XLSX.writeFile(wb, `บันทึกเป่าแอลกอฮอล์_${new Date().toISOString().substring(0, 10)}.xlsx`);
 }
 
+const ALC_XLSX_HEADERS = ['เลขที่', 'วันที่', 'เวลา', 'พนักงาน', 'หน่วยงาน', 'ผลตรวจ (ขาไป)', 'ผลตรวจ (ขากลับ)', 'ค่าที่วัดได้ (มก.)', 'หมายเหตุ'];
+
+function alcDownloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ALC_XLSX_HEADERS,
+    ['1', '2026-01-15', '07:30', 'นายสมชาย ใจดี', 'หน่วยงาน 1', 'ผ่าน', 'ผ่าน', '0', ''],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'เป่าวัดแอลกอฮอล์');
+  XLSX.writeFile(wb, 'template_เป่าวัดแอลกอฮอล์.xlsx');
+}
+
+function alcNormalizeResult(v) {
+  const s = String(v || '').trim();
+  return ALC_RESULT_OPTIONS.includes(s) ? s : ALC_RESULT_OPTIONS[0];
+}
+
+function alcImportExcel(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }).slice(1);
+      let updated = 0, added = 0;
+      const now = new Date();
+      rows.forEach(row => {
+        const employee = String(row[3] || '').trim();
+        const date = normalizeImportDate(row[1]);
+        if (!employee || !date) return;
+        const businessUnit = String(row[4] || '').trim() || mdAbcStaff.find(s => s.name === employee)?.businessUnit || '';
+        const resultOut = alcNormalizeResult(row[5]);
+        const resultReturn = alcNormalizeResult(row[6]);
+        const levelRaw = parseFloat(row[7]);
+        const level = isNaN(levelRaw) ? ALC_FIXED_LEVEL : levelRaw;
+        const note = String(row[8] || '').trim();
+        const time = String(row[2] || '').trim();
+
+        const idx = alcTests.findIndex(t => t.date === date && t.employee === employee);
+        if (idx >= 0) {
+          alcTests[idx] = { ...alcTests[idx], time: time || alcTests[idx].time, businessUnit, resultOut, resultReturn, level, note, updatedAt: now.toISOString() };
+          delete alcTests[idx].result;
+          updated++;
+        } else {
+          alcTests.unshift({
+            id: 'ALC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+            runningNo: alcNextRunningNo(),
+            date, time, employee, businessUnit, level, resultOut, resultReturn, note,
+            createdAt: now.toISOString(),
+          });
+          added++;
+        }
+      });
+      alcSave();
+      alcPushIfReady();
+      alcRenderList();
+      alcRenderRoster();
+      alcRenderSummary();
+      alcRenderDailyReport();
+      const msg = [updated ? `อัปเดต ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
+      showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
+    } catch (err) {
+      showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error');
+    }
+    event.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 // ===== ตารางสรุปผลเป่าแอลกอฮอล์รายวัน แยกตามเดือน (No./ชื่อ/หน่วยงาน x วันที่ 1-31) =====
 function alcSummaryMonthValue() {
   return document.getElementById('alc-summary-month')?.value || new Date().toISOString().substring(0, 7);
