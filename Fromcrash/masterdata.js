@@ -34,7 +34,12 @@ function formatDuration(fromDateStr) {
 function normalizeImportDate(val) {
   if (val === undefined || val === null || val === '') return '';
   if (val instanceof Date && !isNaN(val)) {
-    const y = val.getFullYear(), m = String(val.getMonth() + 1).padStart(2, '0'), d = String(val.getDate()).padStart(2, '0');
+    // SheetJS แปลง Excel date serial เป็น Date object ด้วยค่าที่คลาดเคลื่อนไม่กี่วินาที (floating-point epsilon)
+    // ในโซนเวลาที่เที่ยงคืน local ตรงกับขอบชั่วโมง UTC พอดี (เช่น Bangkok +7) ความคลาดเคลื่อนนี้ทำให้
+    // getDate()/getFullYear() แบบ local อ่านได้ "ก่อนหน้า 1 วัน" ผิดพลาด — ปัดเวลาให้ตรงเที่ยงคืน UTC
+    // ที่ใกล้ที่สุดก่อน แล้วค่อยอ่านด้วย UTC getters ถึงจะได้วันที่ตรงกับที่พิมพ์ไว้ใน Excel จริง
+    const rounded = new Date(Math.round(val.getTime() / 86400000) * 86400000);
+    const y = rounded.getUTCFullYear(), m = String(rounded.getUTCMonth() + 1).padStart(2, '0'), d = String(rounded.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
   }
   const s = String(val).trim();

@@ -404,6 +404,8 @@ body {
 .inc-trouble-table td.inc-trouble-overdue,
 .inc-trouble-table td.inc-trouble-note { color: #d32f2f; font-weight: 700; }
 .inc-trouble-table td:nth-child(4) { text-align: left; }
+.inc-trouble-table .inc-trouble-selectcol { padding: 4px; }
+.inc-trouble-capturing .inc-trouble-selectcol { display: none; }
 
 /* ===== Alcohol Test Monthly Summary Matrix ===== */
 /* ตารางนี้ใช้เส้นกรอบรอบทุกช่อง (ไม่ใช่แค่เส้นใต้แถวแบบ .data-table ปกติ) เพราะมีคอลัมน์
