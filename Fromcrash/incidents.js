@@ -500,7 +500,6 @@ function incRenderTroubleReport() {
   }
   tbody.innerHTML = rows.map(r => `
     <tr data-id="${r.id}">
-      <td class="inc-trouble-selectcol"><input type="checkbox" class="inc-trouble-exclude" /></td>
       <td>${formatDate(r.incidentDate)}</td>
       <td>Trouble Report</td>
       <td>${escapeHtml(r.employeeName || '-')}</td>
@@ -516,10 +515,6 @@ function incRenderTroubleReport() {
 async function incSaveTroubleReportImage() {
   const el = document.getElementById('inc-trouble-capture');
   if (!el) return;
-  const excludedRows = Array.from(el.querySelectorAll('.inc-trouble-exclude:checked'))
-    .map(cb => cb.closest('tr'));
-  excludedRows.forEach(tr => tr.style.display = 'none');
-  el.classList.add('inc-trouble-capturing');
   try {
     const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' });
     const link = document.createElement('a');
@@ -530,8 +525,6 @@ async function incSaveTroubleReportImage() {
   } catch (e) {
     showToast('สร้างภาพไม่ได้: ' + e.message, 'error');
   }
-  el.classList.remove('inc-trouble-capturing');
-  excludedRows.forEach(tr => tr.style.display = '');
 }
 
 // ===== Excel Import / Export / Template =====
