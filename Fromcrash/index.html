@@ -121,6 +121,10 @@
           <span class="nav-icon">🛠️</span>
           <span>บันทึกปัญหาการทำงาน</span>
         </a>
+        <a href="#" class="nav-item" data-page="tickets" onclick="showPage('tickets')">
+          <span class="nav-icon">🎫</span>
+          <span>บันทึกใบสั่ง</span>
+        </a>
         <a href="#" class="nav-item" data-page="alcohol" onclick="showPage('alcohol')">
           <span class="nav-icon">🍃</span>
           <span>เป่าวัดแอลกอฮอล์</span>
@@ -1756,6 +1760,120 @@
         </div>
       </div>
 
+      <!-- TICKETS PAGE (บันทึกใบสั่ง) -->
+      <div class="page" id="page-tickets">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🎫</div>
+            <div>
+              <h2>บันทึกใบสั่ง</h2>
+              <p>บันทึกและติดตามใบสั่งของรถ พร้อมข้อหาและค่าปรับ</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="tk-tab-list" onclick="tkSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="tk-tab-add" onclick="tkSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage active" id="tk-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ลานจอด</label>
+                <select id="tk-f-yard" onchange="tkRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="tk-f-search"
+                  placeholder="ทะเบียน / พนักงาน / ข้อหา..." oninput="tkRenderList()" /></div>
+              <button class="btn-secondary" onclick="tkClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="tkExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="tkImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="tkDownloadTemplate()">📋 Template</button>
+            </div>
+            <div class="ctxt" id="tk-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>วันที่</th>
+                    <th>ทะเบียน</th>
+                    <th>ชื่อพนักงาน</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
+                    <th>ข้อหา</th>
+                    <th>เงินที่ปรับ</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="tk-list-body">
+                  <tr>
+                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="tk-subpage-add">
+            <div class="edit-banner" id="tk-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขบันทึก <strong id="tk-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="tkCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลใบสั่ง</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date"
+                    id="tk-date" /></div>
+                <div class="form-group"><label>ทะเบียน <span class="req">*</span></label>
+                  <input type="text" id="tk-plate" list="tk-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..."
+                    oninput="tkLookupVehicle()" />
+                  <datalist id="tk-plate-list"></datalist>
+                </div>
+                <div class="form-group"><label>ชื่อพนักงาน</label>
+                  <input type="text" id="tk-employee" list="tk-employee-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="tk-employee-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="tk-bu" list="tk-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="tk-bu-list"></datalist>
+                </div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="tk-yard" list="tk-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="tk-yard-list"></datalist>
+                </div>
+                <div class="form-group"><label>เงินที่ปรับ (บาท)</label>
+                  <input type="number" step="0.01" min="0" id="tk-fine" placeholder="0.00" />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group" style="grid-column:1/-1;"><label>ข้อหา <span class="req">*</span></label>
+                  <input type="text" id="tk-charge" placeholder="ระบุข้อหา..." />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
+                  <textarea class="fta" id="tk-note" rows="3" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="tkClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="tkSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ALCOHOL TEST PAGE (บันทึกการเป่าวัดแอลกอฮอล์ - เฉพาะพนักงานลาน ABC) -->
       <div class="page" id="page-alcohol">
         <div class="form-section">
@@ -2819,6 +2937,7 @@
   <script src="masterdata-sync.js"></script>
   <script src="incidents.js"></script>
   <script src="issues.js"></script>
+  <script src="tickets.js"></script>
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
   <script src="gpscctv.js"></script>
