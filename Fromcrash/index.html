@@ -1801,20 +1801,26 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>เลขที่</th>
-                    <th>วันที่</th>
+                    <th>ลำดับที่</th>
+                    <th>วันที่กระทำผิด</th>
+                    <th>เวลา</th>
                     <th>ทะเบียน</th>
-                    <th>ชื่อพนักงาน</th>
+                    <th>พนักงานขับรถ</th>
                     <th>หน่วยงาน</th>
                     <th>ลานจอด</th>
+                    <th>เลขที่ใบสั่ง</th>
                     <th>ข้อหา</th>
-                    <th>เงินที่ปรับ</th>
+                    <th>สถานที่เกิดเหตุ</th>
+                    <th>วันที่รับใบสั่ง</th>
+                    <th>วันครบกำหนดชำระ</th>
+                    <th>จำนวนค่าปรับ</th>
+                    <th>หมายเหตุ</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="tk-list-body">
                   <tr>
-                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="15" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -1830,19 +1836,20 @@
             <div class="form-card">
               <div class="fieldset-title">ข้อมูลใบสั่ง</div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date"
+                <div class="form-group"><label>วันที่กระทำผิด <span class="req">*</span></label><input type="date"
                     id="tk-date" /></div>
+                <div class="form-group"><label>เวลา</label><input type="time" id="tk-time" /></div>
                 <div class="form-group"><label>ทะเบียน <span class="req">*</span></label>
                   <input type="text" id="tk-plate" list="tk-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..."
                     oninput="tkLookupVehicle()" />
                   <datalist id="tk-plate-list"></datalist>
                 </div>
-                <div class="form-group"><label>ชื่อพนักงาน</label>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>พนักงานขับรถ</label>
                   <input type="text" id="tk-employee" list="tk-employee-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
                   <datalist id="tk-employee-list"></datalist>
                 </div>
-              </div>
-              <div class="form-row-3">
                 <div class="form-group"><label>หน่วยงาน</label>
                   <input type="text" id="tk-bu" list="tk-bu-list" placeholder="พิมพ์หรือเลือก..." />
                   <datalist id="tk-bu-list"></datalist>
@@ -1851,13 +1858,23 @@
                   <input type="text" id="tk-yard" list="tk-yard-list" placeholder="พิมพ์หรือเลือก..." />
                   <datalist id="tk-yard-list"></datalist>
                 </div>
-                <div class="form-group"><label>เงินที่ปรับ (บาท)</label>
-                  <input type="number" step="0.01" min="0" id="tk-fine" placeholder="0.00" />
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>เลขที่ใบสั่ง</label>
+                  <input type="text" id="tk-ticketno" placeholder="ระบุเลขที่ใบสั่ง..." />
+                </div>
+                <div class="form-group"><label>ข้อหา <span class="req">*</span></label>
+                  <input type="text" id="tk-charge" placeholder="ระบุข้อหา..." />
+                </div>
+                <div class="form-group"><label>สถานที่เกิดเหตุ</label>
+                  <input type="text" id="tk-location" placeholder="ระบุสถานที่เกิดเหตุ..." />
                 </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group" style="grid-column:1/-1;"><label>ข้อหา <span class="req">*</span></label>
-                  <input type="text" id="tk-charge" placeholder="ระบุข้อหา..." />
+                <div class="form-group"><label>วันที่รับใบสั่ง</label><input type="date" id="tk-received" /></div>
+                <div class="form-group"><label>วันครบกำหนดชำระ</label><input type="date" id="tk-due" /></div>
+                <div class="form-group"><label>จำนวนค่าปรับ (บาท)</label>
+                  <input type="number" step="0.01" min="0" id="tk-fine" placeholder="0.00" />
                 </div>
               </div>
               <div class="form-row-3">

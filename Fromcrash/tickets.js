@@ -6,7 +6,8 @@ let tkEditingId = null;
 let tkRef = null;
 let tkReady = false;
 
-const TK_XLSX_HEADERS = ['เลขที่','วันที่','ทะเบียน','ชื่อพนักงาน','หน่วยงาน','ลานจอด','ข้อหา','เงินที่ปรับ','หมายเหตุ'];
+const TK_XLSX_HEADERS = ['ลำดับที่','วันที่กระทำผิด','เวลา','ทะเบียน','พนักงานขับรถ','หน่วยงาน','ลานจอด','เลขที่ใบสั่ง','ข้อหา','สถานที่เกิดเหตุ','วันที่รับใบสั่ง','วันครบกำหนดชำระ','จำนวนค่าปรับ','หมายเหตุ'];
+const TK_XLSX_COLWIDTHS = [8, 14, 10, 14, 18, 16, 12, 14, 20, 20, 14, 16, 12, 30];
 
 function tkSave() { localStorage.setItem('finflow_tickets', JSON.stringify(tickets)); }
 
@@ -69,15 +70,20 @@ function tkSaveCase() {
   const plate = document.getElementById('tk-plate').value.trim();
   const charge = document.getElementById('tk-charge').value.trim();
 
-  if (!date) { showToast('กรุณาระบุวันที่', 'warning'); return; }
+  if (!date) { showToast('กรุณาระบุวันที่กระทำผิด', 'warning'); return; }
   if (!plate) { showToast('กรุณาระบุทะเบียน', 'warning'); return; }
   if (!charge) { showToast('กรุณาระบุข้อหา', 'warning'); return; }
 
   const record = {
     date, plate, charge,
+    time: document.getElementById('tk-time').value,
     employeeName: document.getElementById('tk-employee').value.trim(),
     businessUnit: document.getElementById('tk-bu').value.trim(),
     yard: document.getElementById('tk-yard').value.trim(),
+    ticketNo: document.getElementById('tk-ticketno').value.trim(),
+    location: document.getElementById('tk-location').value.trim(),
+    receivedDate: document.getElementById('tk-received').value,
+    dueDate: document.getElementById('tk-due').value,
     fineAmount: parseFloat(document.getElementById('tk-fine').value) || 0,
     note: document.getElementById('tk-note').value.trim(),
   };
@@ -114,11 +120,16 @@ function tkClearForm() {
   tkEditingId = null;
   document.getElementById('tk-edit-banner').style.display = 'none';
   document.getElementById('tk-date').value = '';
+  document.getElementById('tk-time').value = '';
   document.getElementById('tk-plate').value = '';
   document.getElementById('tk-employee').value = '';
   document.getElementById('tk-bu').value = '';
   document.getElementById('tk-yard').value = '';
+  document.getElementById('tk-ticketno').value = '';
   document.getElementById('tk-charge').value = '';
+  document.getElementById('tk-location').value = '';
+  document.getElementById('tk-received').value = '';
+  document.getElementById('tk-due').value = '';
   document.getElementById('tk-fine').value = '';
   document.getElementById('tk-note').value = '';
 }
@@ -130,11 +141,16 @@ function tkEditCase(id) {
   document.getElementById('tk-edit-banner').style.display = 'flex';
   document.getElementById('tk-edit-no').textContent = rec.runningNo;
   document.getElementById('tk-date').value = rec.date || '';
+  document.getElementById('tk-time').value = rec.time || '';
   document.getElementById('tk-plate').value = rec.plate || '';
   document.getElementById('tk-employee').value = rec.employeeName || '';
   document.getElementById('tk-bu').value = rec.businessUnit || '';
   document.getElementById('tk-yard').value = rec.yard || '';
+  document.getElementById('tk-ticketno').value = rec.ticketNo || '';
   document.getElementById('tk-charge').value = rec.charge || '';
+  document.getElementById('tk-location').value = rec.location || '';
+  document.getElementById('tk-received').value = rec.receivedDate || '';
+  document.getElementById('tk-due').value = rec.dueDate || '';
   document.getElementById('tk-fine').value = rec.fineAmount || '';
   document.getElementById('tk-note').value = rec.note || '';
   tkSwitchTab('add');
@@ -158,7 +174,7 @@ function tkFilteredList() {
   const search = (document.getElementById('tk-f-search')?.value || '').toLowerCase().trim();
   return tickets.filter(t => {
     if (yard && t.yard !== yard) return false;
-    if (search && !(`${t.plate} ${t.employeeName} ${t.businessUnit} ${t.charge} ${t.note}`.toLowerCase().includes(search))) return false;
+    if (search && !(`${t.plate} ${t.employeeName} ${t.businessUnit} ${t.charge} ${t.ticketNo} ${t.location} ${t.note}`.toLowerCase().includes(search))) return false;
     return true;
   }).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
@@ -176,19 +192,25 @@ function tkRenderList() {
   const total = list.reduce((s, t) => s + (t.fineAmount || 0), 0);
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ · รวมค่าปรับ ${formatMoney(total)}`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="15" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(t => `
     <tr>
       <td>${t.runningNo}</td>
       <td>${formatDate(t.date)}</td>
+      <td>${escapeHtml(t.time || '-')}</td>
       <td style="font-family:monospace">${escapeHtml(t.plate || '-')}</td>
       <td>${escapeHtml(t.employeeName || '-')}</td>
       <td>${escapeHtml(t.businessUnit || '-')}</td>
       <td>${escapeHtml(t.yard || '-')}</td>
+      <td>${escapeHtml(t.ticketNo || '-')}</td>
       <td>${escapeHtml(t.charge || '-')}</td>
+      <td>${escapeHtml(t.location || '-')}</td>
+      <td>${formatDate(t.receivedDate)}</td>
+      <td>${formatDate(t.dueDate)}</td>
       <td>${formatMoney(t.fineAmount)}</td>
+      <td>${escapeHtml(t.note || '-')}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="action-btn action-view" onclick="tkEditCase('${t.id}')">แก้ไข</button>
@@ -203,10 +225,11 @@ function tkRenderList() {
 function tkExportExcel() {
   if (!tickets.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [TK_XLSX_HEADERS, ...tickets.map(t => [
-    t.runningNo, t.date, t.plate || '', t.employeeName || '', t.businessUnit || '', t.yard || '', t.charge || '', t.fineAmount || 0, t.note || '',
+    t.runningNo, t.date, t.time || '', t.plate || '', t.employeeName || '', t.businessUnit || '', t.yard || '',
+    t.ticketNo || '', t.charge || '', t.location || '', t.receivedDate || '', t.dueDate || '', t.fineAmount || 0, t.note || '',
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [8, 14, 14, 18, 16, 12, 20, 12, 30].map(w => ({ wch: w }));
+  ws['!cols'] = TK_XLSX_COLWIDTHS.map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'บันทึกใบสั่ง');
   XLSX.writeFile(wb, 'บันทึกใบสั่ง_' + new Date().toISOString().slice(0, 10) + '.xlsx');
@@ -216,10 +239,10 @@ function tkExportExcel() {
 function tkDownloadTemplate() {
   const sample = [
     TK_XLSX_HEADERS,
-    ['', '2026-01-15', '1กข 1234', 'สมชาย ใจดี', 'Trailer', 'ABC', 'จอดรถผิดที่', '500', 'ตัวอย่างหมายเหตุ'],
+    ['', '2026-01-15', '09:30', '1กข 1234', 'สมชาย ใจดี', 'Trailer', 'ABC', 'T-0001', 'จอดรถผิดที่', 'หน้าโรงงาน', '2026-01-16', '2026-01-31', '500', 'ตัวอย่างหมายเหตุ'],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
-  ws['!cols'] = [8, 14, 14, 18, 16, 12, 20, 12, 30].map(w => ({ wch: w }));
+  ws['!cols'] = TK_XLSX_COLWIDTHS.map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Template');
   XLSX.writeFile(wb, 'Template_บันทึกใบสั่ง.xlsx');
@@ -237,18 +260,23 @@ function tkImportExcel(evt) {
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       let added = 0;
       rows.slice(1).forEach(row => {
-        if (!row[2] && !row[3]) return;
+        if (!row[3] && !row[4]) return;
         const rec = {
           id: 'TK_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
           runningNo: tkNextRunningNo(),
           date: normalizeImportDate(row[1]),
-          plate: String(row[2] || '').trim(),
-          employeeName: String(row[3] || '').trim(),
-          businessUnit: String(row[4] || '').trim(),
-          yard: String(row[5] || '').trim(),
-          charge: String(row[6] || '').trim(),
-          fineAmount: parseFloat(row[7]) || 0,
-          note: String(row[8] || '').trim(),
+          time: String(row[2] || '').trim(),
+          plate: String(row[3] || '').trim(),
+          employeeName: String(row[4] || '').trim(),
+          businessUnit: String(row[5] || '').trim(),
+          yard: String(row[6] || '').trim(),
+          ticketNo: String(row[7] || '').trim(),
+          charge: String(row[8] || '').trim(),
+          location: String(row[9] || '').trim(),
+          receivedDate: normalizeImportDate(row[10]),
+          dueDate: normalizeImportDate(row[11]),
+          fineAmount: parseFloat(row[12]) || 0,
+          note: String(row[13] || '').trim(),
           createdAt: new Date().toISOString(),
         };
         tickets.push(rec);
