@@ -120,7 +120,7 @@ function tkClearForm() {
   tkEditingId = null;
   document.getElementById('tk-edit-banner').style.display = 'none';
   document.getElementById('tk-date').value = '';
-  document.getElementById('tk-time').value = '';
+  tmSetTimeValue('tk-time', '');
   document.getElementById('tk-plate').value = '';
   document.getElementById('tk-employee').value = '';
   document.getElementById('tk-bu').value = '';
@@ -141,7 +141,7 @@ function tkEditCase(id) {
   document.getElementById('tk-edit-banner').style.display = 'flex';
   document.getElementById('tk-edit-no').textContent = rec.runningNo;
   document.getElementById('tk-date').value = rec.date || '';
-  document.getElementById('tk-time').value = rec.time || '';
+  tmSetTimeValue('tk-time', rec.time || '');
   document.getElementById('tk-plate').value = rec.plate || '';
   document.getElementById('tk-employee').value = rec.employeeName || '';
   document.getElementById('tk-bu').value = rec.businessUnit || '';
@@ -214,11 +214,76 @@ function tkRenderList() {
       <td>
         <div style="display:flex;gap:6px">
           <button class="action-btn action-view" onclick="tkEditCase('${t.id}')">แก้ไข</button>
+          <button class="action-btn" onclick="tkShowMemoPrint('${t.id}')">🖨️ พิมพ์</button>
           <button class="action-btn action-delete" onclick="tkDeleteCase('${t.id}')">ลบ</button>
         </div>
       </td>
     </tr>
   `).join('');
+}
+
+// ===== พิมพ์บันทึกข้อความขออนุมัติหักเงิน (ต่อรายการใบสั่ง) =====
+function tkBuddhistDate(val) {
+  if (!val) return '............';
+  const d = new Date(val);
+  if (isNaN(d)) return '............';
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear() + 543}`;
+}
+
+function tkBuildMemoDoc(t) {
+  const timeDisplay = (t.time || '').replace(':', '.') || '............';
+  return `
+    <div class="print-doc">
+      ${companyLetterhead()}
+      <h1>บันทึกข้อความ</h1>
+      <div class="print-info" style="grid-template-columns:1fr 1fr;margin-top:6px;">
+        <div class="print-info-row"><span class="print-label">หน่วยงานความปลอดภัย</span></div>
+        <div class="print-info-row" style="justify-content:flex-end;"><span class="print-label" style="min-width:auto;">วันที่ ${tkBuddhistDate(new Date().toISOString().slice(0, 10))}</span></div>
+      </div>
+      <p class="print-body-text" style="text-indent:0;font-weight:700;">เรื่อง&nbsp;&nbsp;ขออนุมัติหักเงิน พนักงานขับรถฝ่าฝืนกฎหมายกำหนด</p>
+      <hr class="print-divider" />
+      <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ฝ่ายทรัพยากรบุคคล</p>
+      <p class="print-body-text" style="text-indent:0;font-weight:700;">สำเนาเรียน&nbsp;&nbsp;ผู้จัดการทั่วไป</p>
+      <p class="print-body-text" style="text-indent:0;">สิ่งที่ส่งมาด้วย&nbsp;&nbsp;1. สำเนาใบสั่งเจ้าพนักงานจราจร</p>
+      <p class="print-body-text">
+        เนื่องด้วย ${escapeHtml(t.employeeName || '............')} หน่วยงาน ${escapeHtml(t.businessUnit || '............')}
+        ลานจอด ${escapeHtml(t.yard || '............')}
+        ทะเบียน ${escapeHtml(t.plate || '............')} ปฏิบัติงาน เมื่อ วันที่ ${tkBuddhistDate(t.date)}
+        เวลา ${escapeHtml(timeDisplay)} น. <u>${escapeHtml(t.charge || '............')}</u>
+        หลักฐานตามเอกสารแนบ (ใบสั่งจราจร)
+      </p>
+      <p class="print-body-text">
+        เพื่อเป็นหลักฐานตกลงยินยอม ชดใช้ค่าใบสั่งเจ้าพนักงานจราจร ซึ่งเกิดจากการกระทำ ของพนักงาน
+        โดยมีค่าปรับจำนวน ${formatMoney(t.fineAmount).replace('฿', '')} บาท
+      </p>
+      <div class="print-sigs print-sigs-2">
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้บันทึก</div><div class="print-sig-name">(นางสาว บัณฑิตา ชูบุญ)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">พนักงาน</div><div class="print-sig-name">(${escapeHtml(t.employeeName || '')})</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">หัวหน้าลานจอด</div><div class="print-sig-name">(......................)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตรวจสอบ</div><div class="print-sig-name">(......................)</div></div>
+      </div>
+    </div>
+  `;
+}
+
+function tkShowMemoPrint(id) {
+  const t = tickets.find(x => x.id === id);
+  if (!t) return;
+  const html = tkBuildMemoDoc(t);
+  document.getElementById('modalTitle').textContent = `บันทึกข้อความขออนุมัติหักเงิน - ${escapeHtml(t.plate || '')}`;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('printModal').classList.add('show');
+  currentPrintFn = () => {
+    const el = document.getElementById('modalBody');
+    html2pdf().set({
+      margin: [8, 8, 8, 8],
+      filename: `บันทึกใบสั่ง_${t.plate || t.runningNo}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'avoid-all'] },
+    }).from(el).save();
+  };
 }
 
 // ===== Excel Export / Import / Template =====

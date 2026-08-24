@@ -1458,7 +1458,14 @@
                 </div>
                 <div class="form-group"><label>วันที่เกิดเหตุ <span class="req">*</span></label><input type="date"
                     id="inc-date" onchange="incUpdateAutoDate()" /></div>
-                <div class="form-group"><label>เวลา</label><input type="time" id="inc-time" /></div>
+                <div class="form-group"><label>เวลา (24 ชม.)</label>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <select class="fc" id="inc-time-h" style="width:72px;" onchange="tmSyncTimeHidden('inc-time')"></select>
+                    <span>:</span>
+                    <select class="fc" id="inc-time-m" style="width:72px;" onchange="tmSyncTimeHidden('inc-time')"></select>
+                  </div>
+                  <input type="hidden" id="inc-time" />
+                </div>
                 <div class="form-group"><label>วัน (คำนวณอัตโนมัติ)</label><input type="text" id="inc-day-of-week"
                     readonly /></div>
                 <div class="form-group"><label>เดือน (คำนวณอัตโนมัติ)</label><input type="text" id="inc-month-label"
@@ -1838,7 +1845,14 @@
               <div class="form-row-3">
                 <div class="form-group"><label>วันที่กระทำผิด <span class="req">*</span></label><input type="date"
                     id="tk-date" /></div>
-                <div class="form-group"><label>เวลา</label><input type="time" id="tk-time" /></div>
+                <div class="form-group"><label>เวลา (24 ชม.)</label>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <select class="fc" id="tk-time-h" style="width:72px;" onchange="tmSyncTimeHidden('tk-time')"></select>
+                    <span>:</span>
+                    <select class="fc" id="tk-time-m" style="width:72px;" onchange="tmSyncTimeHidden('tk-time')"></select>
+                  </div>
+                  <input type="hidden" id="tk-time" />
+                </div>
                 <div class="form-group"><label>ทะเบียน <span class="req">*</span></label>
                   <input type="text" id="tk-plate" list="tk-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..."
                     oninput="tkLookupVehicle()" />

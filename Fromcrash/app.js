@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   autoDocNo();
   syncRequesterDropdowns();
   updateThemeToggleIcon();
+  tmInitTimeSelect('inc-time');
+  tmInitTimeSelect('tk-time');
 });
 
 // ===== Theme (Dark / White) =====
@@ -949,6 +951,29 @@ function formatDate(val) {
   const d = new Date(val);
   if (isNaN(d)) return val;
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
+
+// ===== ช่องกรอกเวลาแบบ 24 ชม. (select ชั่วโมง/นาทีเอง) =====
+// input type="time" ของ browser จะโชว์ AM/PM หรือ 24 ชม. ตาม locale ของเครื่อง/เบราว์เซอร์ผู้ใช้แต่ละคน
+// ไม่ใช่ตาม lang ของหน้าเว็บ (ทดสอบแล้วว่า lang="th" บน input ไม่มีผล) จึงต้องทำ select เองเพื่อบังคับ 24 ชม. เสมอ
+function tmInitTimeSelect(id) {
+  const h = document.getElementById(`${id}-h`), m = document.getElementById(`${id}-m`);
+  if (h) h.innerHTML = '<option value="">--</option>' + Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map(v => `<option value="${v}">${v}</option>`).join('');
+  if (m) m.innerHTML = '<option value="">--</option>' + Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0')).map(v => `<option value="${v}">${v}</option>`).join('');
+}
+function tmSyncTimeHidden(id) {
+  const h = document.getElementById(`${id}-h`)?.value || '';
+  const m = document.getElementById(`${id}-m`)?.value || '';
+  const hidden = document.getElementById(id);
+  if (hidden) hidden.value = (h && m) ? `${h}:${m}` : '';
+}
+function tmSetTimeValue(id, val) {
+  const [h, m] = (val || '').split(':');
+  const hEl = document.getElementById(`${id}-h`), mEl = document.getElementById(`${id}-m`);
+  if (hEl) hEl.value = h || '';
+  if (mEl) mEl.value = m || '';
+  const hidden = document.getElementById(id);
+  if (hidden) hidden.value = val || '';
 }
 
 // แปลงตัวเลขเป็นข้อความจำนวนเงินภาษาไทย เช่น 23000 -> "สองหมื่นสามพันบาทถ้วน"

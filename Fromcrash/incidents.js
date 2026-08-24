@@ -229,8 +229,9 @@ function incClearForm() {
   ['inc-employee-name','inc-employee-age','inc-employee-tenure','inc-plate','inc-owner','inc-bu','inc-yard-auto','inc-insurance-auto',
    'inc-location','inc-description','inc-repair-shop','inc-repair-in','inc-repair-out','inc-repair-days','inc-score','inc-claim-no','inc-zone',
    'inc-remark-cost','inc-insurance-reported','inc-insurance-claim-status','inc-injury-status','inc-other-name','inc-other-phone','inc-other-plate',
-   'inc-suspension-days','inc-time','inc-day-of-week','inc-month-label'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+   'inc-suspension-days','inc-day-of-week','inc-month-label'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.querySelectorAll('.inc-cost').forEach(el => { el.value = ''; });
+  tmSetTimeValue('inc-time', '');
   document.getElementById('inc-date').value = new Date().toISOString().split('T')[0];
   document.getElementById('inc-tms-status').value = 'OK';
   document.getElementById('inc-damage-type').value = 'Accident';
@@ -250,7 +251,7 @@ function incEditCase(id) {
   document.getElementById('inc-tms-status').value = rec.tmsStatus || 'OK';
   document.getElementById('inc-damage-type').value = rec.damageType || 'Accident';
   document.getElementById('inc-date').value = rec.incidentDate || '';
-  document.getElementById('inc-time').value = rec.incidentTime || '';
+  tmSetTimeValue('inc-time', rec.incidentTime || '');
   document.getElementById('inc-employee-name').value = rec.employeeName || '';
   document.getElementById('inc-plate').value = rec.plate || '';
   document.getElementById('inc-owner').value = rec.owner || '';
