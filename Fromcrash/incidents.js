@@ -330,7 +330,7 @@ function incFilteredList() {
     if (status && i.caseStatus !== status) return false;
     if (q && !((i.plate||'').toLowerCase().includes(q) || (i.employeeName||'').toLowerCase().includes(q))) return false;
     return true;
-  }).sort((a, b) => new Date(b.incidentDate || 0) - new Date(a.incidentDate || 0));
+  }).sort((a, b) => new Date(b.createdAt || b.incidentDate || 0) - new Date(a.createdAt || a.incidentDate || 0));
 }
 
 function incClearListFilters() {
