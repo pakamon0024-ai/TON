@@ -1804,24 +1804,24 @@
             </div>
             <div class="ctxt" id="tk-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
-            <div class="recent-table-wrap">
+            <div class="recent-table-wrap tk-table-wrap">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>ลำดับที่</th>
-                    <th>วันที่กระทำผิด</th>
-                    <th>เวลา</th>
-                    <th>ทะเบียน</th>
-                    <th>พนักงานขับรถ</th>
-                    <th>หน่วยงาน</th>
-                    <th>ลานจอด</th>
-                    <th>เลขที่ใบสั่ง</th>
-                    <th>ข้อหา</th>
-                    <th>สถานที่เกิดเหตุ</th>
-                    <th>วันที่รับใบสั่ง</th>
-                    <th>วันครบกำหนดชำระ</th>
-                    <th>จำนวนค่าปรับ</th>
-                    <th>หมายเหตุ</th>
+                    <th class="tk-sortable" onclick="tkSortBy('runningNo')">ลำดับที่<span class="tk-sort-ind" id="tk-sort-ind-runningNo"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('date')">วันที่กระทำผิด<span class="tk-sort-ind" id="tk-sort-ind-date"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('time')">เวลา<span class="tk-sort-ind" id="tk-sort-ind-time"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('plate')">ทะเบียน<span class="tk-sort-ind" id="tk-sort-ind-plate"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('employeeName')">พนักงานขับรถ<span class="tk-sort-ind" id="tk-sort-ind-employeeName"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('businessUnit')">หน่วยงาน<span class="tk-sort-ind" id="tk-sort-ind-businessUnit"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('yard')">ลานจอด<span class="tk-sort-ind" id="tk-sort-ind-yard"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('ticketNo')">เลขที่ใบสั่ง<span class="tk-sort-ind" id="tk-sort-ind-ticketNo"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('charge')">ข้อหา<span class="tk-sort-ind" id="tk-sort-ind-charge"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('location')">สถานที่เกิดเหตุ<span class="tk-sort-ind" id="tk-sort-ind-location"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('receivedDate')">วันที่รับใบสั่ง<span class="tk-sort-ind" id="tk-sort-ind-receivedDate"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('dueDate')">วันครบกำหนดชำระ<span class="tk-sort-ind" id="tk-sort-ind-dueDate"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('fineAmount')">จำนวนค่าปรับ<span class="tk-sort-ind" id="tk-sort-ind-fineAmount"></span></th>
+                    <th class="tk-sortable" onclick="tkSortBy('note')">หมายเหตุ<span class="tk-sort-ind" id="tk-sort-ind-note"></span></th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>

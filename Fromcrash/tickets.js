@@ -5,6 +5,11 @@ let tickets = JSON.parse(localStorage.getItem('finflow_tickets') || '[]');
 let tkEditingId = null;
 let tkRef = null;
 let tkReady = false;
+let tkSortField = null; // null = ใช้ลำดับ default (วันที่กระทำผิดใหม่สุดก่อน)
+let tkSortDir = 1;
+
+const TK_NUMERIC_FIELDS = ['runningNo', 'fineAmount'];
+const TK_DATE_FIELDS = ['date', 'receivedDate', 'dueDate'];
 
 const TK_XLSX_HEADERS = ['ลำดับที่','วันที่กระทำผิด','เวลา','ทะเบียน','พนักงานขับรถ','หน่วยงาน','ลานจอด','เลขที่ใบสั่ง','ข้อหา','สถานที่เกิดเหตุ','วันที่รับใบสั่ง','วันครบกำหนดชำระ','จำนวนค่าปรับ','หมายเหตุ'];
 const TK_XLSX_COLWIDTHS = [8, 14, 10, 14, 18, 16, 12, 14, 20, 20, 14, 16, 12, 30];
@@ -172,11 +177,33 @@ function tkDeleteCase(id) {
 function tkFilteredList() {
   const yard = document.getElementById('tk-f-yard')?.value || '';
   const search = (document.getElementById('tk-f-search')?.value || '').toLowerCase().trim();
-  return tickets.filter(t => {
+  const filtered = tickets.filter(t => {
     if (yard && t.yard !== yard) return false;
     if (search && !(`${t.plate} ${t.employeeName} ${t.businessUnit} ${t.charge} ${t.ticketNo} ${t.location} ${t.note}`.toLowerCase().includes(search))) return false;
     return true;
-  }).sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  });
+  if (!tkSortField) return filtered.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+  return filtered.sort((a, b) => tkCompareValues(a, b, tkSortField) * tkSortDir);
+}
+
+function tkCompareValues(a, b, field) {
+  const av = a[field], bv = b[field];
+  if (TK_NUMERIC_FIELDS.includes(field)) return (av || 0) - (bv || 0);
+  if (TK_DATE_FIELDS.includes(field)) return new Date(av || 0) - new Date(bv || 0);
+  return String(av || '').localeCompare(String(bv || ''), 'th');
+}
+
+function tkSortBy(field) {
+  if (tkSortField === field) tkSortDir *= -1;
+  else { tkSortField = field; tkSortDir = 1; }
+  tkRenderList();
+}
+
+function tkUpdateSortIndicators() {
+  document.querySelectorAll('.tk-sort-ind').forEach(el => { el.textContent = ''; });
+  if (!tkSortField) return;
+  const ind = document.getElementById(`tk-sort-ind-${tkSortField}`);
+  if (ind) ind.textContent = tkSortDir === 1 ? '▲' : '▼';
 }
 
 function tkClearListFilters() {
@@ -189,6 +216,7 @@ function tkRenderList() {
   const tbody = document.getElementById('tk-list-body');
   const countEl = document.getElementById('tk-list-count');
   if (!tbody) return;
+  tkUpdateSortIndicators();
   const total = list.reduce((s, t) => s + (t.fineAmount || 0), 0);
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ · รวมค่าปรับ ${formatMoney(total)}`;
   if (list.length === 0) {

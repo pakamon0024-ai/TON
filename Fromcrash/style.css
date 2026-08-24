@@ -370,6 +370,14 @@ body {
   border-radius: var(--radius);
   overflow-x: auto;
 }
+/* ตารางบันทึกใบสั่งมีคอลัมน์เยอะ+แถวเยอะ — บีบความสูงให้อยู่ในจอ จะได้เจอ scrollbar แนวนอน
+   ที่ขอบล่างของกล่องเสมอ (ยังอยู่ในหน้าจอ) ไม่ต้องเลื่อนหน้าลงไปสุดตารางก่อนถึงจะเจอ */
+.tk-table-wrap { max-height: 65vh; overflow: auto; }
+.tk-table-wrap thead th { position: sticky; top: 0; z-index: 1; background: var(--bg-secondary); }
+.tk-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.tk-sortable:hover { color: var(--text-primary); }
+.tk-sort-ind { display: inline-block; width: 12px; font-size: 0.75em; opacity: 0.8; }
+
 .data-table { width: 100%; min-width: 560px; border-collapse: collapse; }
 .data-table th {
   background: var(--bg-secondary);
