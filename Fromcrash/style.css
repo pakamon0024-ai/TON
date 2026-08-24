@@ -858,6 +858,21 @@ body {
 .print-doc .print-sig-date { font-size: 10px; color: #666; margin-top: 2px; }
 .print-doc .print-body-text { margin: 6px 0; font-size: 12px; line-height: 1.7; text-indent: 2em; word-break: break-word; }
 
+/* บันทึกข้อความใบสั่ง — ตัวอักษรใหญ่ขึ้นและกระจายเนื้อหาให้เต็มหน้า A4 มากขึ้น (เอกสารนี้มีเนื้อหาน้อย
+   กว่าใบเงินสดย่อย/อนุมัติสำรองจ่ายที่ปรับให้พอดี 1 หน้าไว้แล้ว จึงแยก scope ไม่กระทบเอกสารอื่น) */
+.print-doc.tk-memo-doc { font-size: 16px; line-height: 1.8; padding: 22px 24px; }
+.print-doc.tk-memo-doc .letterhead-name-th { font-size: 18px; }
+.print-doc.tk-memo-doc .letterhead-name-en { font-size: 14px; }
+.print-doc.tk-memo-doc .letterhead-detail { font-size: 12px; }
+.print-doc.tk-memo-doc h1 { font-size: 24px; margin-bottom: 8px; }
+.print-doc.tk-memo-doc .print-divider { margin: 12px 0; border-top-width: 3px; }
+.print-doc.tk-memo-doc .print-info { font-size: 16px; margin-bottom: 10px; }
+.print-doc.tk-memo-doc .print-body-text { font-size: 16px; line-height: 1.95; margin: 13px 0; }
+.print-doc.tk-memo-doc .print-sigs { margin-top: 42px; gap: 30px; }
+.print-doc.tk-memo-doc .print-sig-line { margin: 38px 20px 8px; }
+.print-doc.tk-memo-doc .print-sig-label { font-size: 16px; }
+.print-doc.tk-memo-doc .print-sig-name { font-size: 16px; margin-top: 5px; }
+
 /* ===== Action Buttons in Table ===== */
 .action-btn {
   padding: 5px 10px; border-radius: 6px; border: none;

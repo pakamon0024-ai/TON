@@ -261,7 +261,7 @@ function tkBuddhistDate(val) {
 function tkBuildMemoDoc(t) {
   const timeDisplay = (t.time || '').replace(':', '.') || '............';
   return `
-    <div class="print-doc">
+    <div class="print-doc tk-memo-doc">
       ${companyLetterhead()}
       <h1>บันทึกข้อความ</h1>
       <div class="print-info" style="grid-template-columns:1fr 1fr;margin-top:6px;">
