@@ -194,6 +194,16 @@ function tkDeleteCase(id) {
   showToast('ลบแล้ว', 'warning');
 }
 
+function tkDeleteAllTickets() {
+  if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
+  if (!confirmDeleteWithPin(`ลบบันทึกใบสั่งทั้งหมด ${tickets.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  tickets = [];
+  tkSave();
+  tkPushIfReady();
+  tkRenderList();
+  showToast('ลบทั้งหมดเรียบร้อย', 'success');
+}
+
 // ===== Dashboard =====
 const TK_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
 const TK_CHART_TICK = { color: '#3d4f6d', font: TK_CHART_FONT };
@@ -431,12 +441,11 @@ function tkImportExcel(evt) {
       const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      let added = 0;
+      let added = 0, updated = 0;
+      const now = new Date().toISOString();
       rows.slice(1).forEach(row => {
         if (!row[3] && !row[4]) return;
-        const rec = {
-          id: 'TK_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-          runningNo: tkNextRunningNo(),
+        const data = {
           date: normalizeImportDate(row[1]),
           time: String(row[2] || '').trim(),
           plate: String(row[3] || '').trim(),
@@ -450,13 +459,27 @@ function tkImportExcel(evt) {
           dueDate: normalizeImportDate(row[11]),
           fineAmount: parseFloat(row[12]) || 0,
           note: String(row[13] || '').trim(),
-          createdAt: new Date().toISOString(),
         };
-        tickets.push(rec);
-        added++;
+        // จับคู่ด้วย "ลำดับที่" (คอลัมน์แรก) ถ้าไฟล์นี้มาจากการ Export ของระบบเอง — ถ้ามีเลขนี้อยู่แล้ว
+        // ให้แก้ไขรายการเดิมแทนการเพิ่มซ้ำ (รองรับ export ไปแก้แล้ว import กลับเข้ามา)
+        const rowNo = parseInt(row[0]);
+        const existingIdx = rowNo ? tickets.findIndex(t => t.runningNo === rowNo) : -1;
+        if (existingIdx >= 0) {
+          tickets[existingIdx] = { ...tickets[existingIdx], ...data, updatedAt: now };
+          updated++;
+        } else {
+          tickets.push({
+            id: 'TK_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+            runningNo: tkNextRunningNo(),
+            ...data,
+            createdAt: now,
+          });
+          added++;
+        }
       });
       tkSave(); tkPushIfReady(); tkRenderList();
-      showToast(`นำเข้า ${added} รายการ`, 'success');
+      const msg = [updated ? `แก้ไข ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
+      showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
     } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
     evt.target.value = '';
   };

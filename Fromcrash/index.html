@@ -1861,6 +1861,8 @@
                 <input type="file" accept=".xlsx,.xls" style="display:none" onchange="tkImportExcel(event)">
               </label>
               <button class="btn-secondary" onclick="tkDownloadTemplate()">📋 Template</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="tkDeleteAllTickets()">🗑️
+                ลบทั้งหมด</button>
             </div>
             <div class="ctxt" id="tk-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
