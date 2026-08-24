@@ -7,6 +7,7 @@ let tkRef = null;
 let tkReady = false;
 let tkSortField = null; // null = ใช้ลำดับ default (วันที่กระทำผิดใหม่สุดก่อน)
 let tkSortDir = 1;
+let tkCharts = {};
 
 const TK_NUMERIC_FIELDS = ['runningNo', 'fineAmount'];
 const TK_DATE_FIELDS = ['date', 'receivedDate', 'dueDate'];
@@ -18,10 +19,11 @@ function tkSave() { localStorage.setItem('finflow_tickets', JSON.stringify(ticke
 
 // ===== Sub-tabs =====
 function tkSwitchTab(tab) {
-  ['list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`tk-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`tk-subpage-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'dashboard') tkRenderDashboard();
   if (tab === 'list') tkRenderList();
   if (tab === 'add' && !tkEditingId) tkClearForm();
 }
@@ -171,6 +173,65 @@ function tkDeleteCase(id) {
   tkPushIfReady();
   tkRenderList();
   showToast('ลบแล้ว', 'warning');
+}
+
+// ===== Dashboard =====
+const TK_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
+const TK_CHART_TICK = { color: '#3d4f6d', font: TK_CHART_FONT };
+const TK_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
+const TK_DL_OPTS = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' }, formatter: v => v > 0 ? v : '' };
+const TK_CHART_COLORS = {
+  month:  { bg: 'rgba(67,97,238,0.85)',  border: '#4361ee' },
+  yard:   { bg: 'rgba(6,214,160,0.88)',  border: '#06d6a0' },
+  bu:     { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
+  charge: { bg: 'rgba(255,107,0,0.88)',  border: '#ff6b00' },
+};
+const TK_MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+function tkDestroyChart(id) {
+  if (tkCharts[id]) { tkCharts[id].destroy(); delete tkCharts[id]; }
+}
+
+function tkBarChart(canvasId, key, labels, data, maxRotation) {
+  tkDestroyChart(key);
+  tkCharts[key] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'จำนวนใบสั่ง', data, backgroundColor: TK_CHART_COLORS[key].bg, borderColor: TK_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: TK_DL_OPTS },
+      scales: {
+        y: { beginAtZero: true, grace: '15%', grid: TK_CHART_GRID, ticks: { ...TK_CHART_TICK, precision: 0 } },
+        x: { grid: { display: false }, ticks: { ...TK_CHART_TICK, maxRotation: maxRotation || 0 } },
+      },
+    },
+  });
+}
+
+function tkRenderDashboard() {
+  const curYear = new Date().getFullYear();
+  const monthCount = new Array(12).fill(0);
+  tickets.forEach(t => {
+    if (!t.date) return;
+    const d = new Date(t.date);
+    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
+  });
+  tkBarChart('tk-chart-month', 'month', TK_MONTH_LABELS_TH, monthCount);
+
+  const countBy = field => {
+    const map = {};
+    tickets.forEach(t => { const v = t[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  };
+
+  const yardSorted = countBy('yard');
+  tkBarChart('tk-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]));
+
+  const buSorted = countBy('businessUnit');
+  tkBarChart('tk-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]));
+
+  const chargeSorted = countBy('charge');
+  tkBarChart('tk-chart-charge', 'charge', chargeSorted.map(e => e[0]), chargeSorted.map(e => e[1]), 30);
 }
 
 // ===== List / Filter =====

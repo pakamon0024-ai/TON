@@ -1779,8 +1779,31 @@
           </div>
 
           <div class="subtabs">
+            <button class="subtab" id="tk-tab-dashboard" onclick="tkSwitchTab('dashboard')">📊 แดชบอร์ด</button>
             <button class="subtab active" id="tk-tab-list" onclick="tkSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="tk-tab-add" onclick="tkSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage" id="tk-subpage-dashboard">
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title">จำนวนใบสั่งรายเดือน</div>
+                <div class="chart-box"><canvas id="tk-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนใบสั่งตามลานจอด</div>
+                <div class="chart-box"><canvas id="tk-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนใบสั่งตามหน่วยงาน</div>
+                <div class="chart-box"><canvas id="tk-chart-bu"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนข้อหา</div>
+                <div class="chart-box"><canvas id="tk-chart-charge"></canvas></div>
+              </div>
+            </div>
           </div>
 
           <!-- LIST SUBPAGE -->
