@@ -231,7 +231,7 @@ function tkBarChart(canvasId, key, labels, data, maxRotation) {
       plugins: { legend: { display: false }, datalabels: TK_DL_OPTS },
       scales: {
         y: { beginAtZero: true, grace: '15%', grid: TK_CHART_GRID, ticks: { ...TK_CHART_TICK, precision: 0 } },
-        x: { grid: { display: false }, ticks: { ...TK_CHART_TICK, maxRotation: maxRotation || 0 } },
+        x: { grid: { display: false }, ticks: { ...TK_CHART_TICK, autoSkip: false, minRotation: maxRotation || 0, maxRotation: maxRotation || 0 } },
       },
     },
   });
@@ -254,10 +254,10 @@ function tkRenderDashboard() {
   };
 
   const yardSorted = countBy('yard');
-  tkBarChart('tk-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]));
+  tkBarChart('tk-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), 30);
 
   const buSorted = countBy('businessUnit');
-  tkBarChart('tk-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]));
+  tkBarChart('tk-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]), 30);
 
   const chargeSorted = countBy('charge');
   tkBarChart('tk-chart-charge', 'charge', chargeSorted.map(e => e[0]), chargeSorted.map(e => e[1]), 30);
