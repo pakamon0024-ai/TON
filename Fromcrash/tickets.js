@@ -54,6 +54,7 @@ function tkRefreshLookupDropdowns() {
   tkFillDatalist('tk-plate-list', (mdVehicles || []).map(v => v.plate).filter(Boolean));
   tkFillDatalist('tk-bu-list', mdBusinessUnits);
   tkFillDatalist('tk-yard-list', mdYards);
+  tkFillDatalist('tk-charge-list', mdChargeTypes);
   tkFillSelect('tk-f-yard', mdYards);
 }
 
@@ -64,6 +65,24 @@ function tkLookupVehicle() {
     if (veh.businessUnit) document.getElementById('tk-bu').value = veh.businessUnit;
     if (veh.yard) document.getElementById('tk-yard').value = veh.yard;
   }
+}
+
+function tkQuickAddCharge() {
+  const name = (prompt('เพิ่มข้อหาใหม่:') || '').trim();
+  if (!name) return;
+  if (typeof addChargeTypeDB !== 'function') return;
+  const nameInput = document.getElementById('md-charge-name');
+  if (nameInput) {
+    nameInput.value = name;
+    addChargeTypeDB();
+  } else if (!mdChargeTypes.includes(name)) {
+    mdChargeTypes.push(name);
+    saveChargeTypesDB();
+    tkRefreshLookupDropdowns();
+    if (typeof mdPushIfReady === 'function') mdPushIfReady();
+  }
+  const chargeInput = document.getElementById('tk-charge');
+  if (chargeInput) chargeInput.value = name;
 }
 
 // ===== Running number =====
@@ -379,8 +398,8 @@ function tkShowMemoPrint(id) {
 function tkExportExcel() {
   if (!tickets.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [TK_XLSX_HEADERS, ...tickets.map(t => [
-    t.runningNo, t.date, t.time || '', t.plate || '', t.employeeName || '', t.businessUnit || '', t.yard || '',
-    t.ticketNo || '', t.charge || '', t.location || '', t.receivedDate || '', t.dueDate || '', t.fineAmount || 0, t.note || '',
+    t.runningNo, formatDMY(t.date), t.time || '', t.plate || '', t.employeeName || '', t.businessUnit || '', t.yard || '',
+    t.ticketNo || '', t.charge || '', t.location || '', formatDMY(t.receivedDate), formatDMY(t.dueDate), t.fineAmount || 0, t.note || '',
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = TK_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -393,7 +412,7 @@ function tkExportExcel() {
 function tkDownloadTemplate() {
   const sample = [
     TK_XLSX_HEADERS,
-    ['', '2026-01-15', '09:30', '1กข 1234', 'สมชาย ใจดี', 'Trailer', 'ABC', 'T-0001', 'จอดรถผิดที่', 'หน้าโรงงาน', '2026-01-16', '2026-01-31', '500', 'ตัวอย่างหมายเหตุ'],
+    ['', '15/01/2026', '09:30', '1กข 1234', 'สมชาย ใจดี', 'Trailer', 'ABC', 'T-0001', 'จอดรถผิดที่', 'หน้าโรงงาน', '16/01/2026', '31/01/2026', '500', 'ตัวอย่างหมายเหตุ'],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   ws['!cols'] = TK_XLSX_COLWIDTHS.map(w => ({ wch: w }));

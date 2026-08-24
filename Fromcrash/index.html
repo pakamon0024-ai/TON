@@ -607,6 +607,7 @@
             <button class="subtab" id="md-tab-yard" onclick="mdSwitchTopic('yard')">🅿️ ลานจอด</button>
             <button class="subtab" id="md-tab-pattern" onclick="mdSwitchTopic('pattern')">💥 ลักษณะการเกิดเหตุ</button>
             <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
+            <button class="subtab" id="md-tab-charge" onclick="mdSwitchTopic('charge')">🎫 ข้อหา (ใบสั่ง)</button>
             <button class="subtab" id="md-tab-abcstaff" onclick="mdSwitchTopic('abcstaff')">🍃 พนักงานลาน ABC</button>
             <button class="subtab" id="md-tab-bz" onclick="mdSwitchTopic('bz')">🫁 เครื่องเป่าแอลกอฮอล์</button>
             <button class="subtab" id="md-tab-customer" onclick="mdSwitchTopic('customer')">🏢 ชื่อลูกค้า</button>
@@ -925,6 +926,42 @@
                     </tr>
                   </thead>
                   <tbody id="md-topic-body">
+                    <tr>
+                      <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ticket Charge Types -->
+          <div class="subpage" id="md-subpage-charge">
+            <div class="form-card" style="margin-bottom:24px;">
+              <div class="items-header">
+                <h3>🎫 ข้อหา (สำหรับบันทึกใบสั่ง)</h3>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>ข้อหา</label>
+                  <input type="text" id="md-charge-name" placeholder="เช่น จอดรถผิดที่"
+                    onkeydown="if(event.key==='Enter') addChargeTypeDB()" />
+                </div>
+              </div>
+              <div class="form-actions" style="justify-content:flex-start;">
+                <button class="btn-primary" onclick="addChargeTypeDB()">+ เพิ่มข้อหา</button>
+                <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllChargeTypesDB()">🗑️
+                  ลบทั้งหมด</button>
+              </div>
+              <div class="recent-table-wrap" style="margin-top:16px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>ข้อหา</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="md-charge-body">
                     <tr>
                       <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
                     </tr>
@@ -1901,7 +1938,11 @@
                   <input type="text" id="tk-ticketno" placeholder="ระบุเลขที่ใบสั่ง..." />
                 </div>
                 <div class="form-group"><label>ข้อหา <span class="req">*</span></label>
-                  <input type="text" id="tk-charge" placeholder="ระบุข้อหา..." />
+                  <div style="display:flex; gap:6px;">
+                    <input type="text" id="tk-charge" list="tk-charge-list" placeholder="พิมพ์หรือเลือก..." style="flex:1;" />
+                    <datalist id="tk-charge-list"></datalist>
+                    <button type="button" class="btn-secondary" title="เพิ่มข้อหาใหม่" onclick="tkQuickAddCharge()">+</button>
+                  </div>
                 </div>
                 <div class="form-group"><label>สถานที่เกิดเหตุ</label>
                   <input type="text" id="tk-location" placeholder="ระบุสถานที่เกิดเหตุ..." />

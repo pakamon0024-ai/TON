@@ -44,12 +44,30 @@ function normalizeImportDate(val) {
   }
   const s = String(val).trim();
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  // รูปแบบ dd/mm/yyyy (มาตรฐาน export ของระบบ) — ต้องจับก่อน new Date(s) เสมอ เพราะ
+  // JS แปลง "05/01/2026" แบบ slash เป็น MM/DD/YYYY (เดือน/วัน) ไม่ใช่ DD/MM/YYYY จะได้วันที่ผิดแบบเงียบๆ
+  const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (dmy) {
+    const day = parseInt(dmy[1], 10), month = parseInt(dmy[2], 10), year = parseInt(dmy[3], 10);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
   const d = new Date(s);
   if (!isNaN(d)) {
     const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, '0'), dd = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${dd}`;
   }
   return '';
+}
+
+// แปลงวันที่ (ISO 'YYYY-MM-DD' หรือค่าอื่นที่ new Date() อ่านได้) เป็นข้อความ dd/mm/yyyy
+// ใช้ตอนเขียนไฟล์ Excel (Export/Template) ให้ทุกเมนูแสดงวันที่รูปแบบเดียวกัน
+function formatDMY(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (isNaN(d)) return '';
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
 function readExcelRows(file, callback) {
@@ -145,8 +163,8 @@ function renderDriversTable() {
 
 function downloadDriverTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ชื่อพนักงาน', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)'],
-    ['นายสมชาย ใจดี', '1990-05-12', '2020-01-15'],
+    ['ชื่อพนักงาน', 'วันเกิด (dd/mm/yyyy)', 'วันเริ่มงาน (dd/mm/yyyy)'],
+    ['นายสมชาย ใจดี', '12/05/1990', '15/01/2020'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'พนักงานขับรถ');
@@ -156,8 +174,8 @@ function downloadDriverTemplate() {
 function exportDriverExcel() {
   if (mdDrivers.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['ชื่อพนักงาน', 'วันเกิด (YYYY-MM-DD)', 'วันเริ่มงาน (YYYY-MM-DD)'],
-    ...mdDrivers.map(d => [d.name, d.birthDate || '', d.startDate || '']),
+    ['ชื่อพนักงาน', 'วันเกิด (dd/mm/yyyy)', 'วันเริ่มงาน (dd/mm/yyyy)'],
+    ...mdDrivers.map(d => [d.name, formatDMY(d.birthDate), formatDMY(d.startDate)]),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -262,8 +280,8 @@ function renderVehiclesTable() {
 
 function downloadVehicleTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง (YYYY-MM-DD)', 'CCTV วันที่ติดตั้ง (YYYY-MM-DD)'],
-    ['70-1234', 'AP', '2018-03-01', '2026-01-15', '2026-01-15'],
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (dd/mm/yyyy)', 'GPS วันที่ติดตั้ง (dd/mm/yyyy)', 'CCTV วันที่ติดตั้ง (dd/mm/yyyy)'],
+    ['70-1234', 'AP', '01/03/2018', '15/01/2026', '15/01/2026'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ทะเบียนรถ');
@@ -273,8 +291,8 @@ function downloadVehicleTemplate() {
 function exportVehicleExcel() {
   if (mdVehicles.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (YYYY-MM-DD)', 'GPS วันที่ติดตั้ง (YYYY-MM-DD)', 'CCTV วันที่ติดตั้ง (YYYY-MM-DD)'],
-    ...mdVehicles.map(v => [v.plate, v.owner || '', v.registerDate || '', v.gpsInstallDate || '', v.cctvInstallDate || '']),
+    ['ทะเบียนรถ', 'เจ้าของรถ (AP/Subcontractor)', 'วันที่จดทะเบียน (dd/mm/yyyy)', 'GPS วันที่ติดตั้ง (dd/mm/yyyy)', 'CCTV วันที่ติดตั้ง (dd/mm/yyyy)'],
+    ...mdVehicles.map(v => [v.plate, v.owner || '', formatDMY(v.registerDate), formatDMY(v.gpsInstallDate), formatDMY(v.cctvInstallDate)]),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -687,6 +705,51 @@ function renderIssueTopicsTable() {
   `).join('');
 }
 
+// ===== ข้อหา (สำหรับ "บันทึกใบสั่ง" - tickets.js) =====
+let mdChargeTypes = JSON.parse(localStorage.getItem('finflow_charge_types_db') || '[]');
+function saveChargeTypesDB() { localStorage.setItem('finflow_charge_types_db', JSON.stringify(mdChargeTypes)); }
+
+function addChargeTypeDB() {
+  const input = document.getElementById('md-charge-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdChargeTypes.includes(name)) { showToast('มีข้อหานี้อยู่แล้ว', 'warning'); return; }
+  mdChargeTypes.push(name);
+  saveChargeTypesDB();
+  input.value = ''; input.focus();
+  renderChargeTypesTable();
+  if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มข้อหาแล้ว', 'success');
+}
+function deleteChargeTypeDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
+  mdChargeTypes = mdChargeTypes.filter(n => n !== name);
+  saveChargeTypesDB();
+  renderChargeTypesTable();
+  if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function deleteAllChargeTypesDB() {
+  if (!mdConfirmDeleteAll('ข้อหา')) return;
+  mdChargeTypes = [];
+  saveChargeTypesDB();
+  renderChargeTypesTable();
+  if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบข้อหาทั้งหมดแล้ว', 'warning');
+}
+
+function renderChargeTypesTable() {
+  const tbody = document.getElementById('md-charge-body');
+  if (!tbody) return;
+  if (mdChargeTypes.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = mdChargeTypes.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteChargeTypeDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
 // ===== พนักงานลาน ABC (สำหรับ "บันทึกการเป่าวัดแอลกอฮอล์" - alcohol.js) =====
 // แยกรายชื่อออกจากพนักงานขับรถหลัก เพราะบันทึกเฉพาะพนักงานลาน ABC ลานเดียว
 // (เมนูบันทึกอื่นๆ เช่น อุบัติเหตุ ใช้รายชื่อพนักงานขับรถทุกลาน)
@@ -847,8 +910,8 @@ function renderBreathalyzersTable() {
 
 function downloadBreathalyzerTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['เลขเครื่อง', 'ทะเบียนรถ', 'เจ้าของรถ', 'รับวันไหน (YYYY-MM-DD)', 'คืนวันไหน (YYYY-MM-DD)', 'หมายเหตุ'],
-    ['BZ-001', '70-1234', 'นายสมชาย ใจดี', '2026-01-10', '', ''],
+    ['เลขเครื่อง', 'ทะเบียนรถ', 'เจ้าของรถ', 'รับวันไหน (dd/mm/yyyy)', 'คืนวันไหน (dd/mm/yyyy)', 'หมายเหตุ'],
+    ['BZ-001', '70-1234', 'นายสมชาย ใจดี', '10/01/2026', '', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'เครื่องเป่าแอลกอฮอล์');
@@ -858,8 +921,8 @@ function downloadBreathalyzerTemplate() {
 function exportBreathalyzerExcel() {
   if (mdBreathalyzers.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['เลขเครื่อง', 'ทะเบียนรถ', 'เจ้าของรถ', 'รับวันไหน (YYYY-MM-DD)', 'คืนวันไหน (YYYY-MM-DD)', 'หมายเหตุ'],
-    ...mdBreathalyzers.map(b => [b.deviceNo, b.plate || '', b.owner || '', b.receiveDate || '', b.returnDate || '', b.note || '']),
+    ['เลขเครื่อง', 'ทะเบียนรถ', 'เจ้าของรถ', 'รับวันไหน (dd/mm/yyyy)', 'คืนวันไหน (dd/mm/yyyy)', 'หมายเหตุ'],
+    ...mdBreathalyzers.map(b => [b.deviceNo, b.plate || '', b.owner || '', formatDMY(b.receiveDate), formatDMY(b.returnDate), b.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -952,7 +1015,7 @@ function renderCategoriesTable() {
 }
 
 // ===== เลือกหัวข้อที่จะบันทึก (แสดงเฉพาะส่วนที่เลือก) =====
-const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'abcstaff', 'bz', 'customer', 'requester', 'category', 'telegram'];
+const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'charge', 'abcstaff', 'bz', 'customer', 'requester', 'category', 'telegram'];
 function mdSwitchTopic(topic) {
   MD_TOPICS.forEach(t => {
     document.getElementById(`md-tab-${t}`).classList.toggle('active', t === topic);
@@ -972,6 +1035,7 @@ function renderMasterData() {
   renderYardsTable();
   renderIncidentPatternsTable();
   renderIssueTopicsTable();
+  renderChargeTypesTable();
   renderAbcStaffTable();
   renderBreathalyzersTable();
   renderRequestersTable();

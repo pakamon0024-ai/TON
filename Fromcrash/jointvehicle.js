@@ -244,9 +244,9 @@ function jvRenderList() {
 
 // ===== Excel Template / Export / Import (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+วันที่สมัคร) =====
 const JV_XLSX_HEADERS = [
-  'ประเภท (สมัคร/ลาออก)', 'ทะเบียนรถ', 'เจ้าของรถ', 'วันที่สมัครเข้าร่วม (YYYY-MM-DD)',
+  'ประเภท (สมัคร/ลาออก)', 'ทะเบียนรถ', 'เจ้าของรถ', 'วันที่สมัครเข้าร่วม (dd/mm/yyyy)',
   'บัตรประชาชนเจ้าของรถ', 'บัตรประชาชนคนขับ', 'ทะเบียนบ้าน', 'ใบขับขี่คนขับ', 'ประกันรถ', 'พรบ.', 'ประกันสินค้า',
-  'วันที่ทำงานวันสุดท้าย (YYYY-MM-DD)', 'วันที่ลาออก (YYYY-MM-DD)', 'วันที่ถอดอุปกรณ์ (YYYY-MM-DD)',
+  'วันที่ทำงานวันสุดท้าย (dd/mm/yyyy)', 'วันที่ลาออก (dd/mm/yyyy)', 'วันที่ถอดอุปกรณ์ (dd/mm/yyyy)',
   'ถอด GPS', 'ถอด CCTV', 'ถอดเครื่องเป่าแอลกอฮอล์', 'คืนบัตรน้ำมัน', 'ถอดสติ๊กเกอร์',
   'ค่าใช้จ่ายถอด GPS', 'ค่าใช้จ่ายถอด CCTV', 'ค่าใช้จ่ายถอดเครื่องเป่าแอลกอฮอล์', 'หมายเหตุ',
 ];
@@ -254,8 +254,8 @@ const JV_XLSX_HEADERS = [
 function jvDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     JV_XLSX_HEADERS,
-    ['สมัคร', '70-1234', 'นายสมชาย ใจดี', '2026-01-15', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', '', '', '', '', '', '', '', '', 0, 0, 0, ''],
-    ['ลาออก', '70-5678', 'นายสมหมาย ตั้งใจ', '', '', '', '', '', '', '', '', '2026-06-01', '2026-06-10', '2026-06-12', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 500, 300, 200, ''],
+    ['สมัคร', '70-1234', 'นายสมชาย ใจดี', '15/01/2026', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', '', '', '', '', '', '', '', '', 0, 0, 0, ''],
+    ['ลาออก', '70-5678', 'นายสมหมาย ตั้งใจ', '', '', '', '', '', '', '', '', '01/06/2026', '10/06/2026', '12/06/2026', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 'TRUE', 500, 300, 200, ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'รถร่วม');
@@ -268,9 +268,9 @@ function jvExportExcel() {
   const rows = [
     JV_XLSX_HEADERS,
     ...list.map(r => [
-      r.type === 'leave' ? 'ลาออก' : 'สมัคร', r.plate, r.owner || '', r.joinDate || '',
+      r.type === 'leave' ? 'ลาออก' : 'สมัคร', r.plate, r.owner || '', formatDMY(r.joinDate),
       !!r.docIdOwner, !!r.docIdDriver, !!r.docHouseReg, !!r.docLicense, !!r.docVehIns, !!r.docCompulsory, !!r.docCargoIns,
-      r.lastWorkDate || '', r.leaveDate || '', r.equipRemoveDate || '',
+      formatDMY(r.lastWorkDate), formatDMY(r.leaveDate), formatDMY(r.equipRemoveDate),
       !!r.leaveGps, !!r.leaveCctv, !!r.leaveBreath, !!r.leaveFuelCard, !!r.leaveSticker,
       r.costGps || 0, r.costCctv || 0, r.costBreath || 0, r.note || '',
     ]),

@@ -283,7 +283,7 @@ function alcExportListExcel() {
   const rows = [
     ['เลขที่', 'วันที่', 'เวลา', 'พนักงาน', 'หน่วยงาน', 'ผลตรวจ (ขาไป)', 'ผลตรวจ (ขากลับ)', 'ค่าที่วัดได้ (มก.)', 'หมายเหตุ'],
     ...list.map(t => [
-      t.runningNo, t.date, t.time || '', t.employee, t.businessUnit || '',
+      t.runningNo, formatDMY(t.date), t.time || '', t.employee, t.businessUnit || '',
       t.resultOut || t.result || '', t.resultReturn || '', t.level ?? ALC_FIXED_LEVEL, t.note || '',
     ]),
   ];

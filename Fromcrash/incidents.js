@@ -534,7 +534,7 @@ const INC_XLSX_HEADERS = ['เลขที่','สถานะTMS','ประ�
 function incDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     INC_XLSX_HEADERS,
-    ['1','OK','Accident','2026-01-15','09:30','นายสมชาย ใจดี','70-1234','หน้าโรงงาน','รถชนท้าย','ผิด','On the way','เฉี่ยวชน','ทั่วไป','อู่ ก','2026-01-16','2026-01-20','5','CL-001','โซน1','15000','15000','0','0','0','0','15000','15000','อนุมัติ','','ไม่มี','','','','Closed','0','วิริยะ','ลานจอด A','หน่วยงาน 1'],
+    ['1','OK','Accident','15/01/2026','09:30','นายสมชาย ใจดี','70-1234','หน้าโรงงาน','รถชนท้าย','ผิด','On the way','เฉี่ยวชน','ทั่วไป','อู่ ก','16/01/2026','20/01/2026','5','CL-001','โซน1','15000','15000','0','0','0','0','15000','15000','อนุมัติ','','ไม่มี','','','','Closed','0','วิริยะ','ลานจอด A','หน่วยงาน 1'],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'บันทึกอุบัติเหตุ');
@@ -544,8 +544,8 @@ function incDownloadTemplate() {
 function incExportExcel() {
   if (!incidents.length) { showToast('ไม่มีข้อมูล', 'error'); return; }
   const rows = incidents.map(i => [
-    i.runningNo, i.tmsStatus, i.damageType, i.incidentDate, i.incidentTime, i.employeeName, i.plate, i.location, i.description,
-    i.faultStatus, incNormalizeArea(i.area), i.incidentPattern, i.severity, i.repairShop, i.repairInDate, i.repairOutDate, i.score, i.claimNo, i.zone,
+    i.runningNo, i.tmsStatus, i.damageType, formatDMY(i.incidentDate), i.incidentTime, i.employeeName, i.plate, i.location, i.description,
+    i.faultStatus, incNormalizeArea(i.area), i.incidentPattern, i.severity, i.repairShop, formatDMY(i.repairInDate), formatDMY(i.repairOutDate), i.score, i.claimNo, i.zone,
     i.companyDamageCost, i.companyPaid, i.towingCost, i.chargedToCustomer, i.chargedToEmployee, i.advanceAmount, i.insurancePaid,
     i.insuranceReportedAmount, i.insuranceClaimStatus, i.remarkCost, i.injuryStatus, i.otherPartyName, i.otherPartyPhone, i.otherPartyPlate,
     i.caseStatus, i.suspensionDays, i.insuranceCompany, i.yard, i.businessUnit,

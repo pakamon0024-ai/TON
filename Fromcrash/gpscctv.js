@@ -384,8 +384,8 @@ function grRenderList() {
 // ===== Excel: ติดตั้ง/ถอด (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่ติดตั้ง) =====
 function gcDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'บริษัท', 'วันที่ติดตั้ง (YYYY-MM-DD)', 'วันที่ถอด (YYYY-MM-DD)', 'หมายเหตุ'],
-    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'บริษัท ตัวอย่าง จำกัด', '2026-01-15', '', ''],
+    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'บริษัท', 'วันที่ติดตั้ง (dd/mm/yyyy)', 'วันที่ถอด (dd/mm/yyyy)', 'หมายเหตุ'],
+    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'บริษัท ตัวอย่าง จำกัด', '15/01/2026', '', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'ติดตั้ง-ถอด');
@@ -397,7 +397,7 @@ function gcExportExcel() {
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
     ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'บริษัท', 'วันที่ติดตั้ง', 'วันที่ถอด', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', r.installDate || '', r.removeDate || '', r.note || '']),
+    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.company || '', formatDMY(r.installDate), formatDMY(r.removeDate), r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -436,8 +436,8 @@ function gcImportExcel(event) {
 // ===== Excel: แจ้งซ่อม (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่นัดซ่อม) =====
 function grDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'อาการ', 'วันที่นัดซ่อม (YYYY-MM-DD)', 'วันที่ช่างมาซ่อม (YYYY-MM-DD)', 'หมายเหตุ'],
-    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'สัญญาณขาดหาย', '2026-02-01', '', ''],
+    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'อาการ', 'วันที่นัดซ่อม (dd/mm/yyyy)', 'วันที่ช่างมาซ่อม (dd/mm/yyyy)', 'หมายเหตุ'],
+    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'สัญญาณขาดหาย', '01/02/2026', '', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'แจ้งซ่อม');
@@ -449,7 +449,7 @@ function grExportExcel() {
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
     ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'อาการ', 'วันที่นัดซ่อม', 'วันที่ช่างมาซ่อม', 'สถานะ', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.symptom || '', r.appointmentDate || '', r.repairDate || '', grStatusOf(r) === 'done' ? 'ซ่อมเสร็จแล้ว' : 'รอซ่อม', r.note || '']),
+    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.symptom || '', formatDMY(r.appointmentDate), formatDMY(r.repairDate), grStatusOf(r) === 'done' ? 'ซ่อมเสร็จแล้ว' : 'รอซ่อม', r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();

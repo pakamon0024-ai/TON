@@ -215,7 +215,7 @@ function wiRenderList() {
 function wiExportExcel() {
   if (!workIssues.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [WI_XLSX_HEADERS, ...workIssues.map(i => [
-    i.runningNo, i.date, i.topic||'', i.driverName||'', i.plate||'', i.businessUnit||'', i.yard||'', i.detail||''
+    i.runningNo, formatDMY(i.date), i.topic||'', i.driverName||'', i.plate||'', i.businessUnit||'', i.yard||'', i.detail||''
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [8, 14, 20, 18, 14, 18, 14, 36].map(w => ({ wch: w }));
@@ -228,7 +228,7 @@ function wiExportExcel() {
 function wiDownloadTemplate() {
   const sample = [
     WI_XLSX_HEADERS,
-    ['', '2025-01-15', 'GPS', 'สมชาย ใจดี', '1กข 1234', 'Trailer', 'ABC', 'ตัวอย่างรายละเอียดปัญหาที่พบ']
+    ['', '15/01/2025', 'GPS', 'สมชาย ใจดี', '1กข 1234', 'Trailer', 'ABC', 'ตัวอย่างรายละเอียดปัญหาที่พบ']
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   ws['!cols'] = [8, 14, 20, 18, 14, 18, 14, 36].map(w => ({ wch: w }));
@@ -244,7 +244,7 @@ function wiImportExcel(evt) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
       let added = 0;
@@ -253,7 +253,7 @@ function wiImportExcel(evt) {
         const rec = {
           id: 'WI_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
           runningNo: wiNextRunningNo(),
-          date: String(row[1] || '').trim(),
+          date: normalizeImportDate(row[1]),
           topic: String(row[2] || '').trim(),
           driverName: String(row[3] || '').trim(),
           plate: String(row[4] || '').trim(),
@@ -270,7 +270,7 @@ function wiImportExcel(evt) {
     } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
     evt.target.value = '';
   };
-  reader.readAsBinaryString(file);
+  reader.readAsArrayBuffer(file);
 }
 
 // ===== Firebase Sync =====
