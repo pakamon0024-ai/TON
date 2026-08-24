@@ -18,7 +18,7 @@ function grSave() { localStorage.setItem('finflow_gpscctv_repairs', JSON.stringi
 
 // ===== Sub-tabs (4 แท็บ ใช้ตัวสลับร่วมกัน) =====
 function gcSwitchTab(tab) {
-  ['list', 'add', 'replist', 'repadd'].forEach(t => {
+  ['list', 'add', 'replist', 'repadd', 'live'].forEach(t => {
     document.getElementById(`gc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gc-subpage-${t}`).classList.toggle('active', t === tab);
   });
@@ -26,6 +26,7 @@ function gcSwitchTab(tab) {
   if (tab === 'add' && !gcEditingId) gcClearForm();
   if (tab === 'replist') grRenderList();
   if (tab === 'repadd' && !grEditingId) grClearForm();
+  if (tab === 'live') gcRenderLiveTable();
 }
 
 function gcOnPageShown() { gcRenderList(); grRenderList(); }
@@ -544,3 +545,92 @@ document.addEventListener('DOMContentLoaded', () => {
   grRenderList();
   gcInit();
 });
+
+// ===== EUP GPS Live Tracking (ดึงตำแหน่ง/สถานะรถสดจาก API ของผู้ให้บริการ GPS) =====
+// หมายเหตุ: เว็บนี้เป็น static site ไม่มี backend ของตัวเอง จึงเรียก API ตรงจากเบราว์เซอร์ผู้ใช้
+// token ด้านล่างจะฝังอยู่ในโค้ดที่ทุกคนเปิดดูหน้าเว็บ (View Source) เห็นได้ — ควรตั้งสิทธิ์ token
+// นี้ฝั่ง EUP ให้เป็นแบบอ่านอย่างเดียวเท่านั้น
+const EUP_API_BASE = 'https://th-slt.eupfin.com/Eup_Servlet_API_SOAP';
+const EUP_TOKEN = '763b8371-b029-25b6-7a7b-2bccbe5cd832';
+let eupSessionId = null;
+let eupSessionExp = 0; // epoch ms ที่ session หมดอายุ (ถอดจาก exp claim ของ JWT)
+let eupLiveData = [];
+
+function eupDecodeJwtExp(jwt) {
+  try {
+    const payload = JSON.parse(atob(jwt.split('.')[1]));
+    return (payload.exp || 0) * 1000;
+  } catch (e) { return 0; }
+}
+
+async function eupLogin() {
+  const res = await fetch(`${EUP_API_BASE}/login/session`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `token=${encodeURIComponent(EUP_TOKEN)}`,
+  });
+  const data = await res.json();
+  if (data.responseStatus !== 100 || !data.result?.sessionId) throw new Error(data.responseMsg || 'เข้าสู่ระบบ EUP ไม่สำเร็จ');
+  eupSessionId = data.result.sessionId;
+  eupSessionExp = eupDecodeJwtExp(eupSessionId);
+}
+
+async function eupEnsureSession() {
+  if (!eupSessionId || Date.now() > eupSessionExp - 60000) await eupLogin();
+}
+
+// carNumber ว่าง = ดึงทุกคัน
+async function eupFetchCarStatus(carNumber = '') {
+  await eupEnsureSession();
+  const res = await fetch(`${EUP_API_BASE}/car/log_data/car_status?carNumber=${encodeURIComponent(carNumber)}`, {
+    headers: { 'Authorization': `Bearer ${eupSessionId}` },
+  });
+  if (res.status === 401) {
+    await eupLogin();
+    return eupFetchCarStatus(carNumber);
+  }
+  const data = await res.json();
+  if (data.responseStatus !== 100) throw new Error(data.responseMsg || 'ดึงข้อมูลตำแหน่งรถไม่สำเร็จ');
+  return data.result || [];
+}
+
+async function gcRefreshLiveTracking() {
+  const loading = document.getElementById('gc-live-loading');
+  if (loading) loading.style.display = '';
+  try {
+    eupLiveData = await eupFetchCarStatus('');
+    gcRenderLiveTable();
+    showToast(`ดึงข้อมูลตำแหน่งรถ ${eupLiveData.length} คันแล้ว`, 'success');
+  } catch (e) {
+    showToast('ดึงข้อมูล GPS ไม่ได้: ' + e.message, 'error');
+  }
+  if (loading) loading.style.display = 'none';
+}
+
+function gcFilteredLiveList() {
+  const q = (document.getElementById('gc-live-search')?.value || '').toLowerCase().trim();
+  if (!q) return eupLiveData;
+  return eupLiveData.filter(c => (c.carNumber || '').toLowerCase().includes(q) || (c.driverName || '').toLowerCase().includes(q));
+}
+
+function gcRenderLiveTable() {
+  const tbody = document.getElementById('gc-live-body');
+  if (!tbody) return;
+  const list = gcFilteredLiveList();
+  const countEl = document.getElementById('gc-live-count');
+  if (countEl) countEl.textContent = `ทั้งหมด ${list.length} คัน`;
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล — กด "รีเฟรชตำแหน่งสด" เพื่อดึงตำแหน่งล่าสุด</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(c => `
+    <tr>
+      <td style="font-family:monospace">${escapeHtml(c.carNumber || '-')}</td>
+      <td>${escapeHtml(c.driverName || '-')}</td>
+      <td>${escapeHtml(c.driverTel || '-')}</td>
+      <td>${typeof c.logSpeed === 'number' ? c.logSpeed.toFixed(1) : '0.0'} กม./ชม.</td>
+      <td>${escapeHtml(c.address || c.roadName || '-')}</td>
+      <td>${escapeHtml(c.logDTime || '-')}</td>
+    </tr>
+  `).join('');
+}

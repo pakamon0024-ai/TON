@@ -2225,6 +2225,7 @@
             <button class="subtab" id="gc-tab-add" onclick="gcSwitchTab('add')">➕ เพิ่มบันทึกติดตั้ง/ถอด</button>
             <button class="subtab" id="gc-tab-replist" onclick="gcSwitchTab('replist')">🔧 รายการแจ้งซ่อม</button>
             <button class="subtab" id="gc-tab-repadd" onclick="gcSwitchTab('repadd')">➕ เพิ่มแจ้งซ่อม</button>
+            <button class="subtab" id="gc-tab-live" onclick="gcSwitchTab('live')">📍 ตำแหน่งรถ (Live)</button>
           </div>
 
           <!-- LIST: ติดตั้ง/ถอด -->
@@ -2424,6 +2425,37 @@
                 <button class="btn-secondary" onclick="grClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="grSaveCase()">💾 บันทึกข้อมูล</button>
               </div>
+            </div>
+          </div>
+
+          <!-- LIVE TRACKING: ดึงตำแหน่ง/สถานะรถสดจาก EUP GPS API -->
+          <div class="subpage" id="gc-subpage-live">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gc-live-search"
+                  placeholder="ทะเบียน / ชื่อคนขับ..." oninput="gcRenderLiveTable()" /></div>
+              <button class="btn-primary" onclick="gcRefreshLiveTracking()">🔄 รีเฟรชตำแหน่งสด</button>
+              <span id="gc-live-loading" style="display:none;color:var(--text-muted);font-size:0.85rem;">กำลังดึงข้อมูล...</span>
+            </div>
+            <div class="ctxt" id="gc-live-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ทะเบียน</th>
+                    <th>คนขับ</th>
+                    <th>เบอร์โทร</th>
+                    <th>ความเร็ว</th>
+                    <th>ตำแหน่งล่าสุด</th>
+                    <th>เวลาบันทึก</th>
+                  </tr>
+                </thead>
+                <tbody id="gc-live-body">
+                  <tr>
+                    <td colspan="6" class="empty-state">ยังไม่มีข้อมูล — กด "รีเฟรชตำแหน่งสด" เพื่อดึงตำแหน่งล่าสุด</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
