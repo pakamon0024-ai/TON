@@ -345,8 +345,11 @@ function pbBuildMemoDoc(r) {
 }
 
 // name === null ตัดแถวชื่อในวงเล็บออกไปเลย (ใช้กับช่องที่ไม่ต้องระบุชื่อ เช่น กรรมการผู้จัดการ)
+// name === '' (ว่างแต่ไม่ใช่ null) เติมช่องว่างจริงในวงเล็บให้กว้างพอสำหรับเขียนชื่อด้วยมือ — แค่ min-width
+// เฉยๆ ไม่พอเพราะ "()" เนื้อหาแค่ 2 ตัวอักษรจะถูกจัดกึ่งกลางเป็นก้อนเดียว ไม่เห็นช่องว่างจริงให้เขียน
 function pbSigCell(label, name) {
-  const nameRow = name === null ? '' : `<div class="pb-sig-name-wrap"><span class="pb-sig-name">(${escapeHtml(name || '')})</span></div>`;
+  const nameContent = name ? escapeHtml(name) : '&nbsp;'.repeat(34);
+  const nameRow = name === null ? '' : `<div class="pb-sig-name-wrap"><span class="pb-sig-name">(${nameContent})</span></div>`;
   return `
     <div class="pb-sig-cell">
       <div class="pb-sig-line">ลงชื่อ .......................................... ${label}</div>
