@@ -314,7 +314,7 @@ function pbBuildMemoDoc(r) {
       </div>
       <p class="print-body-text" style="text-indent:0;font-weight:700;">เรื่อง&nbsp;&nbsp;รายงานการคุมประพฤติ "ผลการตรวจประวัติอาชญากรรม"</p>
       <hr class="print-divider" />
-      <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
+      <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;คุณ${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
       <p class="print-body-text">โดยพบข้อหา ${escapeHtml(r.detail || '')}</p>
       <p class="print-body-text" style="text-indent:0;font-weight:700;border-bottom:1px solid #222;display:inline-block;">การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</p>
       <p class="print-body-text">( ตามข้อบังคับเกี่ยวกับการทำงานของบริษัท 2.1. วินัยทั่วไป 2.1.1 ประพฤติตนเป็นพลเมืองดีอยู่ในระเบียบและกฎของสังคม
@@ -333,7 +333,7 @@ function pbBuildMemoDoc(r) {
         <div class="pb-sig-box-title">ฝ่ายบริหารรับทราบ</div>
         <div class="pb-sig-row">
           ${pbSigCell('ผู้จัดการขึ้นไป', '')}
-          ${pbSigCell('ผอ.ฝ่ายบุคคลและฝ่ายปฏิบัติการ', 'นายโอฬาร วัชโรดมประเสริฐ')}
+          ${pbSigCell('ผอ.ฝ่ายบุคคลและฝ่ายปฏิบัติการ', 'นายโอพัฒน์ วัชโรดมประเสริฐ')}
         </div>
         <div class="pb-sig-row">
           ${pbSigCell('ผู้จัดการทั่วไป', 'นางนภาวรรณ คำภานุช')}

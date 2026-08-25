@@ -860,8 +860,10 @@ body {
 
 /* บันทึกการคุมประพฤติ — ช่องลายเซ็น 6 ช่อง (2 คอลัมน์ x 3 แถว) ตามฟอร์มต้นแบบ: แถวบนคือพนักงาน/หัวหน้างาน
    แถวล่างอยู่ในกรอบ "ฝ่ายบริหารรับทราบ" — เว้นระยะห่างมากพอเพื่อให้เนื้อหายาวเต็มหน้า A4 พอดี */
-.print-doc .pb-sig-row { display: flex; gap: 32px; margin-top: 38px; page-break-inside: avoid; }
-.print-doc .pb-sig-cell { flex: 1; font-size: 13px; }
+/* ใช้ grid แทน flex — html2canvas (ที่ใช้ตอน Export PDF) รองรับ flexbox ได้ไม่สมบูรณ์ ทำให้ตัวกึ่งกลาง
+   เพี้ยนได้ ส่วน grid เป็น pattern เดียวกับ .print-sigs ของเอกสารอื่นที่ทดสอบแล้วว่าเรนเดอร์ถูกต้อง */
+.print-doc .pb-sig-row { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 38px; page-break-inside: avoid; }
+.print-doc .pb-sig-cell { font-size: 13px; text-align: center; }
 .print-doc .pb-sig-line { border-bottom: 1px solid transparent; white-space: nowrap; }
 .print-doc .pb-sig-name-wrap { margin-top: 8px; text-align: center; }
 .print-doc .pb-sig-name { display: inline-block; padding: 0 2px; }
@@ -871,9 +873,12 @@ body {
   display: inline-block; background: #d9d9d9; padding: 4px 14px; border-radius: 3px;
   font-weight: 700; margin: -32px 0 8px 0px;
 }
-/* บันทึกการคุมประพฤติ — ตัวหนังสือย่อหน้าเนื้อความให้ขนาดเท่ากับตัวหนังสือช่องลายเซ็น (13px) */
+/* บันทึกการคุมประพฤติ — ตัวหนังสือย่อหน้าเนื้อความให้ขนาดเท่ากับตัวหนังสือช่องลายเซ็น (13px)
+   และตัด text-indent ออก — ย่อหน้าเยื้องบรรทัดแรกร่วมกับการตัดบรรทัดยาวๆ ทำให้ html2canvas
+   คำนวณความสูงของบล็อกผิด จนข้อความบรรทัดถัดไปเหลื่อมทับกัน (ตัดสาเหตุนี้ทิ้งไปเลย) */
 .print-doc.pb-memo-doc .print-body-text,
 .print-doc.pb-memo-doc .print-info { font-size: 13px; }
+.print-doc.pb-memo-doc .print-body-text { text-indent: 0; }
 
 /* บันทึกข้อความใบสั่ง — ตัวอักษรใหญ่ขึ้นและกระจายเนื้อหาให้เต็มหน้า A4 มากขึ้น (เอกสารนี้มีเนื้อหาน้อย
    กว่าใบเงินสดย่อย/อนุมัติสำรองจ่ายที่ปรับให้พอดี 1 หน้าไว้แล้ว จึงแยก scope ไม่กระทบเอกสารอื่น) */
