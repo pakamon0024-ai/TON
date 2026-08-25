@@ -125,6 +125,10 @@
           <span class="nav-icon">🎫</span>
           <span>บันทึกใบสั่ง</span>
         </a>
+        <a href="#" class="nav-item" data-page="probation" onclick="showPage('probation')">
+          <span class="nav-icon">⚖️</span>
+          <span>บันทึกใบคุมประพฤติ</span>
+        </a>
         <a href="#" class="nav-item" data-page="alcohol" onclick="showPage('alcohol')">
           <span class="nav-icon">🍃</span>
           <span>เป่าวัดแอลกอฮอล์</span>
@@ -1971,6 +1975,132 @@
         </div>
       </div>
 
+      <!-- PROBATION RECORD PAGE (บันทึกใบคุมประพฤติ) -->
+      <div class="page" id="page-probation">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">⚖️</div>
+            <div>
+              <h2>บันทึกใบคุมประพฤติ</h2>
+              <p>บันทึกและติดตามใบคุมประพฤติของพนักงาน พร้อมข้อหาและรายละเอียด</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab" id="pb-tab-dashboard" onclick="pbSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab active" id="pb-tab-list" onclick="pbSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="pb-tab-add" onclick="pbSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage" id="pb-subpage-dashboard">
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title">จำนวนรายการรายเดือน</div>
+                <div class="chart-box"><canvas id="pb-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนรายการตามลานจอด</div>
+                <div class="chart-box"><canvas id="pb-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนข้อหา</div>
+                <div class="chart-box"><canvas id="pb-chart-charge"></canvas></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage active" id="pb-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ลานจอด</label>
+                <select id="pb-f-yard" onchange="pbRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="pb-f-search"
+                  placeholder="ชื่อ / ตำแหน่ง / ข้อหา..." oninput="pbRenderList()" /></div>
+              <button class="btn-secondary" onclick="pbClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="pbExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="pbImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="pbDownloadTemplate()">📋 Template</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="pbDeleteAll()">🗑️
+                ลบทั้งหมด</button>
+            </div>
+            <div class="ctxt" id="pb-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap tk-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th class="tk-sortable" onclick="pbSortBy('runningNo')">ลำดับที่<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-runningNo"></span></th>
+                    <th class="tk-sortable" onclick="pbSortBy('date')">วันที่<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-date"></span></th>
+                    <th class="tk-sortable" onclick="pbSortBy('name')">ชื่อ<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-name"></span></th>
+                    <th class="tk-sortable" onclick="pbSortBy('position')">ตำแหน่ง<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-position"></span></th>
+                    <th class="tk-sortable" onclick="pbSortBy('yard')">ลานจอด<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-yard"></span></th>
+                    <th class="tk-sortable" onclick="pbSortBy('charge')">ข้อหา<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-charge"></span></th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="pb-list-body">
+                  <tr>
+                    <td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="pb-subpage-add">
+            <div class="edit-banner" id="pb-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขบันทึก <strong id="pb-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="pbCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลใบคุมประพฤติ</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date"
+                    id="pb-date" /></div>
+                <div class="form-group"><label>ชื่อ <span class="req">*</span></label>
+                  <input type="text" id="pb-name" list="pb-name-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="pb-name-list"></datalist>
+                </div>
+                <div class="form-group"><label>ตำแหน่ง</label>
+                  <input type="text" id="pb-position" placeholder="ระบุตำแหน่ง..." />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="pb-yard" list="pb-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="pb-yard-list"></datalist>
+                </div>
+                <div class="form-group" style="grid-column:span 2;"><label>ข้อหา <span class="req">*</span></label>
+                  <div style="display:flex; gap:6px;">
+                    <input type="text" id="pb-charge" list="pb-charge-list" placeholder="พิมพ์หรือเลือก..." style="flex:1;" />
+                    <datalist id="pb-charge-list"></datalist>
+                    <button type="button" class="btn-secondary" title="เพิ่มข้อหาใหม่" onclick="pbQuickAddCharge()">+</button>
+                  </div>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียด</label>
+                  <textarea class="fta" id="pb-detail" rows="5" placeholder="รายละเอียดการกระทำผิด/ข้อเท็จจริง..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="pbClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="pbSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ALCOHOL TEST PAGE (บันทึกการเป่าวัดแอลกอฮอล์ - เฉพาะพนักงานลาน ABC) -->
       <div class="page" id="page-alcohol">
         <div class="form-section">
@@ -3067,6 +3197,7 @@
   <script src="incidents.js"></script>
   <script src="issues.js"></script>
   <script src="tickets.js"></script>
+  <script src="probation.js"></script>
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
   <script src="gpscctv.js"></script>

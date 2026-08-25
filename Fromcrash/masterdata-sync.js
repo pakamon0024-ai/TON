@@ -122,6 +122,7 @@ function mdApplySimpleList(kind, arr) {
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
   if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  if (typeof pbRefreshLookupDropdowns === 'function') pbRefreshLookupDropdowns();
 }
 
 async function mdInit() {

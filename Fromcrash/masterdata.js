@@ -719,6 +719,7 @@ function addChargeTypeDB() {
   input.value = ''; input.focus();
   renderChargeTypesTable();
   if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  if (typeof pbRefreshLookupDropdowns === 'function') pbRefreshLookupDropdowns();
   mdPushIfReady();
   showToast('เพิ่มข้อหาแล้ว', 'success');
 }
@@ -728,6 +729,7 @@ function deleteChargeTypeDB(name) {
   saveChargeTypesDB();
   renderChargeTypesTable();
   if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  if (typeof pbRefreshLookupDropdowns === 'function') pbRefreshLookupDropdowns();
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
 }
@@ -737,6 +739,7 @@ function deleteAllChargeTypesDB() {
   saveChargeTypesDB();
   renderChargeTypesTable();
   if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
+  if (typeof pbRefreshLookupDropdowns === 'function') pbRefreshLookupDropdowns();
   mdPushIfReady();
   showToast('ลบข้อหาทั้งหมดแล้ว', 'warning');
 }
