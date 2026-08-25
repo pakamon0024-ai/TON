@@ -337,18 +337,20 @@ function pbBuildMemoDoc(r) {
         </div>
         <div class="pb-sig-row">
           ${pbSigCell('ผู้จัดการทั่วไป', 'นางนภาวรรณ คำภานุช')}
-          ${pbSigCell('ลงนาม/รับทราบ<br>กรรมการผู้จัดการ', '')}
+          ${pbSigCell('ลงนาม/รับทราบ<br>กรรมการผู้จัดการ', null)}
         </div>
       </div>
     </div>
   `;
 }
 
+// name === null ตัดแถวชื่อในวงเล็บออกไปเลย (ใช้กับช่องที่ไม่ต้องระบุชื่อ เช่น กรรมการผู้จัดการ)
 function pbSigCell(label, name) {
+  const nameRow = name === null ? '' : `<div class="pb-sig-name-wrap"><span class="pb-sig-name">(${escapeHtml(name || '')})</span></div>`;
   return `
     <div class="pb-sig-cell">
       <div class="pb-sig-line">ลงชื่อ .......................................... ${label}</div>
-      <div class="pb-sig-name-wrap"><span class="pb-sig-name">(${escapeHtml(name || '')})</span></div>
+      ${nameRow}
       <div class="pb-sig-date">ลงวันที่ ............/..................../...............</div>
     </div>
   `;
@@ -362,7 +364,15 @@ function pbShowMemoPrint(id) {
   document.getElementById('modalBody').innerHTML = html;
   document.getElementById('printModal').classList.add('show');
   currentPrintFn = () => {
-    const el = document.getElementById('modalBody');
+    // html2canvas คำนวณตำแหน่งบรรทัดของย่อหน้าที่ตัดขึ้นบรรทัดใหม่ผิดพลาด (ข้อความทับกัน) ถ้า element
+    // ที่ capture ยังอยู่ใน DOM ของ modal เดิม (ซึ่งมี flex/overflow ในโครงสร้างบรรพบุรุษ) — ย้าย clone
+    // ออกมานอก modal ก่อน capture แก้ปัญหานี้ได้ (ทดสอบยืนยันแล้วว่า clone แบบนี้ไม่มีปัญหาทับกัน)
+    const orig = document.getElementById('modalBody');
+    const clone = orig.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.style.cssText = `position:fixed;top:0;left:-9999px;overflow:visible;height:auto;max-height:none;width:${orig.clientWidth}px;`;
+    document.body.appendChild(clone);
+    const cleanup = () => { if (clone.parentNode) clone.parentNode.removeChild(clone); };
     html2pdf().set({
       margin: [8, 8, 8, 8],
       filename: `บันทึกคุมประพฤติ_${r.name || r.runningNo}.pdf`,
@@ -370,7 +380,7 @@ function pbShowMemoPrint(id) {
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'avoid-all'] },
-    }).from(el).save();
+    }).from(clone).save().then(cleanup).catch(cleanup);
   };
 }
 

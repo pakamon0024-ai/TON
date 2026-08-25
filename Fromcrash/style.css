@@ -866,7 +866,7 @@ body {
 .print-doc .pb-sig-cell { font-size: 13px; text-align: center; }
 .print-doc .pb-sig-line { border-bottom: 1px solid transparent; white-space: nowrap; }
 .print-doc .pb-sig-name-wrap { margin-top: 8px; text-align: center; }
-.print-doc .pb-sig-name { display: inline-block; padding: 0 2px; }
+.print-doc .pb-sig-name { display: inline-block; min-width: 190px; padding: 0 2px; }
 .print-doc .pb-sig-date { margin-top: 12px; }
 .print-doc .pb-sig-box { border: 1px solid #333; border-radius: 4px; margin-top: 38px; padding: 24px 20px 14px; }
 .print-doc .pb-sig-box-title {
