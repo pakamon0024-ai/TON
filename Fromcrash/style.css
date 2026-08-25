@@ -858,6 +858,19 @@ body {
 .print-doc .print-sig-date { font-size: 10px; color: #666; margin-top: 2px; }
 .print-doc .print-body-text { margin: 6px 0; font-size: 12px; line-height: 1.7; text-indent: 2em; word-break: break-word; }
 
+/* บันทึกการคุมประพฤติ — ช่องลายเซ็น 6 ช่อง (2 คอลัมน์ x 3 แถว) ตามฟอร์มต้นแบบ: แถวบนคือพนักงาน/หัวหน้างาน
+   แถวล่างอยู่ในกรอบ "ฝ่ายบริหารรับทราบ" — เว้นระยะห่างมากพอเพื่อให้เนื้อหายาวเต็มหน้า A4 พอดี */
+.print-doc .pb-sig-row { display: flex; gap: 32px; margin-top: 54px; page-break-inside: avoid; }
+.print-doc .pb-sig-cell { flex: 1; font-size: 13px; }
+.print-doc .pb-sig-line { border-bottom: 1px solid transparent; white-space: nowrap; }
+.print-doc .pb-sig-name { margin-top: 8px; text-align: center; }
+.print-doc .pb-sig-date { margin-top: 12px; }
+.print-doc .pb-sig-box { border: 1px solid #333; border-radius: 4px; margin-top: 54px; padding: 30px 20px 14px; }
+.print-doc .pb-sig-box-title {
+  display: inline-block; background: #d9d9d9; padding: 4px 14px; border-radius: 3px;
+  font-weight: 700; margin: -32px 0 8px 0px;
+}
+
 /* บันทึกข้อความใบสั่ง — ตัวอักษรใหญ่ขึ้นและกระจายเนื้อหาให้เต็มหน้า A4 มากขึ้น (เอกสารนี้มีเนื้อหาน้อย
    กว่าใบเงินสดย่อย/อนุมัติสำรองจ่ายที่ปรับให้พอดี 1 หน้าไว้แล้ว จึงแยก scope ไม่กระทบเอกสารอื่น) */
 .print-doc.tk-memo-doc { font-size: 16px; line-height: 1.8; padding: 22px 24px; }

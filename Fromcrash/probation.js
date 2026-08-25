@@ -312,7 +312,7 @@ function pbBuildMemoDoc(r) {
         <div class="print-info-row"></div>
         <div class="print-info-row" style="justify-content:flex-end;"><span class="print-label" style="min-width:auto;">วันที่ ${pbThaiLongDate(r.date)}</span></div>
       </div>
-      <p class="print-body-text" style="text-indent:0;font-weight:700;">เรื่อง&nbsp;&nbsp;${escapeHtml(r.charge || '')}</p>
+      <p class="print-body-text" style="text-indent:0;font-weight:700;">เรื่อง&nbsp;&nbsp;รายงานการคุมประพฤติ "ผลการตรวจประวัติอาชญากรรม"</p>
       <hr class="print-divider" />
       <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
       <p class="print-body-text">โดยพบข้อหา ${escapeHtml(r.detail || '')}</p>
@@ -325,11 +325,31 @@ function pbBuildMemoDoc(r) {
       <p class="print-body-text" style="text-indent:0;text-align:center;font-weight:700;">" ทางบริษัทฯ ขอแจ้งสิ้นสุดสภาพการเป็นพนักงานของทางบริษัทฯ ทันที "</p>
       <p class="print-body-text">ข้าพเจ้า ได้อ่านข้อความข้างต้นโดยละเอียดแล้ว ขอรับรองว่าเป็นความจริงทุกประการ โดยการให้ข้อความข้างต้นนี้
         เกิดจากความสมัครใจของข้าพเจ้า โดยมิได้ถูกบังคับหรือฝืนใจแต่อย่างใดใดทั้งสิ้น</p>
-      <div class="print-sigs">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">พนักงานรับทราบ</div><div class="print-sig-name">(${escapeHtml(r.name || '')})</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผอ.ฝ่ายบุคคลและฝ่ายปฏิบัติการ</div><div class="print-sig-name">(นายโอฬาร วัชโรดมประเสริฐ)</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้จัดการทั่วไป</div><div class="print-sig-name">(นางนภาวรรณ คำภานุช)</div></div>
+      <div class="pb-sig-row">
+        ${pbSigCell('พนักงานรับทราบ', r.name)}
+        ${pbSigCell('หัวหน้างานรับทราบ', '')}
       </div>
+      <div class="pb-sig-box">
+        <div class="pb-sig-box-title">ฝ่ายบริหารรับทราบ</div>
+        <div class="pb-sig-row">
+          ${pbSigCell('ผู้จัดการขึ้นไป', '')}
+          ${pbSigCell('ผอ.ฝ่ายบุคคลและฝ่ายปฏิบัติการ', 'นายโอฬาร วัชโรดมประเสริฐ')}
+        </div>
+        <div class="pb-sig-row">
+          ${pbSigCell('ผู้จัดการทั่วไป', 'นางนภาวรรณ คำภานุช')}
+          ${pbSigCell('ลงนาม/รับทราบ<br>กรรมการผู้จัดการ', '')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function pbSigCell(label, name) {
+  return `
+    <div class="pb-sig-cell">
+      <div class="pb-sig-line">ลงชื่อ .......................................... ${label}</div>
+      <div class="pb-sig-name">( ${escapeHtml(name || '')} )</div>
+      <div class="pb-sig-date">ลงวันที่ ............/..................../...............</div>
     </div>
   `;
 }
