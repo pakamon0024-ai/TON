@@ -305,7 +305,7 @@ function pbThaiLongDate(val) {
 
 function pbBuildMemoDoc(r) {
   return `
-    <div class="print-doc">
+    <div class="print-doc pb-memo-doc">
       ${companyLetterhead()}
       <h1>บันทึกการคุมประพฤติ</h1>
       <div class="print-info" style="grid-template-columns:1fr 1fr;margin-top:6px;">
@@ -316,12 +316,12 @@ function pbBuildMemoDoc(r) {
       <hr class="print-divider" />
       <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
       <p class="print-body-text">โดยพบข้อหา ${escapeHtml(r.detail || '')}</p>
-      <p class="print-body-text" style="text-indent:0;"><u><b>การดำเนินการติดตามการทำงานพนักงาน</b> : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</u></p>
+      <p class="print-body-text" style="text-indent:0;font-weight:700;border-bottom:1px solid #222;display:inline-block;">การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</p>
       <p class="print-body-text">( ตามข้อบังคับเกี่ยวกับการทำงานของบริษัท 2.1. วินัยทั่วไป 2.1.1 ประพฤติตนเป็นพลเมืองดีอยู่ในระเบียบและกฎของสังคม
         ไม่ประพฤติชั่วกระทำหรือร่วมกันกระทำการใดๆ อันเป็นการผิดกฎหมายของบ้านเมืองทั้งในและนอกบริเวณบริษัทฯ )</p>
       <p class="print-body-text">ผลการตรวจประวัติอาชญากรรมของท่านข้างต้นตามที่กล่าวมา หากท่านมีความประสงค์ที่จะปฏิบัติงานร่วมกับทางบริษัทฯ
-        ขอให้ท่านปรับปรุงทัศนคติและการทำงานให้ดีขึ้น โดยห้ามมิให้ท่านกระทำการดังกล่าวนี้อีก
-        <u>หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</u></p>
+        ขอให้ท่านปรับปรุงทัศนคติและการทำงานให้ดีขึ้น โดยห้ามมิให้ท่านกระทำการดังกล่าวนี้อีก</p>
+      <p class="print-body-text" style="text-indent:0;font-weight:700;border-bottom:1px solid #222;display:inline-block;">หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</p>
       <p class="print-body-text" style="text-indent:0;text-align:center;font-weight:700;">" ทางบริษัทฯ ขอแจ้งสิ้นสุดสภาพการเป็นพนักงานของทางบริษัทฯ ทันที "</p>
       <p class="print-body-text">ข้าพเจ้า ได้อ่านข้อความข้างต้นโดยละเอียดแล้ว ขอรับรองว่าเป็นความจริงทุกประการ โดยการให้ข้อความข้างต้นนี้
         เกิดจากความสมัครใจของข้าพเจ้า โดยมิได้ถูกบังคับหรือฝืนใจแต่อย่างใดใดทั้งสิ้น</p>
@@ -348,7 +348,7 @@ function pbSigCell(label, name) {
   return `
     <div class="pb-sig-cell">
       <div class="pb-sig-line">ลงชื่อ .......................................... ${label}</div>
-      <div class="pb-sig-name">( ${escapeHtml(name || '')} )</div>
+      <div class="pb-sig-name-wrap"><span class="pb-sig-name">(${escapeHtml(name || '')})</span></div>
       <div class="pb-sig-date">ลงวันที่ ............/..................../...............</div>
     </div>
   `;
