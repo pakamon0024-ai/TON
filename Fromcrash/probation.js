@@ -15,6 +15,19 @@ const PB_DATE_FIELDS = ['date'];
 const PB_XLSX_HEADERS = ['ลำดับที่','วันที่','ชื่อ','ตำแหน่ง','ลานจอด','ข้อหา','รายละเอียด'];
 const PB_XLSX_COLWIDTHS = [8, 14, 20, 16, 12, 20, 40];
 
+// ข้อความมาตรฐานตามฟอร์มบันทึกการคุมประพฤติ — เติมให้เป็นค่าเริ่มต้นในช่อง "รายละเอียด" ทุกครั้งที่เปิดฟอร์มเพิ่มบันทึกใหม่
+// ผู้กรอกแก้ไขส่วน "โดยพบข้อหา ..." ให้ตรงกับเคสจริง ส่วนที่เหลือเป็นข้อความตายตัวเก็บไว้ตามฟอร์มต้นแบบ
+const PB_DEFAULT_DETAIL = `โดยพบข้อหา
+
+การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน
+( ตามข้อบังคับเกี่ยวกับการทำงานของบริษัท 2.1. วินัยทั่วไป 2.1.1 ประพฤติตนเป็นพลเมืองดีอยู่ในระเบียบและกฎของสังคม ไม่ประพฤติชั่วกระทำหรือร่วมกันกระทำการใดๆ อันเป็นการผิดกฎหมายของบ้านเมืองทั้งในและนอกบริเวณบริษัทฯ )
+
+ผลการตรวจประวัติอาชญากรรมของท่านข้างต้นตามที่กล่าวมา หากท่านมีความประสงค์ที่จะปฏิบัติงานร่วมกับทางบริษัทฯ ขอให้ท่านปรับปรุงทัศนคติและการทำงานให้ดีขึ้น โดยห้ามมิให้ท่านกระทำการดังกล่าวนี้อีก หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย
+
+" ทางบริษัทฯ ขอแจ้งสิ้นสุดสภาพการเป็นพนักงานของทางบริษัทฯ ทันที "
+
+ข้าพเจ้า ได้อ่านข้อความข้างต้นโดยละเอียดแล้ว ขอรับรองว่าเป็นความจริงทุกประการ โดยการให้ข้อความข้างต้นนี้ เกิดจากความสมัครใจของข้าพเจ้า โดยมิได้ถูกบังคับหรือฝืนใจแต่อย่างใดใดทั้งสิ้น`;
+
 function pbSave() { localStorage.setItem('finflow_probation', JSON.stringify(probationRecords)); }
 
 // ===== Sub-tabs =====
@@ -132,7 +145,7 @@ function pbClearForm() {
   document.getElementById('pb-position').value = '';
   document.getElementById('pb-yard').value = '';
   document.getElementById('pb-charge').value = '';
-  document.getElementById('pb-detail').value = '';
+  document.getElementById('pb-detail').value = PB_DEFAULT_DETAIL;
 }
 
 function pbEditCase(id) {
@@ -303,6 +316,28 @@ function pbThaiLongDate(val) {
   return `${d.getDate()} ${monthsTh[d.getMonth()]} พ.ศ. ${d.getFullYear() + 543}`;
 }
 
+// แปลงข้อความในช่อง "รายละเอียด" (แก้ไขได้อิสระ) เป็นย่อหน้าเอกสารพิมพ์
+// พยายามจัดรูปแบบตัวหนา/ขีดเส้นใต้ให้อัตโนมัติถ้าข้อความยังตรงกับ PB_DEFAULT_DETAIL เดิม
+// (บรรทัดหัวข้อย่อยและคำเตือน) ถ้าผู้กรอกแก้ข้อความเหล่านั้นไปจะเรนเดอร์เป็นย่อหน้าธรรมดาแทน ไม่ทำให้พิมพ์ไม่ได้
+function pbRenderDetailParagraphs(detail) {
+  const paragraphs = String(detail || '').split(/\n\s*\n/).map(p => p.trim()).filter(Boolean);
+  return paragraphs.map(p => {
+    const oneLine = p.replace(/\s*\n\s*/g, ' ');
+    if (/^".*"$/.test(oneLine)) {
+      return `<p class="print-body-text" style="text-indent:0;text-align:center;font-weight:700;">${escapeHtml(oneLine)}</p>`;
+    }
+    if (oneLine.includes('การดำเนินการติดตามการทำงานพนักงาน')) {
+      return `<p class="print-body-text" style="text-indent:0;"><u><b>${escapeHtml(oneLine)}</b></u></p>`;
+    }
+    if (oneLine.includes('หากปรากฎ')) {
+      const idx = oneLine.indexOf('หากปรากฎ');
+      const before = oneLine.slice(0, idx), after = oneLine.slice(idx);
+      return `<p class="print-body-text">${escapeHtml(before)}<u>${escapeHtml(after)}</u></p>`;
+    }
+    return `<p class="print-body-text">${escapeHtml(oneLine)}</p>`;
+  }).join('');
+}
+
 function pbBuildMemoDoc(r) {
   return `
     <div class="print-doc">
@@ -315,16 +350,7 @@ function pbBuildMemoDoc(r) {
       <p class="print-body-text" style="text-indent:0;font-weight:700;">เรื่อง&nbsp;&nbsp;${escapeHtml(r.charge || '')}</p>
       <hr class="print-divider" />
       <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
-      <p class="print-body-text">โดยพบข้อหา ${escapeHtml(r.detail || '')}</p>
-      <p class="print-body-text" style="text-indent:0;"><u><b>การดำเนินการติดตามการทำงานพนักงาน</b> : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</u></p>
-      <p class="print-body-text">( ตามข้อบังคับเกี่ยวกับการทำงานของบริษัท 2.1. วินัยทั่วไป 2.1.1 ประพฤติตนเป็นพลเมืองดีอยู่ในระเบียบและกฎของสังคม
-        ไม่ประพฤติชั่วกระทำหรือร่วมกันกระทำการใดๆ อันเป็นการผิดกฎหมายของบ้านเมืองทั้งในและนอกบริเวณบริษัทฯ )</p>
-      <p class="print-body-text">ผลการตรวจประวัติอาชญากรรมของท่านข้างต้นตามที่กล่าวมา หากท่านมีความประสงค์ที่จะปฏิบัติงานร่วมกับทางบริษัทฯ
-        ขอให้ท่านปรับปรุงทัศนคติและการทำงานให้ดีขึ้น โดยห้ามมิให้ท่านกระทำการดังกล่าวนี้อีก
-        <u>หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</u></p>
-      <p class="print-body-text" style="text-indent:0;text-align:center;font-weight:700;">" ทางบริษัทฯ ขอแจ้งสิ้นสุดสภาพการเป็นพนักงานของทางบริษัทฯ ทันที "</p>
-      <p class="print-body-text">ข้าพเจ้า ได้อ่านข้อความข้างต้นโดยละเอียดแล้ว ขอรับรองว่าเป็นความจริงทุกประการ โดยการให้ข้อความข้างต้นนี้
-        เกิดจากความสมัครใจของข้าพเจ้า โดยมิได้ถูกบังคับหรือฝืนใจแต่อย่างใดใดทั้งสิ้น</p>
+      ${pbRenderDetailParagraphs(r.detail)}
       <div class="print-sigs">
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">พนักงานรับทราบ</div><div class="print-sig-name">(${escapeHtml(r.name || '')})</div></div>
         <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผอ.ฝ่ายบุคคลและฝ่ายปฏิบัติการ</div><div class="print-sig-name">(นายโอฬาร วัชโรดมประเสริฐ)</div></div>
