@@ -778,12 +778,13 @@ function showApprovalPrint(data) {
 function companyLetterhead() {
   return `
     <div class="letterhead">
-      <div class="letterhead-name-th">บริษัท เอ.พี.ทรานสปอร์ต เซ็นเตอร์ จำกัด</div>
-      <div class="letterhead-name-en">A.P. TRANSPORT CENTER CO., LTD.</div>
-      <div class="letterhead-detail">1/4 หมู่ 4 ต.พิมพา อ.บางปะกง จ.ฉะเชิงเทรา 24180</div>
-      <div class="letterhead-detail">Tel. 033-050710 &nbsp;&nbsp; Fax. -</div>
-      <div class="letterhead-detail">เลขประจำตัวผู้เสียภาษี: 0-2455-50000-03-1</div>
-      <div class="letterhead-detail">www.amphol2000.com &nbsp;|&nbsp; E-mail: apt@amphol2000.com</div>
+      <img class="letterhead-logo" src="assets/logo.png" alt="AP Transport Center" />
+      <div class="letterhead-text">
+        <div class="letterhead-name-th">บริษัท เอ.พี.ทรานสปอร์ต เซ็นเตอร์ จำกัด</div>
+        <div class="letterhead-name-en">A.P. TRANSPORT CENTER CO., LTD.</div>
+        <div class="letterhead-detail">1/4 หมู่ 4 ต.พิมพา อ.บางปะกง จ.ฉะเชิงเทรา 24180 &nbsp;&nbsp; Tel. 033-050710 &nbsp;&nbsp; Fax. -</div>
+        <div class="letterhead-detail">เลขประจำตัวผู้เสียภาษี: 0-2455-50000-03-1 &nbsp;&nbsp; www.amphol2000.com &nbsp;|&nbsp; E-mail: apt@amphol2000.com</div>
+      </div>
     </div>
     <hr class="print-divider" />
   `;
