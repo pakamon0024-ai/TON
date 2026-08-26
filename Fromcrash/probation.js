@@ -316,12 +316,12 @@ function pbBuildMemoDoc(r) {
       <hr class="print-divider" />
       <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;คุณ${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
       <p class="print-body-text">โดยพบข้อหา ${escapeHtml(r.detail || '')}</p>
-      <p class="print-body-text" style="text-indent:2em;font-weight:700;border-bottom:1px solid #222;display:inline-block;">การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</p>
+      <p class="print-body-text" style="text-indent:0;margin-left:2em;font-weight:700;border-bottom:1px solid #222;display:inline-block;">การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</p>
       <p class="print-body-text">( ตามข้อบังคับเกี่ยวกับการทำงานของบริษัท 2.1. วินัยทั่วไป 2.1.1 ประพฤติตนเป็นพลเมืองดีอยู่ในระเบียบและกฎของสังคม
         ไม่ประพฤติชั่วกระทำหรือร่วมกันกระทำการใดๆ อันเป็นการผิดกฎหมายของบ้านเมืองทั้งในและนอกบริเวณบริษัทฯ )</p>
       <p class="print-body-text">ผลการตรวจประวัติอาชญากรรมของท่านข้างต้นตามที่กล่าวมา หากท่านมีความประสงค์ที่จะปฏิบัติงานร่วมกับทางบริษัทฯ
         ขอให้ท่านปรับปรุงทัศนคติและการทำงานให้ดีขึ้น โดยห้ามมิให้ท่านกระทำการดังกล่าวนี้อีก</p>
-      <p class="print-body-text" style="text-indent:2em;font-weight:700;border-bottom:1px solid #222;display:inline-block;">หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</p>
+      <p class="print-body-text" style="text-indent:0;margin-left:2em;font-weight:700;border-bottom:1px solid #222;display:inline-block;">หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</p>
       <p class="print-body-text" style="text-indent:0;text-align:center;font-weight:700;">" ทางบริษัทฯ ขอแจ้งสิ้นสุดสภาพการเป็นพนักงานของทางบริษัทฯ ทันที "</p>
       <p class="print-body-text">ข้าพเจ้า ได้อ่านข้อความข้างต้นโดยละเอียดแล้ว ขอรับรองว่าเป็นความจริงทุกประการ โดยการให้ข้อความข้างต้นนี้
         เกิดจากความสมัครใจของข้าพเจ้า โดยมิได้ถูกบังคับหรือฝืนใจแต่อย่างใดใดทั้งสิ้น</p>
@@ -349,6 +349,9 @@ function pbBuildMemoDoc(r) {
 // ทำให้กึ่งกลางของทั้งบรรทัดเยื้องไปจากกึ่งกลางจุดประจริง) — วิธีแก้: บรรทัดชื่อ replicate โครงสร้าง prefix/label
 // เดียวกับบรรทัดลงชื่อทุกตัวอักษร แต่ซ่อนไว้ (visibility:hidden) เพื่อให้ความกว้างเท่ากันเป๊ะ แล้ว text-align:center
 // เฉพาะช่องจุดประ/ชื่อ ซึ่งจะตกตำแหน่งเดียวกับจุดประของบรรทัดบนเสมอเมื่อทั้งสอง div ถูก text-align:center เท่ากัน
+// บรรทัด "ลงวันที่" ต้องเริ่มต้นตำแหน่งเดียวกับ "ลงชื่อ" (ชิดซ้ายกล่องเดียวกัน ไม่ใช่กึ่งกลางเซลล์) — ใช้กล่องคลุม
+// (mirror-wrap) ที่มีความกว้างเท่ากล่องบรรทัดลงชื่อเป๊ะ (จาก mirror ที่ซ่อนไว้) แล้ว absolute ข้อความลงวันที่
+// ให้ชิดซ้าย (left:0) ของกล่องนั้น ซึ่งจะตรงกับตำแหน่งเริ่มของ "ลงชื่อ" เสมอเพราะกล่องถูก center เท่ากัน
 function pbSigCell(label, name) {
   const dots = '.'.repeat(56);
   const nameContent = name ? escapeHtml(name) : '&nbsp;'.repeat(34);
@@ -362,7 +365,12 @@ function pbSigCell(label, name) {
         <span class="pb-sig-prefix">ลงชื่อ&nbsp;</span><span class="pb-sig-blank">${dots}</span><span class="pb-sig-suffix">&nbsp;${label}</span>
       </div>
       ${nameRow}
-      <div class="pb-sig-date">ลงวันที่ ............/..................../...............</div>
+      <div class="pb-sig-line pb-sig-line-date">
+        <span class="pb-sig-mirror-wrap">
+          <span class="pb-sig-mirror"><span class="pb-sig-prefix">ลงชื่อ&nbsp;</span><span class="pb-sig-blank">${dots}</span><span class="pb-sig-suffix">&nbsp;${label}</span></span>
+          <span class="pb-sig-date-text">ลงวันที่ ............/..................../...............</span>
+        </span>
+      </div>
     </div>
   `;
 }

@@ -872,7 +872,10 @@ body {
 .print-doc .pb-sig-line-name .pb-sig-prefix,
 .print-doc .pb-sig-line-name .pb-sig-suffix { visibility: hidden; }
 .print-doc .pb-sig-line-name .pb-sig-blank { overflow: visible; text-align: center; }
-.print-doc .pb-sig-date { margin-top: 12px; }
+.print-doc .pb-sig-line-date { margin-top: 12px; }
+.print-doc .pb-sig-mirror-wrap { display: inline-block; position: relative; }
+.print-doc .pb-sig-mirror { visibility: hidden; }
+.print-doc .pb-sig-date-text { position: absolute; left: 0; top: 0; white-space: nowrap; }
 .print-doc .pb-sig-box { border: 1px solid #333; border-radius: 4px; margin-top: 38px; padding: 24px 20px 14px; }
 .print-doc .pb-sig-box-title {
   display: inline-block; background: #d9d9d9; padding: 4px 14px; border-radius: 3px;
