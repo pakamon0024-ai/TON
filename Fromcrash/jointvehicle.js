@@ -37,15 +37,20 @@ function jvParseBool(v) {
 
 // ===== Sub-tabs =====
 function jvSwitchTab(tab) {
-  ['list', 'add'].forEach(t => {
+  ['list', 'add', 'db', 'dbadd'].forEach(t => {
     document.getElementById(`jv-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`jv-subpage-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'list') jvRenderList();
   if (tab === 'add' && !jvEditingId) jvClearForm();
+  if (tab === 'db') { jvdbRefreshLookupDropdowns(); jvdbRenderList(); }
+  if (tab === 'dbadd' && !jvdbEditingId) jvdbClearForm();
 }
 
-function jvOnPageShown() { jvRenderList(); }
+function jvOnPageShown() {
+  jvRenderList();
+  jvdbRenderList();
+}
 
 // ===== ดึงเจ้าของรถจากฐานข้อมูลหลัก =====
 function jvLookupVehicle() {
@@ -385,4 +390,325 @@ document.addEventListener('DOMContentLoaded', () => {
   jvClearForm();
   jvRenderList();
   jvInit();
+  jvdbClearForm();
+  jvdbRefreshLookupDropdowns();
+  jvdbRenderList();
+  jvdbInit();
 });
+
+// ===== ฐานข้อมูลรถร่วม (ทะเบียน/เจ้าของ/เอกสารและวันหมดอายุ) =====
+// เก็บ local ที่ localStorage key 'finflow_jointvehicle_db' และ sync กับ Firebase ที่ /jointVehicleDB
+// แจ้งเตือนก่อนวันหมดอายุ (ภาษี/พรบ./ประกันรถ/ประกันสินค้า) 90 วัน ด้วยตัวสีแดงในตาราง
+
+let jvdbRecords = JSON.parse(localStorage.getItem('finflow_jointvehicle_db') || '[]');
+let jvdbEditingId = null;
+let jvdbRef = null;
+let jvdbReady = false;
+
+const JVDB_EXPIRY_FIELDS = [
+  ['taxExpiry', 'ภาษี'],
+  ['compulsoryExpiry', 'พรบ.'],
+  ['vehInsExpiry', 'ประกันรถ'],
+  ['cargoInsExpiry', 'ประกันสินค้า'],
+];
+const JVDB_EXPIRY_WARN_DAYS = 90;
+
+const JVDB_XLSX_HEADERS = [
+  'ลำดับที่', 'ทะเบียนรถ', 'ประเภทรถ', 'เจ้าของรถ', 'หน่วยงาน', 'ลานจอด',
+  'วันที่สำเนาเล่ม (dd/mm/yyyy)', 'วันหมดอายุภาษี (dd/mm/yyyy)', 'วันหมดอายุพรบ. (dd/mm/yyyy)',
+  'วันหมดอายุประกันรถ (dd/mm/yyyy)', 'วันหมดอายุประกันสินค้า (dd/mm/yyyy)',
+];
+const JVDB_XLSX_COLWIDTHS = [8, 14, 14, 20, 16, 12, 18, 18, 18, 18, 18];
+
+function jvdbSave() { localStorage.setItem('finflow_jointvehicle_db', JSON.stringify(jvdbRecords)); }
+
+function jvdbNextRunningNo() {
+  return jvdbRecords.length ? Math.max(...jvdbRecords.map(r => r.runningNo || 0)) + 1 : 1;
+}
+
+// ===== Lookup dropdowns (หน่วยงาน/ลานจอด จากฐานข้อมูลหลัก) =====
+function jvdbFillDatalist(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = (list || []).map(name => `<option value="${escapeHtml(name)}">`).join('');
+}
+
+function jvdbRefreshLookupDropdowns() {
+  jvdbFillDatalist('jvdb-bu-list', mdBusinessUnits);
+  jvdbFillDatalist('jvdb-yard-list', mdYards);
+}
+
+// ===== วันหมดอายุ =====
+function jvdbDaysUntil(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  return Math.round((d - today) / 86400000);
+}
+
+function jvdbIsNearExpiry(dateStr) {
+  const days = jvdbDaysUntil(dateStr);
+  return days !== null && days <= JVDB_EXPIRY_WARN_DAYS;
+}
+
+function jvdbExpiryCell(dateStr) {
+  if (!dateStr) return '-';
+  const warn = jvdbIsNearExpiry(dateStr);
+  const label = formatDate(dateStr);
+  return warn ? `<span style="color:#d90429;font-weight:700;">${label}</span>` : label;
+}
+
+// ===== Save / Edit / Delete =====
+function jvdbSaveRecord() {
+  const plate = document.getElementById('jvdb-plate').value.trim();
+  if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
+
+  const record = {
+    plate,
+    vehicleType: document.getElementById('jvdb-vehicletype').value.trim(),
+    owner: document.getElementById('jvdb-owner').value.trim(),
+    businessUnit: document.getElementById('jvdb-bu').value.trim(),
+    yard: document.getElementById('jvdb-yard').value.trim(),
+    bookCopyDate: document.getElementById('jvdb-bookcopy').value,
+    taxExpiry: document.getElementById('jvdb-tax').value,
+    compulsoryExpiry: document.getElementById('jvdb-compulsory').value,
+    vehInsExpiry: document.getElementById('jvdb-vehins').value,
+    cargoInsExpiry: document.getElementById('jvdb-cargoins').value,
+  };
+
+  if (jvdbEditingId) {
+    const idx = jvdbRecords.findIndex(r => r.id === jvdbEditingId);
+    if (idx >= 0) {
+      jvdbRecords[idx] = { ...jvdbRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      showToast('บันทึกการแก้ไขแล้ว', 'success');
+    }
+    jvdbCancelEdit();
+  } else {
+    jvdbRecords.unshift({
+      id: 'JVDB_' + Date.now(),
+      runningNo: jvdbNextRunningNo(),
+      ...record,
+      createdAt: new Date().toISOString(),
+    });
+    showToast('บันทึกข้อมูลแล้ว', 'success');
+    jvdbClearForm();
+  }
+  jvdbSave();
+  jvdbPushIfReady();
+  jvdbRenderList();
+}
+
+function jvdbClearForm() {
+  jvdbEditingId = null;
+  const banner = document.getElementById('jvdb-edit-banner');
+  if (banner) banner.style.display = 'none';
+  ['jvdb-plate', 'jvdb-vehicletype', 'jvdb-owner', 'jvdb-bu', 'jvdb-yard', 'jvdb-bookcopy', 'jvdb-tax', 'jvdb-compulsory', 'jvdb-vehins', 'jvdb-cargoins']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+function jvdbEditRecord(id) {
+  const rec = jvdbRecords.find(r => r.id === id);
+  if (!rec) return;
+  jvdbEditingId = id;
+  document.getElementById('jvdb-edit-banner').style.display = 'flex';
+  document.getElementById('jvdb-edit-no').textContent = rec.runningNo;
+  document.getElementById('jvdb-plate').value = rec.plate || '';
+  document.getElementById('jvdb-vehicletype').value = rec.vehicleType || '';
+  document.getElementById('jvdb-owner').value = rec.owner || '';
+  document.getElementById('jvdb-bu').value = rec.businessUnit || '';
+  document.getElementById('jvdb-yard').value = rec.yard || '';
+  document.getElementById('jvdb-bookcopy').value = rec.bookCopyDate || '';
+  document.getElementById('jvdb-tax').value = rec.taxExpiry || '';
+  document.getElementById('jvdb-compulsory').value = rec.compulsoryExpiry || '';
+  document.getElementById('jvdb-vehins').value = rec.vehInsExpiry || '';
+  document.getElementById('jvdb-cargoins').value = rec.cargoInsExpiry || '';
+  jvSwitchTab('dbadd');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function jvdbCancelEdit() { jvdbClearForm(); }
+
+function jvdbDeleteRecord(id) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
+  jvdbRecords = jvdbRecords.filter(r => r.id !== id);
+  jvdbSave();
+  jvdbPushIfReady();
+  jvdbRenderList();
+  showToast('ลบแล้ว', 'warning');
+}
+
+function jvdbDeleteAllRecords() {
+  if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
+  if (!confirmDeleteWithPin(`ลบข้อมูลรถร่วมทั้งหมด ${jvdbRecords.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  jvdbRecords = [];
+  jvdbSave();
+  jvdbPushIfReady();
+  jvdbRenderList();
+  showToast('ลบทั้งหมดเรียบร้อย', 'success');
+}
+
+// ===== List / Filter =====
+function jvdbFilteredList() {
+  const search = (document.getElementById('jvdb-f-search')?.value || '').toLowerCase().trim();
+  if (!search) return jvdbRecords;
+  return jvdbRecords.filter(r =>
+    `${r.plate} ${r.vehicleType} ${r.owner} ${r.businessUnit} ${r.yard}`.toLowerCase().includes(search)
+  );
+}
+
+function jvdbClearListFilters() {
+  const el = document.getElementById('jvdb-f-search');
+  if (el) el.value = '';
+  jvdbRenderList();
+}
+
+function jvdbRenderList() {
+  const list = jvdbFilteredList();
+  const tbody = document.getElementById('jvdb-list-body');
+  const countEl = document.getElementById('jvdb-list-count');
+  if (!tbody) return;
+  const warnCount = list.filter(r => JVDB_EXPIRY_FIELDS.some(([key]) => jvdbIsNearExpiry(r[key]))).length;
+  if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ` + (warnCount ? ` — ใกล้หมดอายุ ${warnCount} คัน` : '');
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td>${r.runningNo}</td>
+      <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
+      <td>${escapeHtml(r.vehicleType || '-')}</td>
+      <td>${escapeHtml(r.owner || '-')}</td>
+      <td>${escapeHtml(r.businessUnit || '-')}</td>
+      <td>${escapeHtml(r.yard || '-')}</td>
+      <td>${r.bookCopyDate ? formatDate(r.bookCopyDate) : '-'}</td>
+      <td>${jvdbExpiryCell(r.taxExpiry)}</td>
+      <td>${jvdbExpiryCell(r.compulsoryExpiry)}</td>
+      <td>${jvdbExpiryCell(r.vehInsExpiry)}</td>
+      <td>${jvdbExpiryCell(r.cargoInsExpiry)}</td>
+      <td>
+        <button class="action-btn action-view" onclick="jvdbEditRecord('${r.id}')">แก้ไข</button>
+        <button class="action-btn action-delete" onclick="jvdbDeleteRecord('${r.id}')">ลบ</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ===== Excel Template / Export / Import (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียนรถ) =====
+function jvdbDownloadTemplate() {
+  const sample = [
+    JVDB_XLSX_HEADERS,
+    ['', '70-1234', 'หัวลาก', 'นายสมชาย ใจดี', 'Trailer', 'ABC', '15/01/2026', '31/12/2026', '31/12/2026', '31/12/2026', '31/12/2026'],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(sample);
+  ws['!cols'] = JVDB_XLSX_COLWIDTHS.map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, 'Template_ฐานข้อมูลรถร่วม.xlsx');
+  showToast('ดาวน์โหลด Template เรียบร้อย', 'success');
+}
+
+function jvdbExportExcel() {
+  if (!jvdbRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
+  const rows = [JVDB_XLSX_HEADERS, ...jvdbRecords.map(r => [
+    r.runningNo, r.plate || '', r.vehicleType || '', r.owner || '', r.businessUnit || '', r.yard || '',
+    formatDMY(r.bookCopyDate), formatDMY(r.taxExpiry), formatDMY(r.compulsoryExpiry), formatDMY(r.vehInsExpiry), formatDMY(r.cargoInsExpiry),
+  ])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = JVDB_XLSX_COLWIDTHS.map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ฐานข้อมูลรถร่วม');
+  XLSX.writeFile(wb, 'ฐานข้อมูลรถร่วม_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  showToast('Export เรียบร้อย', 'success');
+}
+
+function jvdbImportExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      let added = 0, updated = 0;
+      const now = new Date().toISOString();
+      rows.slice(1).forEach(row => {
+        const plate = String(row[1] || '').trim();
+        if (!plate) return;
+        const data = {
+          plate,
+          vehicleType: String(row[2] || '').trim(),
+          owner: String(row[3] || '').trim(),
+          businessUnit: String(row[4] || '').trim(),
+          yard: String(row[5] || '').trim(),
+          bookCopyDate: normalizeImportDate(row[6]),
+          taxExpiry: normalizeImportDate(row[7]),
+          compulsoryExpiry: normalizeImportDate(row[8]),
+          vehInsExpiry: normalizeImportDate(row[9]),
+          cargoInsExpiry: normalizeImportDate(row[10]),
+        };
+        // จับคู่ด้วย "ทะเบียนรถ" — ฐานข้อมูลนี้ทะเบียนต้องไม่ซ้ำกัน ถ้าเจอทะเบียนเดิมให้แก้ไขแทนเพิ่มซ้ำ
+        const existingIdx = jvdbRecords.findIndex(r => r.plate === plate);
+        if (existingIdx >= 0) {
+          jvdbRecords[existingIdx] = { ...jvdbRecords[existingIdx], ...data, updatedAt: now };
+          updated++;
+        } else {
+          jvdbRecords.push({
+            id: 'JVDB_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+            runningNo: jvdbNextRunningNo(),
+            ...data,
+            createdAt: now,
+          });
+          added++;
+        }
+      });
+      jvdbSave(); jvdbPushIfReady(); jvdbRenderList();
+      const msg = [updated ? `แก้ไข ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
+      showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
+    } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
+    evt.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ===== Firebase Sync =====
+function jvdbRecordsToObj(arr) {
+  const o = {};
+  (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; });
+  return o;
+}
+function jvdbObjToRecords(obj) {
+  if (!obj) return [];
+  if (Array.isArray(obj)) return obj.filter(Boolean);
+  return Object.values(obj).filter(r => r && r.id);
+}
+function jvdbApplyServer(serverRecords) {
+  jvdbRecords = serverRecords;
+  jvdbSave();
+  jvdbRenderList();
+}
+async function jvdbWriteFB() {
+  if (!jvdbRef) return;
+  try {
+    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(jvdbRef, jvdbRecordsToObj(jvdbRecords));
+  } catch (e) { console.warn('jvdbWriteFB error', e); }
+}
+function jvdbPushIfReady() { if (jvdbReady) jvdbWriteFB(); }
+
+async function jvdbInit() {
+  await jvWaitForFirebase();
+  try {
+    const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    jvdbRef = ref(fbDb, '/jointVehicleDB');
+    const snap = await get(jvdbRef);
+    if (snap.exists()) jvdbApplyServer(jvdbObjToRecords(snap.val()));
+    jvdbReady = true;
+    if (!snap.exists() && jvdbRecords.length > 0) await jvdbWriteFB();
+    onValue(jvdbRef, s => { if (s.exists()) jvdbApplyServer(jvdbObjToRecords(s.val())); });
+  } catch (e) { console.warn('jvdbInit error', e); }
+}

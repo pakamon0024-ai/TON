@@ -2280,6 +2280,8 @@
           <div class="subtabs">
             <button class="subtab active" id="jv-tab-list" onclick="jvSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="jv-tab-add" onclick="jvSwitchTab('add')">➕ เพิ่มบันทึก</button>
+            <button class="subtab" id="jv-tab-db" onclick="jvSwitchTab('db')">🚙 ฐานข้อมูลรถร่วม</button>
+            <button class="subtab" id="jv-tab-dbadd" onclick="jvSwitchTab('dbadd')">➕ เพิ่มรถร่วม</button>
           </div>
 
           <!-- LIST SUBPAGE -->
@@ -2413,6 +2415,96 @@
               <div class="form-actions">
                 <button class="btn-secondary" onclick="jvClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="jvSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- JOINT VEHICLE DATABASE — LIST SUBPAGE -->
+          <div class="subpage" id="jv-subpage-db">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="jvdb-f-search"
+                  placeholder="ทะเบียน / เจ้าของ / หน่วยงาน / ลานจอด..." oninput="jvdbRenderList()" /></div>
+              <button class="btn-secondary" onclick="jvdbClearListFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="jvdbDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="jvdbImportExcel(event)"></label>
+              <button class="btn-secondary" onclick="jvdbExportExcel()">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="jvdbDeleteAllRecords()">🗑️
+                ลบทั้งหมด</button>
+            </div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ
+              (แก้ในไฟล์ Excel แล้ว Import กลับมาได้) — ช่องวันหมดอายุที่เหลือไม่เกิน 90 วันจะแสดงเป็นตัวสีแดง</p>
+            <div class="ctxt" id="jvdb-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>ประเภทรถ</th>
+                    <th>เจ้าของรถ</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
+                    <th>วันที่สำเนาเล่ม</th>
+                    <th>หมดอายุภาษี</th>
+                    <th>หมดอายุพรบ.</th>
+                    <th>หมดอายุประกันรถ</th>
+                    <th>หมดอายุประกันสินค้า</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="jvdb-list-body">
+                  <tr>
+                    <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- JOINT VEHICLE DATABASE — ADD SUBPAGE -->
+          <div class="subpage" id="jv-subpage-dbadd">
+            <div class="edit-banner" id="jvdb-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="jvdb-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="jvdbCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลรถร่วม</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="jvdb-plate" placeholder="พิมพ์ทะเบียนรถ..." /></div>
+                <div class="form-group"><label>ประเภทรถ</label>
+                  <input type="text" id="jvdb-vehicletype" placeholder="เช่น หัวลาก, กระบะ..." /></div>
+                <div class="form-group"><label>เจ้าของรถ</label>
+                  <input type="text" id="jvdb-owner" placeholder="ชื่อเจ้าของรถ..." /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="jvdb-bu" list="jvdb-bu-list" placeholder="เลือก/พิมพ์หน่วยงาน..." /></div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="jvdb-yard" list="jvdb-yard-list" placeholder="เลือก/พิมพ์ลานจอด..." /></div>
+                <div class="form-group"><label>วันที่สำเนาเล่ม</label>
+                  <input type="date" id="jvdb-bookcopy" /></div>
+              </div>
+              <datalist id="jvdb-bu-list"></datalist>
+              <datalist id="jvdb-yard-list"></datalist>
+
+              <div class="fieldset-title">วันหมดอายุเอกสาร (แจ้งเตือนล่วงหน้า 90 วัน)</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันหมดอายุภาษี</label><input type="date" id="jvdb-tax" /></div>
+                <div class="form-group"><label>วันหมดอายุ พรบ.</label><input type="date" id="jvdb-compulsory" /></div>
+                <div class="form-group"><label>วันหมดอายุประกันรถ</label><input type="date" id="jvdb-vehins" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันหมดอายุประกันสินค้า</label><input type="date" id="jvdb-cargoins" /></div>
+              </div>
+
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="jvdbClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="jvdbSaveRecord()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
           </div>
