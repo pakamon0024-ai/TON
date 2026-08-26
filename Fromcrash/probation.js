@@ -316,12 +316,12 @@ function pbBuildMemoDoc(r) {
       <hr class="print-divider" />
       <p class="print-body-text" style="text-indent:0;">เรียน&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;คุณ${escapeHtml(r.name || '')} ตำแหน่ง ${escapeHtml(r.position || '-')}</p>
       <p class="print-body-text">โดยพบข้อหา ${escapeHtml(r.detail || '')}</p>
-      <p class="print-body-text" style="text-indent:0;font-weight:700;border-bottom:1px solid #222;display:inline-block;">การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</p>
+      <p class="print-body-text" style="text-indent:2em;font-weight:700;border-bottom:1px solid #222;display:inline-block;">การดำเนินการติดตามการทำงานพนักงาน : ขอให้ทางต้นสังกัดติดตามควบคุมพฤติกรรมของพนักงาน</p>
       <p class="print-body-text">( ตามข้อบังคับเกี่ยวกับการทำงานของบริษัท 2.1. วินัยทั่วไป 2.1.1 ประพฤติตนเป็นพลเมืองดีอยู่ในระเบียบและกฎของสังคม
         ไม่ประพฤติชั่วกระทำหรือร่วมกันกระทำการใดๆ อันเป็นการผิดกฎหมายของบ้านเมืองทั้งในและนอกบริเวณบริษัทฯ )</p>
       <p class="print-body-text">ผลการตรวจประวัติอาชญากรรมของท่านข้างต้นตามที่กล่าวมา หากท่านมีความประสงค์ที่จะปฏิบัติงานร่วมกับทางบริษัทฯ
         ขอให้ท่านปรับปรุงทัศนคติและการทำงานให้ดีขึ้น โดยห้ามมิให้ท่านกระทำการดังกล่าวนี้อีก</p>
-      <p class="print-body-text" style="text-indent:0;font-weight:700;border-bottom:1px solid #222;display:inline-block;">หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</p>
+      <p class="print-body-text" style="text-indent:2em;font-weight:700;border-bottom:1px solid #222;display:inline-block;">หากปรากฎ ว่าท่านยังละเลยเพิกเฉย กระทำผิดซ้ำหรือกระทำความผิดอื่นที่ทำให้บริษัทฯได้รับความเสียหาย</p>
       <p class="print-body-text" style="text-indent:0;text-align:center;font-weight:700;">" ทางบริษัทฯ ขอแจ้งสิ้นสุดสภาพการเป็นพนักงานของทางบริษัทฯ ทันที "</p>
       <p class="print-body-text">ข้าพเจ้า ได้อ่านข้อความข้างต้นโดยละเอียดแล้ว ขอรับรองว่าเป็นความจริงทุกประการ โดยการให้ข้อความข้างต้นนี้
         เกิดจากความสมัครใจของข้าพเจ้า โดยมิได้ถูกบังคับหรือฝืนใจแต่อย่างใดใดทั้งสิ้น</p>
@@ -345,14 +345,22 @@ function pbBuildMemoDoc(r) {
 }
 
 // name === null ตัดแถวชื่อในวงเล็บออกไปเลย (ใช้กับช่องที่ไม่ต้องระบุชื่อ เช่น กรรมการผู้จัดการ)
-// name === '' (ว่างแต่ไม่ใช่ null) เติมช่องว่างจริงในวงเล็บให้กว้างพอสำหรับเขียนชื่อด้วยมือ — แค่ min-width
-// เฉยๆ ไม่พอเพราะ "()" เนื้อหาแค่ 2 ตัวอักษรจะถูกจัดกึ่งกลางเป็นก้อนเดียว ไม่เห็นช่องว่างจริงให้เขียน
+// ชื่อในวงเล็บต้องอยู่ตรงกลาง "จุดประ" ของบรรทัดลงชื่อ ไม่ใช่กลางทั้งเซลล์ (เพราะป้ายชื่อ label ที่ต่อท้ายจุดประ
+// ทำให้กึ่งกลางของทั้งบรรทัดเยื้องไปจากกึ่งกลางจุดประจริง) — วิธีแก้: บรรทัดชื่อ replicate โครงสร้าง prefix/label
+// เดียวกับบรรทัดลงชื่อทุกตัวอักษร แต่ซ่อนไว้ (visibility:hidden) เพื่อให้ความกว้างเท่ากันเป๊ะ แล้ว text-align:center
+// เฉพาะช่องจุดประ/ชื่อ ซึ่งจะตกตำแหน่งเดียวกับจุดประของบรรทัดบนเสมอเมื่อทั้งสอง div ถูก text-align:center เท่ากัน
 function pbSigCell(label, name) {
+  const dots = '.'.repeat(56);
   const nameContent = name ? escapeHtml(name) : '&nbsp;'.repeat(34);
-  const nameRow = name === null ? '' : `<div class="pb-sig-name-wrap"><span class="pb-sig-name">(${nameContent})</span></div>`;
+  const nameRow = name === null ? '' : `
+    <div class="pb-sig-line pb-sig-line-name">
+      <span class="pb-sig-prefix">ลงชื่อ&nbsp;</span><span class="pb-sig-blank">(${nameContent})</span><span class="pb-sig-suffix">&nbsp;${label}</span>
+    </div>`;
   return `
     <div class="pb-sig-cell">
-      <div class="pb-sig-line">ลงชื่อ .......................................... ${label}</div>
+      <div class="pb-sig-line">
+        <span class="pb-sig-prefix">ลงชื่อ&nbsp;</span><span class="pb-sig-blank">${dots}</span><span class="pb-sig-suffix">&nbsp;${label}</span>
+      </div>
       ${nameRow}
       <div class="pb-sig-date">ลงวันที่ ............/..................../...............</div>
     </div>
