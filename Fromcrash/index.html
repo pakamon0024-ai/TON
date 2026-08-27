@@ -1734,6 +1734,7 @@
                   <tr>
                     <th>เลขที่</th>
                     <th>ทะเบียนรถ</th>
+                    <th>ลานจอด</th>
                     <th>อู่/ศูนย์ซ่อม</th>
                     <th>วันที่เข้าอู่</th>
                     <th>วันที่ซ่อมเสร็จ</th>
@@ -1745,7 +1746,7 @@
                 </thead>
                 <tbody id="gh-list-body">
                   <tr>
-                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -1763,12 +1764,13 @@
               <div class="form-row-3">
                 <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
                   <input type="text" id="gh-plate" list="gh-plate-list" placeholder="พิมพ์ทะเบียนรถ..." /></div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="gh-yard" list="gh-yard-list" placeholder="เลือก/พิมพ์ลานจอด..." /></div>
                 <div class="form-group"><label>อู่/ศูนย์ซ่อม</label>
                   <input type="text" id="gh-shop" placeholder="ชื่ออู่/ศูนย์ซ่อม..." /></div>
-                <div class="form-group"><label>ค่าใช้จ่ายรอบนี้</label>
-                  <input type="number" min="0" step="0.01" id="gh-cost" placeholder="0.00" /></div>
               </div>
               <datalist id="gh-plate-list"></datalist>
+              <datalist id="gh-yard-list"></datalist>
               <div class="form-row-3">
                 <div class="form-group"><label>วันที่เข้าอู่ <span class="req">*</span></label>
                   <input type="date" id="gh-in" oninput="ghCalcRepairDays()" /></div>
@@ -1776,6 +1778,10 @@
                   <input type="date" id="gh-out" oninput="ghCalcRepairDays()" /></div>
                 <div class="form-group"><label>จำนวนวันซ่อม (auto)</label>
                   <input type="text" id="gh-days" readonly /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ค่าใช้จ่ายรอบนี้</label>
+                  <input type="number" min="0" step="0.01" id="gh-cost" placeholder="0.00" /></div>
               </div>
               <div class="form-row-3">
                 <div class="form-group full" style="grid-column:1/-1;">

@@ -841,8 +841,8 @@ let ghRef = null;
 let ghReady = false;
 let ghCharts = {};
 
-const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
-const GH_XLSX_COLWIDTHS = [8, 14, 20, 18, 18, 30, 14];
+const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'ลานจอด', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
+const GH_XLSX_COLWIDTHS = [8, 14, 12, 20, 18, 18, 30, 14];
 
 function ghSave() { localStorage.setItem('finflow_garage_history', JSON.stringify(ghRecords)); }
 
@@ -941,6 +941,7 @@ function ghFillDatalist(id, list) {
 
 function ghRefreshLookupDropdowns() {
   ghFillDatalist('gh-plate-list', (mdVehicles || []).map(v => v.plate).filter(Boolean));
+  ghFillDatalist('gh-yard-list', mdYards);
 }
 
 function ghCalcRepairDays() {
@@ -961,6 +962,7 @@ function ghSaveRecord() {
 
   const record = {
     plate,
+    yard: document.getElementById('gh-yard').value.trim(),
     inDate,
     outDate: document.getElementById('gh-out').value,
     shop: document.getElementById('gh-shop').value.trim(),
@@ -994,7 +996,7 @@ function ghClearForm() {
   ghEditingId = null;
   const banner = document.getElementById('gh-edit-banner');
   if (banner) banner.style.display = 'none';
-  ['gh-plate', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
+  ['gh-plate', 'gh-yard', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 }
 
@@ -1005,6 +1007,7 @@ function ghEditRecord(id) {
   document.getElementById('gh-edit-banner').style.display = 'flex';
   document.getElementById('gh-edit-no').textContent = rec.runningNo;
   document.getElementById('gh-plate').value = rec.plate || '';
+  document.getElementById('gh-yard').value = rec.yard || '';
   document.getElementById('gh-shop').value = rec.shop || '';
   document.getElementById('gh-in').value = rec.inDate || '';
   document.getElementById('gh-out').value = rec.outDate || '';
@@ -1040,7 +1043,7 @@ function ghDeleteAllRecords() {
 function ghFilteredList() {
   const search = (document.getElementById('gh-f-search')?.value || '').toLowerCase().trim();
   const list = search
-    ? ghRecords.filter(r => `${r.plate} ${r.shop} ${r.reason}`.toLowerCase().includes(search))
+    ? ghRecords.filter(r => `${r.plate} ${r.yard} ${r.shop} ${r.reason}`.toLowerCase().includes(search))
     : ghRecords;
   return [...list].sort((a, b) => new Date(b.inDate || 0) - new Date(a.inDate || 0));
 }
@@ -1064,13 +1067,14 @@ function ghRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
+      <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.shop || '-')}</td>
       <td>${r.inDate ? formatDate(r.inDate) : '-'}</td>
       <td>${r.outDate ? formatDate(r.outDate) : '-'}</td>
@@ -1089,7 +1093,7 @@ function ghRenderList() {
 function ghDownloadTemplate() {
   const sample = [
     GH_XLSX_HEADERS,
-    ['', '70-1234', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500'],
+    ['', '70-1234', 'ABC', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500'],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -1102,7 +1106,7 @@ function ghDownloadTemplate() {
 function ghExportExcel() {
   if (!ghRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [GH_XLSX_HEADERS, ...ghRecords.map(r => [
-    r.runningNo, r.plate || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0,
+    r.runningNo, r.plate || '', r.yard || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0,
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -1128,11 +1132,12 @@ function ghImportExcel(evt) {
         if (!plate) return;
         const data = {
           plate,
-          shop: String(row[2] || '').trim(),
-          inDate: normalizeImportDate(row[3]),
-          outDate: normalizeImportDate(row[4]),
-          reason: String(row[5] || '').trim(),
-          cost: parseFloat(row[6]) || 0,
+          yard: String(row[2] || '').trim(),
+          shop: String(row[3] || '').trim(),
+          inDate: normalizeImportDate(row[4]),
+          outDate: normalizeImportDate(row[5]),
+          reason: String(row[6] || '').trim(),
+          cost: parseFloat(row[7]) || 0,
         };
         // จับคู่ด้วย "ลำดับที่" (คอลัมน์แรก) — ถ้ามีเลขนี้อยู่แล้วให้แก้ไขรายการเดิมแทนการเพิ่มซ้ำ
         const rowNo = parseInt(row[0]);
