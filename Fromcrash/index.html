@@ -1299,6 +1299,8 @@
             <button class="subtab" id="inc-tab-add" onclick="incSwitchTab('add')">➕ เพิ่มบันทึก</button>
             <button class="subtab" id="inc-tab-trouble" onclick="incSwitchTab('trouble')">📨 จัดส่งรายงาน Trouble
               Report</button>
+            <button class="subtab" id="gh-tab-dashboard" onclick="ghSwitchTab('dashboard')">📊
+              แดชบอร์ดประวัติเข้าอู่</button>
             <button class="subtab" id="gh-tab-list" onclick="ghSwitchTab('list')">🔧 ประวัติการนำรถเข้าอู่</button>
             <button class="subtab" id="gh-tab-add" onclick="ghSwitchTab('add')">➕ เพิ่มประวัติเข้าอู่</button>
           </div>
@@ -1681,6 +1683,28 @@
                   </thead>
                   <tbody id="inc-trouble-body"></tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- GARAGE HISTORY — DASHBOARD SUBPAGE -->
+          <div class="subpage" id="gh-subpage-dashboard">
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งที่เข้าอู่รายเดือน</div>
+                <div class="chart-box"><canvas id="gh-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">ค่าใช้จ่ายรวมรายเดือน</div>
+                <div class="chart-box"><canvas id="gh-chart-cost"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งตามอู่/ศูนย์ซ่อม</div>
+                <div class="chart-box"><canvas id="gh-chart-shop"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งตามทะเบียนรถ</div>
+                <div class="chart-box"><canvas id="gh-chart-plate"></canvas></div>
               </div>
             </div>
           </div>

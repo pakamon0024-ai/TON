@@ -47,7 +47,7 @@ function incSwitchTab(tab) {
     document.getElementById(`inc-subpage-${t}`).classList.toggle('active', t === tab);
   });
   // แท็บ "ประวัติการนำรถเข้าอู่" (gh-*) อยู่ในแถบ subtabs เดียวกันของหน้านี้ — ต้องปิดไว้เสมอเวลาสลับมาแท็บฝั่ง inc
-  ['list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`gh-tab-${t}`)?.classList.remove('active');
     document.getElementById(`gh-subpage-${t}`)?.classList.remove('active');
   });
@@ -63,6 +63,7 @@ function incOnPageShown() {
   incRenderDashboard();
   ghRefreshLookupDropdowns();
   ghRenderList();
+  if (document.getElementById('gh-subpage-dashboard')?.classList.contains('active')) ghRenderDashboard();
 }
 
 // ===== Auto-calc helpers =====
@@ -838,6 +839,7 @@ let ghRecords = JSON.parse(localStorage.getItem('finflow_garage_history') || '[]
 let ghEditingId = null;
 let ghRef = null;
 let ghReady = false;
+let ghCharts = {};
 
 const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
 const GH_XLSX_COLWIDTHS = [8, 14, 20, 18, 18, 30, 14];
@@ -855,12 +857,79 @@ function ghSwitchTab(tab) {
     document.getElementById(`inc-tab-${t}`)?.classList.remove('active');
     document.getElementById(`inc-subpage-${t}`)?.classList.remove('active');
   });
-  ['list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`gh-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gh-subpage-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'dashboard') ghRenderDashboard();
   if (tab === 'list') ghRenderList();
   if (tab === 'add' && !ghEditingId) ghClearForm();
+}
+
+// ===== Dashboard =====
+const GH_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
+const GH_CHART_TICK = { color: '#3d4f6d', font: GH_CHART_FONT };
+const GH_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
+const GH_CHART_COLORS = {
+  month: { bg: 'rgba(67,97,238,0.85)', border: '#4361ee' },
+  cost:  { bg: 'rgba(255,107,0,0.88)', border: '#ff6b00' },
+  shop:  { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
+  plate: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
+};
+const GH_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function ghDestroyChart(id) {
+  if (ghCharts[id]) { ghCharts[id].destroy(); delete ghCharts[id]; }
+}
+
+function ghBarChart(canvasId, key, labels, data, opts) {
+  const { maxRotation = 0, isMoney = false, datasetLabel = 'จำนวนครั้ง' } = opts || {};
+  ghDestroyChart(key);
+  const dl = {
+    display: true, anchor: 'end', align: 'end', color: '#1a2540',
+    font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
+    formatter: v => v > 0 ? (isMoney ? formatMoney(v) : v) : '',
+  };
+  ghCharts[key] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: datasetLabel, data, backgroundColor: GH_CHART_COLORS[key].bg, borderColor: GH_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: dl },
+      scales: {
+        y: { beginAtZero: true, grace: '15%', grid: GH_CHART_GRID, ticks: { ...GH_CHART_TICK, precision: 0 } },
+        x: { grid: { display: false }, ticks: { ...GH_CHART_TICK, autoSkip: false, minRotation: maxRotation, maxRotation } },
+      },
+    },
+  });
+}
+
+function ghRenderDashboard() {
+  const curYear = new Date().getFullYear();
+  const monthCount = new Array(12).fill(0);
+  const monthCost = new Array(12).fill(0);
+  ghRecords.forEach(r => {
+    if (!r.inDate) return;
+    const d = new Date(r.inDate);
+    if (!isNaN(d) && d.getFullYear() === curYear) {
+      monthCount[d.getMonth()]++;
+      monthCost[d.getMonth()] += r.cost || 0;
+    }
+  });
+  ghBarChart('gh-chart-month', 'month', GH_MONTH_LABELS_TH, monthCount);
+  ghBarChart('gh-chart-cost', 'cost', GH_MONTH_LABELS_TH, monthCost, { isMoney: true, datasetLabel: 'ค่าใช้จ่าย (บาท)' });
+
+  const countBy = field => {
+    const map = {};
+    ghRecords.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  };
+
+  const shopSorted = countBy('shop');
+  ghBarChart('gh-chart-shop', 'shop', shopSorted.map(e => e[0]), shopSorted.map(e => e[1]), { maxRotation: 30 });
+
+  const plateSorted = countBy('plate');
+  ghBarChart('gh-chart-plate', 'plate', plateSorted.map(e => e[0]), plateSorted.map(e => e[1]), { maxRotation: 30 });
 }
 
 // ===== Lookup dropdowns =====
