@@ -46,6 +46,11 @@ function incSwitchTab(tab) {
     document.getElementById(`inc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`inc-subpage-${t}`).classList.toggle('active', t === tab);
   });
+  // แท็บ "ประวัติการนำรถเข้าอู่" (gh-*) อยู่ในแถบ subtabs เดียวกันของหน้านี้ — ต้องปิดไว้เสมอเวลาสลับมาแท็บฝั่ง inc
+  ['list', 'add'].forEach(t => {
+    document.getElementById(`gh-tab-${t}`)?.classList.remove('active');
+    document.getElementById(`gh-subpage-${t}`)?.classList.remove('active');
+  });
   if (tab === 'dashboard') incRenderDashboard();
   if (tab === 'list') incRenderList();
   if (tab === 'add' && !incEditingId) incClearForm();
@@ -56,6 +61,8 @@ function incSwitchTab(tab) {
 // (Chart.js วาดผิดถ้า container ยังซ่อนอยู่ตอนสร้าง canvas)
 function incOnPageShown() {
   incRenderDashboard();
+  ghRefreshLookupDropdowns();
+  ghRenderList();
 }
 
 // ===== Auto-calc helpers =====
@@ -818,4 +825,305 @@ document.addEventListener('DOMContentLoaded', () => {
   incClearForm();
   incRenderList();
   incInit();
+  ghRefreshLookupDropdowns();
+  ghClearForm();
+  ghRenderList();
+  ghInit();
 });
+
+// ===== ประวัติการนำรถเข้าอู่ (แยกต่างหากจากบันทึกอุบัติเหตุ — รถคันเดียวเข้าอู่ได้หลายครั้ง) =====
+// เก็บ local ที่ localStorage key 'finflow_garage_history' และ sync กับ Firebase ที่ /garageHistory
+
+let ghRecords = JSON.parse(localStorage.getItem('finflow_garage_history') || '[]');
+let ghEditingId = null;
+let ghRef = null;
+let ghReady = false;
+
+const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
+const GH_XLSX_COLWIDTHS = [8, 14, 20, 18, 18, 30, 14];
+
+function ghSave() { localStorage.setItem('finflow_garage_history', JSON.stringify(ghRecords)); }
+
+function ghNextRunningNo() {
+  return ghRecords.length ? Math.max(...ghRecords.map(r => r.runningNo || 0)) + 1 : 1;
+}
+
+// ===== Sub-tabs =====
+function ghSwitchTab(tab) {
+  // gh-* อยู่ในแถบ subtabs เดียวกับ inc-* (dashboard/list/add/trouble) — ต้องปิดฝั่ง inc ไว้เสมอเวลาสลับมาแท็บนี้
+  ['dashboard', 'list', 'add', 'trouble'].forEach(t => {
+    document.getElementById(`inc-tab-${t}`)?.classList.remove('active');
+    document.getElementById(`inc-subpage-${t}`)?.classList.remove('active');
+  });
+  ['list', 'add'].forEach(t => {
+    document.getElementById(`gh-tab-${t}`).classList.toggle('active', t === tab);
+    document.getElementById(`gh-subpage-${t}`).classList.toggle('active', t === tab);
+  });
+  if (tab === 'list') ghRenderList();
+  if (tab === 'add' && !ghEditingId) ghClearForm();
+}
+
+// ===== Lookup dropdowns =====
+function ghFillDatalist(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = (list || []).map(name => `<option value="${escapeHtml(name)}">`).join('');
+}
+
+function ghRefreshLookupDropdowns() {
+  ghFillDatalist('gh-plate-list', (mdVehicles || []).map(v => v.plate).filter(Boolean));
+}
+
+function ghCalcRepairDays() {
+  const inDate = document.getElementById('gh-in').value;
+  const outDate = document.getElementById('gh-out').value;
+  const el = document.getElementById('gh-days');
+  if (!inDate || !outDate) { el.value = ''; return; }
+  const diff = Math.round((new Date(outDate) - new Date(inDate)) / 86400000);
+  el.value = diff >= 0 ? diff + ' วัน' : '-';
+}
+
+// ===== Save / Edit / Delete =====
+function ghSaveRecord() {
+  const plate = document.getElementById('gh-plate').value.trim();
+  const inDate = document.getElementById('gh-in').value;
+  if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
+  if (!inDate) { showToast('กรุณาระบุวันที่เข้าอู่', 'warning'); return; }
+
+  const record = {
+    plate,
+    inDate,
+    outDate: document.getElementById('gh-out').value,
+    shop: document.getElementById('gh-shop').value.trim(),
+    reason: document.getElementById('gh-reason').value.trim(),
+    cost: parseFloat(document.getElementById('gh-cost').value) || 0,
+  };
+
+  if (ghEditingId) {
+    const idx = ghRecords.findIndex(r => r.id === ghEditingId);
+    if (idx >= 0) {
+      ghRecords[idx] = { ...ghRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      showToast('บันทึกการแก้ไขแล้ว', 'success');
+    }
+    ghCancelEdit();
+  } else {
+    ghRecords.unshift({
+      id: 'GH_' + Date.now(),
+      runningNo: ghNextRunningNo(),
+      ...record,
+      createdAt: new Date().toISOString(),
+    });
+    showToast('บันทึกข้อมูลแล้ว', 'success');
+    ghClearForm();
+  }
+  ghSave();
+  ghPushIfReady();
+  ghRenderList();
+}
+
+function ghClearForm() {
+  ghEditingId = null;
+  const banner = document.getElementById('gh-edit-banner');
+  if (banner) banner.style.display = 'none';
+  ['gh-plate', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+}
+
+function ghEditRecord(id) {
+  const rec = ghRecords.find(r => r.id === id);
+  if (!rec) return;
+  ghEditingId = id;
+  document.getElementById('gh-edit-banner').style.display = 'flex';
+  document.getElementById('gh-edit-no').textContent = rec.runningNo;
+  document.getElementById('gh-plate').value = rec.plate || '';
+  document.getElementById('gh-shop').value = rec.shop || '';
+  document.getElementById('gh-in').value = rec.inDate || '';
+  document.getElementById('gh-out').value = rec.outDate || '';
+  document.getElementById('gh-reason').value = rec.reason || '';
+  document.getElementById('gh-cost').value = rec.cost || '';
+  ghCalcRepairDays();
+  ghSwitchTab('add');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function ghCancelEdit() { ghClearForm(); }
+
+function ghDeleteRecord(id) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
+  ghRecords = ghRecords.filter(r => r.id !== id);
+  ghSave();
+  ghPushIfReady();
+  ghRenderList();
+  showToast('ลบแล้ว', 'warning');
+}
+
+function ghDeleteAllRecords() {
+  if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
+  if (!confirmDeleteWithPin(`ลบประวัติการนำรถเข้าอู่ทั้งหมด ${ghRecords.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  ghRecords = [];
+  ghSave();
+  ghPushIfReady();
+  ghRenderList();
+  showToast('ลบทั้งหมดเรียบร้อย', 'success');
+}
+
+// ===== List / Filter =====
+function ghFilteredList() {
+  const search = (document.getElementById('gh-f-search')?.value || '').toLowerCase().trim();
+  const list = search
+    ? ghRecords.filter(r => `${r.plate} ${r.shop} ${r.reason}`.toLowerCase().includes(search))
+    : ghRecords;
+  return [...list].sort((a, b) => new Date(b.inDate || 0) - new Date(a.inDate || 0));
+}
+
+function ghClearListFilters() {
+  const el = document.getElementById('gh-f-search');
+  if (el) el.value = '';
+  ghRenderList();
+}
+
+function ghRepairDaysLabel(r) {
+  if (!r.inDate || !r.outDate) return '-';
+  const diff = Math.round((new Date(r.outDate) - new Date(r.inDate)) / 86400000);
+  return diff >= 0 ? diff + ' วัน' : '-';
+}
+
+function ghRenderList() {
+  const list = ghFilteredList();
+  const tbody = document.getElementById('gh-list-body');
+  const countEl = document.getElementById('gh-list-count');
+  if (!tbody) return;
+  if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td>${r.runningNo}</td>
+      <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
+      <td>${escapeHtml(r.shop || '-')}</td>
+      <td>${r.inDate ? formatDate(r.inDate) : '-'}</td>
+      <td>${r.outDate ? formatDate(r.outDate) : '-'}</td>
+      <td>${ghRepairDaysLabel(r)}</td>
+      <td>${escapeHtml(r.reason || '-')}</td>
+      <td>${formatMoney(r.cost || 0)}</td>
+      <td>
+        <button class="action-btn action-view" onclick="ghEditRecord('${r.id}')">แก้ไข</button>
+        <button class="action-btn action-delete" onclick="ghDeleteRecord('${r.id}')">ลบ</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ===== Excel Template / Export / Import (นำเข้าซ้ำ = แก้ไข จับคู่ด้วย "ลำดับที่") =====
+function ghDownloadTemplate() {
+  const sample = [
+    GH_XLSX_HEADERS,
+    ['', '70-1234', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500'],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(sample);
+  ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, 'Template_ประวัติการนำรถเข้าอู่.xlsx');
+  showToast('ดาวน์โหลด Template เรียบร้อย', 'success');
+}
+
+function ghExportExcel() {
+  if (!ghRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
+  const rows = [GH_XLSX_HEADERS, ...ghRecords.map(r => [
+    r.runningNo, r.plate || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0,
+  ])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ประวัติเข้าอู่');
+  XLSX.writeFile(wb, 'ประวัติการนำรถเข้าอู่_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  showToast('Export เรียบร้อย', 'success');
+}
+
+function ghImportExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      let added = 0, updated = 0;
+      const now = new Date().toISOString();
+      rows.slice(1).forEach(row => {
+        const plate = String(row[1] || '').trim();
+        if (!plate) return;
+        const data = {
+          plate,
+          shop: String(row[2] || '').trim(),
+          inDate: normalizeImportDate(row[3]),
+          outDate: normalizeImportDate(row[4]),
+          reason: String(row[5] || '').trim(),
+          cost: parseFloat(row[6]) || 0,
+        };
+        // จับคู่ด้วย "ลำดับที่" (คอลัมน์แรก) — ถ้ามีเลขนี้อยู่แล้วให้แก้ไขรายการเดิมแทนการเพิ่มซ้ำ
+        const rowNo = parseInt(row[0]);
+        const existingIdx = rowNo ? ghRecords.findIndex(r => r.runningNo === rowNo) : -1;
+        if (existingIdx >= 0) {
+          ghRecords[existingIdx] = { ...ghRecords[existingIdx], ...data, updatedAt: now };
+          updated++;
+        } else {
+          ghRecords.push({
+            id: 'GH_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+            runningNo: ghNextRunningNo(),
+            ...data,
+            createdAt: now,
+          });
+          added++;
+        }
+      });
+      ghSave(); ghPushIfReady(); ghRenderList();
+      const msg = [updated ? `แก้ไข ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
+      showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
+    } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
+    evt.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ===== Firebase Sync =====
+function ghRecordsToObj(arr) {
+  const o = {};
+  (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; });
+  return o;
+}
+function ghObjToRecords(obj) {
+  if (!obj) return [];
+  if (Array.isArray(obj)) return obj.filter(Boolean);
+  return Object.values(obj).filter(r => r && r.id);
+}
+function ghApplyServer(serverRecords) {
+  ghRecords = serverRecords;
+  ghSave();
+  ghRenderList();
+}
+async function ghWriteFB() {
+  if (!ghRef) return;
+  try {
+    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ghRef, ghRecordsToObj(ghRecords));
+  } catch (e) { console.warn('ghWriteFB error', e); }
+}
+function ghPushIfReady() { if (ghReady) ghWriteFB(); }
+
+async function ghInit() {
+  await incWaitForFirebase();
+  try {
+    const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    ghRef = ref(fbDb, '/garageHistory');
+    const snap = await get(ghRef);
+    if (snap.exists()) ghApplyServer(ghObjToRecords(snap.val()));
+    ghReady = true;
+    if (!snap.exists() && ghRecords.length > 0) await ghWriteFB();
+    onValue(ghRef, s => { if (s.exists()) ghApplyServer(ghObjToRecords(s.val())); });
+  } catch (e) { console.warn('ghInit error', e); }
+}

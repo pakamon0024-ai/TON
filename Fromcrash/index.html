@@ -1299,6 +1299,8 @@
             <button class="subtab" id="inc-tab-add" onclick="incSwitchTab('add')">➕ เพิ่มบันทึก</button>
             <button class="subtab" id="inc-tab-trouble" onclick="incSwitchTab('trouble')">📨 จัดส่งรายงาน Trouble
               Report</button>
+            <button class="subtab" id="gh-tab-list" onclick="ghSwitchTab('list')">🔧 ประวัติการนำรถเข้าอู่</button>
+            <button class="subtab" id="gh-tab-add" onclick="ghSwitchTab('add')">➕ เพิ่มประวัติเข้าอู่</button>
           </div>
 
           <!-- DASHBOARD SUBPAGE -->
@@ -1679,6 +1681,87 @@
                   </thead>
                   <tbody id="inc-trouble-body"></tbody>
                 </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- GARAGE HISTORY — LIST SUBPAGE -->
+          <div class="subpage" id="gh-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gh-f-search"
+                  placeholder="ทะเบียน / อู่ / สาเหตุ..." oninput="ghRenderList()" /></div>
+              <button class="btn-secondary" onclick="ghClearListFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="ghDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="ghImportExcel(event)"></label>
+              <button class="btn-secondary" onclick="ghExportExcel()">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="ghDeleteAllRecords()">🗑️
+                ลบทั้งหมด</button>
+            </div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ลำดับที่" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ
+              (แก้ในไฟล์ Excel แล้ว Import กลับมาได้) — รถคันเดียวกันเข้าอู่ได้หลายครั้ง แต่ละครั้งบันทึกแยกเป็นคนละรายการ</p>
+            <div class="ctxt" id="gh-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>อู่/ศูนย์ซ่อม</th>
+                    <th>วันที่เข้าอู่</th>
+                    <th>วันที่ซ่อมเสร็จ</th>
+                    <th>จำนวนวันซ่อม</th>
+                    <th>รายละเอียด/สาเหตุ</th>
+                    <th>ค่าใช้จ่าย</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="gh-list-body">
+                  <tr>
+                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- GARAGE HISTORY — ADD SUBPAGE -->
+          <div class="subpage" id="gh-subpage-add">
+            <div class="edit-banner" id="gh-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="gh-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="ghCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ประวัติการนำรถเข้าอู่</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="gh-plate" list="gh-plate-list" placeholder="พิมพ์ทะเบียนรถ..." /></div>
+                <div class="form-group"><label>อู่/ศูนย์ซ่อม</label>
+                  <input type="text" id="gh-shop" placeholder="ชื่ออู่/ศูนย์ซ่อม..." /></div>
+                <div class="form-group"><label>ค่าใช้จ่ายรอบนี้</label>
+                  <input type="number" min="0" step="0.01" id="gh-cost" placeholder="0.00" /></div>
+              </div>
+              <datalist id="gh-plate-list"></datalist>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่เข้าอู่ <span class="req">*</span></label>
+                  <input type="date" id="gh-in" oninput="ghCalcRepairDays()" /></div>
+                <div class="form-group"><label>วันที่ซ่อมเสร็จ</label>
+                  <input type="date" id="gh-out" oninput="ghCalcRepairDays()" /></div>
+                <div class="form-group"><label>จำนวนวันซ่อม (auto)</label>
+                  <input type="text" id="gh-days" readonly /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;">
+                  <label>รายละเอียด/สาเหตุที่เข้าอู่</label>
+                  <textarea class="fta" id="gh-reason" rows="2" placeholder="เช่น เปลี่ยนกันชนหน้า, ซ่อมระบบเบรก..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="ghClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="ghSaveRecord()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
           </div>
