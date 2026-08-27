@@ -1736,15 +1736,15 @@
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th>เลขที่</th>
-                    <th>ทะเบียนรถ</th>
-                    <th>ลานจอด</th>
-                    <th>อู่/ศูนย์ซ่อม</th>
-                    <th>วันที่เข้าอู่</th>
-                    <th>วันที่ซ่อมเสร็จ</th>
-                    <th>จำนวนวันซ่อม</th>
+                    <th class="tk-sortable" onclick="ghSortBy('runningNo')">เลขที่<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-runningNo"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('plate')">ทะเบียนรถ<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-plate"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('yard')">ลานจอด<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-yard"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('shop')">อู่/ศูนย์ซ่อม<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-shop"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('inDate')">วันที่เข้าอู่<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-inDate"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('outDate')">วันที่ซ่อมเสร็จ<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-outDate"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('repairDays')">จำนวนวันซ่อม<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-repairDays"></span></th>
                     <th>รายละเอียด/สาเหตุ</th>
-                    <th>ค่าใช้จ่าย</th>
+                    <th class="tk-sortable" onclick="ghSortBy('cost')">ค่าใช้จ่าย<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-cost"></span></th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>

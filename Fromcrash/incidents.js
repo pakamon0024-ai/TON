@@ -840,9 +840,13 @@ let ghEditingId = null;
 let ghRef = null;
 let ghReady = false;
 let ghCharts = {};
+let ghSortField = null; // null = ใช้ลำดับ default (วันที่เข้าอู่ใหม่สุดก่อน)
+let ghSortDir = 1;
 
 const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'ลานจอด', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
 const GH_XLSX_COLWIDTHS = [8, 14, 12, 20, 18, 18, 30, 14];
+const GH_NUMERIC_FIELDS = ['runningNo', 'cost'];
+const GH_DATE_FIELDS = ['inDate', 'outDate'];
 
 function ghSave() { localStorage.setItem('finflow_garage_history', JSON.stringify(ghRecords)); }
 
@@ -1048,8 +1052,36 @@ function ghFilteredList() {
   const search = (document.getElementById('gh-f-search')?.value || '').toLowerCase().trim();
   const list = search
     ? ghRecords.filter(r => `${r.plate} ${r.yard} ${r.shop} ${r.reason}`.toLowerCase().includes(search))
-    : ghRecords;
-  return [...list].sort((a, b) => new Date(b.inDate || 0) - new Date(a.inDate || 0));
+    : [...ghRecords];
+  if (!ghSortField) return list.sort((a, b) => new Date(b.inDate || 0) - new Date(a.inDate || 0));
+  return list.sort((a, b) => ghCompareValues(a, b, ghSortField) * ghSortDir);
+}
+
+function ghRepairDaysValue(r) {
+  if (!r.inDate || !r.outDate) return -1;
+  const diff = Math.round((new Date(r.outDate) - new Date(r.inDate)) / 86400000);
+  return diff >= 0 ? diff : -1;
+}
+
+function ghCompareValues(a, b, field) {
+  if (field === 'repairDays') return ghRepairDaysValue(a) - ghRepairDaysValue(b);
+  const av = a[field], bv = b[field];
+  if (GH_NUMERIC_FIELDS.includes(field)) return (av || 0) - (bv || 0);
+  if (GH_DATE_FIELDS.includes(field)) return new Date(av || 0) - new Date(bv || 0);
+  return String(av || '').localeCompare(String(bv || ''), 'th');
+}
+
+function ghSortBy(field) {
+  if (ghSortField === field) ghSortDir *= -1;
+  else { ghSortField = field; ghSortDir = 1; }
+  ghRenderList();
+}
+
+function ghUpdateSortIndicators() {
+  document.querySelectorAll('.gh-sort-ind').forEach(el => { el.textContent = ''; });
+  if (!ghSortField) return;
+  const ind = document.getElementById(`gh-sort-ind-${ghSortField}`);
+  if (ind) ind.textContent = ghSortDir === 1 ? '▲' : '▼';
 }
 
 function ghClearListFilters() {
@@ -1069,6 +1101,7 @@ function ghRenderList() {
   const tbody = document.getElementById('gh-list-body');
   const countEl = document.getElementById('gh-list-count');
   if (!tbody) return;
+  ghUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
