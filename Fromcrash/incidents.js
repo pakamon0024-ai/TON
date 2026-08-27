@@ -873,6 +873,7 @@ const GH_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
 const GH_CHART_COLORS = {
   month: { bg: 'rgba(67,97,238,0.85)', border: '#4361ee' },
   cost:  { bg: 'rgba(255,107,0,0.88)', border: '#ff6b00' },
+  yard:  { bg: 'rgba(255,209,102,0.9)', border: '#e0a800' },
   shop:  { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
   plate: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
 };
@@ -924,6 +925,9 @@ function ghRenderDashboard() {
     ghRecords.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
+
+  const yardSorted = countBy('yard');
+  ghBarChart('gh-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), { maxRotation: 30 });
 
   const shopSorted = countBy('shop');
   ghBarChart('gh-chart-shop', 'shop', shopSorted.map(e => e[0]), shopSorted.map(e => e[1]), { maxRotation: 30 });
