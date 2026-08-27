@@ -879,7 +879,6 @@ const GH_CHART_COLORS = {
   cost:  { bg: 'rgba(255,107,0,0.88)', border: '#ff6b00' },
   yard:  { bg: 'rgba(255,209,102,0.9)', border: '#e0a800' },
   shop:  { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
-  plate: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
 };
 const GH_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -935,9 +934,6 @@ function ghRenderDashboard() {
 
   const shopSorted = countBy('shop');
   ghBarChart('gh-chart-shop', 'shop', shopSorted.map(e => e[0]), shopSorted.map(e => e[1]), { maxRotation: 30 });
-
-  const plateSorted = countBy('plate');
-  ghBarChart('gh-chart-plate', 'plate', plateSorted.map(e => e[0]), plateSorted.map(e => e[1]), { maxRotation: 30 });
 }
 
 // ===== Lookup dropdowns =====
