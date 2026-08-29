@@ -6,6 +6,7 @@ let gvRecords = JSON.parse(localStorage.getItem('finflow_gps_violations') || '[]
 let gvEditingId = null;
 let gvRef = null;
 let gvReady = false;
+let gvCharts = {};
 
 const GV_TYPE_PRESETS = ['ความเร็วเกิน', 'จอดรถติดเครื่องนาน'];
 const GV_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'เวลา', 'ประเภทความผิด', 'ทะเบียนรถ', 'ชื่อพนักงานขับรถ', 'หน่วยงาน', 'ลานจอด', 'รายละเอียด', 'หมายเหตุ'];
@@ -18,16 +19,87 @@ function gvNextRunningNo() {
 
 // ===== Sub-tabs =====
 function gvSwitchTab(tab) {
-  ['list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`gv-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gv-subpage-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'dashboard') gvRenderDashboard();
   if (tab === 'list') gvRenderList();
   if (tab === 'add' && !gvEditingId) gvClearForm();
 }
 
+// ===== Dashboard (เลือกดูแยกตามประเภทความผิดผ่าน dropdown) =====
+const GV_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
+const GV_CHART_TICK = { color: '#3d4f6d', font: GV_CHART_FONT };
+const GV_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
+const GV_CHART_COLORS = {
+  month: { bg: 'rgba(244,63,94,0.85)', border: '#f43f5e' },
+  plate: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
+  yard:  { bg: 'rgba(255,209,102,0.9)', border: '#e0a800' },
+  bu:    { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
+};
+const GV_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function gvDestroyChart(id) {
+  if (gvCharts[id]) { gvCharts[id].destroy(); delete gvCharts[id]; }
+}
+
+function gvBarChart(canvasId, key, labels, data, maxRotation) {
+  gvDestroyChart(key);
+  const dl = {
+    display: true, anchor: 'end', align: 'end', color: '#1a2540',
+    font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
+    formatter: v => v > 0 ? v : '',
+  };
+  gvCharts[key] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'จำนวนครั้ง', data, backgroundColor: GV_CHART_COLORS[key].bg, borderColor: GV_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: dl },
+      scales: {
+        y: { beginAtZero: true, grace: '15%', grid: GV_CHART_GRID, ticks: { ...GV_CHART_TICK, precision: 0 } },
+        x: { grid: { display: false }, ticks: { ...GV_CHART_TICK, autoSkip: false, minRotation: maxRotation || 0, maxRotation: maxRotation || 0 } },
+      },
+    },
+  });
+}
+
+function gvRenderDashboard() {
+  const type = document.getElementById('gv-dash-type').value;
+  const list = gvRecords.filter(r => r.type === type);
+
+  const curYear = new Date().getFullYear();
+  const monthCount = new Array(12).fill(0);
+  list.forEach(r => {
+    if (!r.date) return;
+    const d = new Date(r.date);
+    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
+  });
+  gvBarChart('gv-chart-month', 'month', GV_MONTH_LABELS_TH, monthCount);
+
+  const countBy = field => {
+    const map = {};
+    list.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  };
+
+  const plateSorted = countBy('plate');
+  gvBarChart('gv-chart-plate', 'plate', plateSorted.map(e => e[0]), plateSorted.map(e => e[1]), 30);
+
+  const yardSorted = countBy('yard');
+  gvBarChart('gv-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), 30);
+
+  const buSorted = countBy('businessUnit');
+  gvBarChart('gv-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]), 30);
+
+  const countEl = document.getElementById('gv-dash-count');
+  if (countEl) countEl.textContent = `พบทั้งหมด ${list.length} ครั้ง`;
+}
+
 function gvOnPageShown() {
   gvRefreshLookupDropdowns();
+  if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) gvRenderDashboard();
   gvRenderList();
 }
 

@@ -2916,12 +2916,46 @@
           </div>
 
           <div class="subtabs">
-            <button class="subtab active" id="gv-tab-list" onclick="gvSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab active" id="gv-tab-dashboard" onclick="gvSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="gv-tab-list" onclick="gvSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="gv-tab-add" onclick="gvSwitchTab('add')">➕ เพิ่มบันทึก</button>
           </div>
 
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="gv-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>แสดงแดชบอร์ดของ</label>
+                <select id="gv-dash-type" onchange="gvRenderDashboard()">
+                  <option value="ความเร็วเกิน">ความเร็วเกิน</option>
+                  <option value="จอดรถติดเครื่องนาน">จอดรถไม่ดับเครื่องนานเกิน</option>
+                </select>
+              </div>
+              <div class="ctxt" id="gv-dash-count" style="color:var(--text-muted);font-size:0.82rem;align-self:center;">
+              </div>
+            </div>
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งรายเดือน</div>
+                <div class="chart-box"><canvas id="gv-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งตามทะเบียนรถ</div>
+                <div class="chart-box"><canvas id="gv-chart-plate"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งตามลานจอด</div>
+                <div class="chart-box"><canvas id="gv-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนครั้งตามหน่วยงาน</div>
+                <div class="chart-box"><canvas id="gv-chart-bu"></canvas></div>
+              </div>
+            </div>
+          </div>
+
           <!-- LIST SUBPAGE -->
-          <div class="subpage active" id="gv-subpage-list">
+          <div class="subpage" id="gv-subpage-list">
             <div class="filter-bar">
               <div class="filter-group">
                 <label>ประเภทความผิด</label>
