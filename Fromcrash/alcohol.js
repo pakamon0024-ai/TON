@@ -9,7 +9,7 @@
 
 const ALC_FIXED_LEVEL = 0; // ค่าตั้งต้นของช่อง "ค่าที่วัดได้" (แก้ไขได้ต่อคน ไม่ใช่ค่าคงที่ตายตัวอีกต่อไป)
 // ลำดับแรก (ยังไม่เป่า) ถูก fix ไว้เป็นค่าเริ่มต้นของทั้ง 2 รอบ (ขา / ขากลับ)
-const ALC_RESULT_OPTIONS = ['ยังไม่เป่า', 'ผ่าน', 'ไม่ผ่าน', 'ขาด/ลา', 'ต่อเนื่อง'];
+const ALC_RESULT_OPTIONS = ['ยังไม่เป่า', 'ผ่าน', 'ไม่ผ่าน', 'ขาด/ลา', 'ต่อเนื่อง', 'ลาออก'];
 const ALC_DOW_SHORT_TH = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'];
 const ALC_MONTH_SHORT_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const ALC_MONTH_FULL_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
@@ -243,9 +243,11 @@ function alcResultBadge(result) {
     'ขาด/ลา': 'badge-orange',
     'ต่อเนื่อง': 'badge-blue',
     'ยังไม่เป่า': null,
+    'ลาออก': null,
   };
   if (result === 'ไม่ผ่าน') return `<span class="badge" style="background:#f64f5911;color:#f64f59;border:1px solid #f64f5933">${escapeHtml(result)}</span>`;
   if (result === 'ยังไม่เป่า' || !result) return `<span class="badge" style="background:var(--bg-input);color:var(--text-muted);border:1px solid var(--border)">${escapeHtml(result || ALC_RESULT_OPTIONS[0])}</span>`;
+  if (result === 'ลาออก') return `<span class="badge" style="background:var(--bg-input);color:var(--text-muted);border:1px solid var(--border)">${escapeHtml(result)}</span>`;
   return `<span class="badge ${map[result] || 'badge-green'}">${escapeHtml(result)}</span>`;
 }
 
@@ -520,7 +522,7 @@ function alcDailyMonthValue() {
 function alcDailyReportData(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
-  const totalStaff = (mdAbcStaff || []).length;
+  const fullStaff = (mdAbcStaff || []).length;
 
   // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ): ตรวจแล้ว(ผ่าน+ไม่ผ่าน) / ไม่ผ่าน / % = (ตรวจ+ต่อเนื่อง)/มาทำงาน
   const roundStats = (dayRecords, getResult, atWork, continuous) => {
@@ -535,6 +537,11 @@ function alcDailyReportData(monthVal) {
     const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dow = new Date(y, m - 1, day).getDay();
     const dayRecords = alcTests.filter(t => t.date === dateStr);
+
+    // พนักงานที่มีสถานะ "ลาออก" ในวันนั้น ไม่นับรวมใน "ทั้งหมด (คน)" ของวันนั้น
+    // (ต่างจาก "ขาด/ลา" ที่ยังนับเป็นพนักงานทั้งหมดอยู่ แค่ไม่ได้มาทำงานวันนั้นวันเดียว)
+    const resigned = dayRecords.filter(r => (r.resultOut || r.result) === 'ลาออก').length;
+    const totalStaff = fullStaff - resigned;
 
     const leaveAbsent = dayRecords.filter(r => (r.resultOut || r.result) === 'ขาด/ลา').length;
     const continuous = dayRecords.filter(r => (r.resultOut || r.result) === 'ต่อเนื่อง').length;
