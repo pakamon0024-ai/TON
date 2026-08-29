@@ -141,6 +141,10 @@
           <span class="nav-icon">📡</span>
           <span>จัดการ GPS/CCTV</span>
         </a>
+        <a href="#" class="nav-item" data-page="gpsviolation" onclick="showPage('gpsviolation')">
+          <span class="nav-icon">🚨</span>
+          <span>รายงานความผิด GPS</span>
+        </a>
         <a href="#" class="nav-item" data-page="backup" onclick="showPage('backup')">
           <span class="nav-icon">💾</span>
           <span>สำรองข้อมูล</span>
@@ -1811,12 +1815,35 @@
           </div>
 
           <div class="subtabs">
-            <button class="subtab active" id="wi-tab-list" onclick="wiSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab active" id="wi-tab-dashboard" onclick="wiSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="wi-tab-list" onclick="wiSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="wi-tab-add" onclick="wiSwitchTab('add')">➕ เพิ่มบันทึก</button>
           </div>
 
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="wi-subpage-dashboard">
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title">จำนวนรายการรายเดือน</div>
+                <div class="chart-box"><canvas id="wi-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนรายการตามหัวข้อปัญหา</div>
+                <div class="chart-box"><canvas id="wi-chart-topic"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนรายการตามลานจอด</div>
+                <div class="chart-box"><canvas id="wi-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">จำนวนรายการตามหน่วยงาน</div>
+                <div class="chart-box"><canvas id="wi-chart-bu"></canvas></div>
+              </div>
+            </div>
+          </div>
+
           <!-- LIST SUBPAGE -->
-          <div class="subpage active" id="wi-subpage-list">
+          <div class="subpage" id="wi-subpage-list">
             <div class="filter-bar">
               <div class="filter-group">
                 <label>หัวข้อปัญหา</label>
@@ -2877,6 +2904,134 @@
         </div>
       </div>
 
+      <!-- GPS VIOLATION REPORT PAGE (รายงานความผิด GPS) -->
+      <div class="page" id="page-gpsviolation">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🚨</div>
+            <div>
+              <h2>รายงานความผิด GPS</h2>
+              <p>บันทึกความผิดที่ตรวจพบจากระบบ GPS เช่น ความเร็วเกิน, จอดรถติดเครื่องนาน</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="gv-tab-list" onclick="gvSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="gv-tab-add" onclick="gvSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage active" id="gv-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ประเภทความผิด</label>
+                <select id="gv-f-type" onchange="gvRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="ความเร็วเกิน">ความเร็วเกิน</option>
+                  <option value="จอดรถติดเครื่องนาน">จอดรถติดเครื่องนาน</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gv-f-search"
+                  placeholder="ทะเบียน / พนักงาน / รายละเอียด..." oninput="gvRenderList()" /></div>
+              <button class="btn-secondary" onclick="gvClearListFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="gvDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="gvImportExcel(event)"></label>
+              <button class="btn-secondary" onclick="gvExportExcel()">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="gvDeleteAllRecords()">🗑️
+                ลบทั้งหมด</button>
+            </div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ลำดับที่" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ
+              (แก้ในไฟล์ Excel แล้ว Import กลับมาได้)</p>
+            <div class="ctxt" id="gv-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>วันที่</th>
+                    <th>เวลา</th>
+                    <th>ประเภทความผิด</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>พนักงานขับรถ</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
+                    <th>รายละเอียด</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="gv-list-body">
+                  <tr>
+                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="gv-subpage-add">
+            <div class="edit-banner" id="gv-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="gv-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="gvCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">รายงานความผิด GPS</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label>
+                  <input type="date" id="gv-date" /></div>
+                <div class="form-group"><label>เวลา (24 ชม.)</label>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <select class="fc" id="gv-time-h" style="width:72px;" onchange="tmSyncTimeHidden('gv-time')"></select>
+                    <span>:</span>
+                    <select class="fc" id="gv-time-m" style="width:72px;" onchange="tmSyncTimeHidden('gv-time')"></select>
+                  </div>
+                  <input type="hidden" id="gv-time" />
+                </div>
+                <div class="form-group"><label>ประเภทความผิด <span class="req">*</span></label>
+                  <input type="text" id="gv-type" list="gv-type-list" placeholder="เลือก/พิมพ์ประเภทความผิด..." /></div>
+              </div>
+              <datalist id="gv-type-list"></datalist>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="gv-plate" list="gv-plate-list" placeholder="พิมพ์ทะเบียนรถ..." oninput="gvLookupVehicle()" /></div>
+                <div class="form-group"><label>ชื่อพนักงานขับรถ</label>
+                  <input type="text" id="gv-driver" list="gv-driver-list" placeholder="ชื่อพนักงานขับรถ..." /></div>
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="gv-bu" list="gv-bu-list" placeholder="เลือก/พิมพ์หน่วยงาน..." /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="gv-yard" list="gv-yard-list" placeholder="เลือก/พิมพ์ลานจอด..." /></div>
+              </div>
+              <datalist id="gv-plate-list"></datalist>
+              <datalist id="gv-driver-list"></datalist>
+              <datalist id="gv-bu-list"></datalist>
+              <datalist id="gv-yard-list"></datalist>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;">
+                  <label>รายละเอียด</label>
+                  <textarea class="fta" id="gv-detail" rows="2" placeholder="เช่น ขับ 95 กม./ชม. ในเขตจำกัด 80, จอดติดเครื่องนาน 45 นาที..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;">
+                  <label>หมายเหตุ</label>
+                  <textarea class="fta" id="gv-note" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="gvClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="gvSaveRecord()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- BACKUP PAGE (สำรองข้อมูลทั้งหมดเป็น Excel เก็บไว้ในเครื่อง) -->
       <div class="page" id="page-backup">
         <div class="form-section">
@@ -3407,6 +3562,7 @@
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
   <script src="gpscctv.js"></script>
+  <script src="gpsviolation.js"></script>
   <script src="backup.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>

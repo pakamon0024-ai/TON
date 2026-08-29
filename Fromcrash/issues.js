@@ -5,6 +5,7 @@ let workIssues = JSON.parse(localStorage.getItem('finflow_work_issues') || '[]')
 let wiEditingId = null;
 let wiRef = null;
 let wiReady = false;
+let wiCharts = {};
 
 const WI_XLSX_HEADERS = ['เลขที่','วันที่','หัวข้อปัญหา','ชื่อพนักงาน','ทะเบียน','หน่วยงาน','ลานจอด','รายละเอียด'];
 
@@ -12,10 +13,11 @@ function wiSave() { localStorage.setItem('finflow_work_issues', JSON.stringify(w
 
 // ===== Sub-tabs =====
 function wiSwitchTab(tab) {
-  ['list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`wi-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`wi-subpage-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'dashboard') wiRenderDashboard();
   if (tab === 'list') wiRenderList();
   if (tab === 'add' && !wiEditingId) wiClearForm();
 }
@@ -23,6 +25,70 @@ function wiSwitchTab(tab) {
 function wiOnPageShown() {
   wiRefreshLookupDropdowns();
   wiRenderList();
+  if (document.getElementById('wi-subpage-dashboard')?.classList.contains('active')) wiRenderDashboard();
+}
+
+// ===== Dashboard =====
+const WI_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
+const WI_CHART_TICK = { color: '#3d4f6d', font: WI_CHART_FONT };
+const WI_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
+const WI_CHART_COLORS = {
+  month: { bg: 'rgba(67,97,238,0.85)', border: '#4361ee' },
+  topic: { bg: 'rgba(255,107,0,0.88)', border: '#ff6b00' },
+  yard:  { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
+  bu:    { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
+};
+const WI_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function wiDestroyChart(id) {
+  if (wiCharts[id]) { wiCharts[id].destroy(); delete wiCharts[id]; }
+}
+
+function wiBarChart(canvasId, key, labels, data, maxRotation) {
+  wiDestroyChart(key);
+  const dl = {
+    display: true, anchor: 'end', align: 'end', color: '#1a2540',
+    font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
+    formatter: v => v > 0 ? v : '',
+  };
+  wiCharts[key] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'จำนวนรายการ', data, backgroundColor: WI_CHART_COLORS[key].bg, borderColor: WI_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: dl },
+      scales: {
+        y: { beginAtZero: true, grace: '15%', grid: WI_CHART_GRID, ticks: { ...WI_CHART_TICK, precision: 0 } },
+        x: { grid: { display: false }, ticks: { ...WI_CHART_TICK, autoSkip: false, minRotation: maxRotation || 0, maxRotation: maxRotation || 0 } },
+      },
+    },
+  });
+}
+
+function wiRenderDashboard() {
+  const curYear = new Date().getFullYear();
+  const monthCount = new Array(12).fill(0);
+  workIssues.forEach(i => {
+    if (!i.date) return;
+    const d = new Date(i.date);
+    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
+  });
+  wiBarChart('wi-chart-month', 'month', WI_MONTH_LABELS_TH, monthCount);
+
+  const countBy = field => {
+    const map = {};
+    workIssues.forEach(i => { const v = i[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  };
+
+  const topicSorted = countBy('topic');
+  wiBarChart('wi-chart-topic', 'topic', topicSorted.map(e => e[0]), topicSorted.map(e => e[1]), 30);
+
+  const yardSorted = countBy('yard');
+  wiBarChart('wi-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), 30);
+
+  const buSorted = countBy('businessUnit');
+  wiBarChart('wi-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]), 30);
 }
 
 // ===== Lookup dropdowns =====
