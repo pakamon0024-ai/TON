@@ -118,6 +118,7 @@ function showPage(page) {
     jointvehicle: 'บันทึกรถร่วม',
     gpscctv: 'จัดการ GPS/CCTV',
     gpsviolation: 'รายงานความผิด GPS',
+    fuelrate: 'รายงานเรทเชื้อเพลิง',
     backup: 'สำรองข้อมูล'
   };
   document.getElementById('pageTitle').textContent = titles[page] || '';
@@ -135,6 +136,7 @@ function showPage(page) {
   if (page === 'jointvehicle' && typeof jvOnPageShown === 'function') jvOnPageShown();
   if (page === 'gpscctv' && typeof gcOnPageShown === 'function') gcOnPageShown();
   if (page === 'gpsviolation' && typeof gvOnPageShown === 'function') gvOnPageShown();
+  if (page === 'fuelrate' && typeof frOnPageShown === 'function') frOnPageShown();
   if (page === 'backup' && typeof bkOnPageShown === 'function') bkOnPageShown();
   if (page === 'petty-cash') refreshCategoryDropdowns('pc');
   if (page === 'approval') refreshCategoryDropdowns('ap');

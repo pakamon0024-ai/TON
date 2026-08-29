@@ -145,6 +145,10 @@
           <span class="nav-icon">🚨</span>
           <span>รายงานความผิด GPS</span>
         </a>
+        <a href="#" class="nav-item" data-page="fuelrate" onclick="showPage('fuelrate')">
+          <span class="nav-icon">⛽</span>
+          <span>รายงานเรทเชื้อเพลิง</span>
+        </a>
         <a href="#" class="nav-item" data-page="backup" onclick="showPage('backup')">
           <span class="nav-icon">💾</span>
           <span>สำรองข้อมูล</span>
@@ -3066,6 +3070,124 @@
         </div>
       </div>
 
+      <!-- FUEL RATE REPORT PAGE (รายงานเรทเชื้อเพลิง) -->
+      <div class="page" id="page-fuelrate">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">⛽</div>
+            <div>
+              <h2>รายงานเรทเชื้อเพลิง</h2>
+              <p>บันทึกเรทเชื้อเพลิงรายวันของพนักงาน/รถแต่ละคัน พร้อมแดชบอร์ดสรุปภาพรวม</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="fr-tab-dashboard" onclick="frSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="fr-tab-list" onclick="frSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="fr-tab-add" onclick="frSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="fr-subpage-dashboard">
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title">เรทเชื้อเพลิงรวมรายเดือน</div>
+                <div class="chart-box"><canvas id="fr-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">เรทเชื้อเพลิงรวมตามพนักงาน</div>
+                <div class="chart-box"><canvas id="fr-chart-driver"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">เรทเชื้อเพลิงรวมตามลานจอด</div>
+                <div class="chart-box"><canvas id="fr-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title">เรทเชื้อเพลิงรวมตามหน่วยงาน</div>
+                <div class="chart-box"><canvas id="fr-chart-bu"></canvas></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage" id="fr-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="fr-f-search"
+                  placeholder="พนักงาน / ทะเบียน / หน่วยงาน / ลานจอด..." oninput="frRenderList()" /></div>
+              <button class="btn-secondary" onclick="frClearListFilters()">🔄 ล้างตัวกรอง</button>
+            </div>
+            <div class="filter-bar">
+              <button class="btn-secondary" onclick="frDownloadTemplate()">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="frImportExcel(event)"></label>
+              <button class="btn-secondary" onclick="frExportExcel()">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="frDeleteAllRecords()">🗑️
+                ลบทั้งหมด</button>
+            </div>
+            <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ลำดับที่" เป็นตัวจับคู่ — ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ
+              (แก้ในไฟล์ Excel แล้ว Import กลับมาได้)</p>
+            <div class="ctxt" id="fr-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>วันที่</th>
+                    <th>ชื่อพนักงาน</th>
+                    <th>ทะเบียนรถ</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
+                    <th>เรทเชื้อเพลิง (บาท)</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="fr-list-body">
+                  <tr>
+                    <td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="fr-subpage-add">
+            <div class="edit-banner" id="fr-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="fr-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="frCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">รายงานเรทเชื้อเพลิง</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label>
+                  <input type="date" id="fr-date" /></div>
+                <div class="form-group"><label>ชื่อพนักงาน <span class="req">*</span></label>
+                  <input type="text" id="fr-driver" list="fr-driver-list" placeholder="ชื่อพนักงานขับรถ..." /></div>
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="fr-plate" list="fr-plate-list" placeholder="พิมพ์ทะเบียนรถ..." oninput="frLookupVehicle()" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="fr-bu" list="fr-bu-list" placeholder="เลือก/พิมพ์หน่วยงาน..." /></div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="fr-yard" list="fr-yard-list" placeholder="เลือก/พิมพ์ลานจอด..." /></div>
+                <div class="form-group"><label>เรทเชื้อเพลิง (บาท)</label>
+                  <input type="number" min="0" step="0.01" id="fr-amount" placeholder="0.00" /></div>
+              </div>
+              <datalist id="fr-driver-list"></datalist>
+              <datalist id="fr-plate-list"></datalist>
+              <datalist id="fr-bu-list"></datalist>
+              <datalist id="fr-yard-list"></datalist>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="frClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="frSaveRecord()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- BACKUP PAGE (สำรองข้อมูลทั้งหมดเป็น Excel เก็บไว้ในเครื่อง) -->
       <div class="page" id="page-backup">
         <div class="form-section">
@@ -3597,6 +3719,7 @@
   <script src="jointvehicle.js"></script>
   <script src="gpscctv.js"></script>
   <script src="gpsviolation.js"></script>
+  <script src="fuelrate.js"></script>
   <script src="backup.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
