@@ -52,15 +52,24 @@ function frDestroyChart(id) {
   if (frCharts[id]) { frCharts[id].destroy(); delete frCharts[id]; }
 }
 
+// ย่อจำนวนเงินให้สั้นลงเฉพาะตัวเลข label บนกราฟ (เช่น ฿71,405.32 -> ฿71.4K) เพราะ label เต็มยาวเกินไป
+// ทำให้ล้นออกนอกกรอบกราฟและทับกันเวลาแท่งอยู่ชิดกันหรือเอียง label
+function frCompactMoney(v) {
+  const abs = Math.abs(v);
+  if (abs >= 1000000) return '฿' + (v / 1000000).toFixed(2) + 'M';
+  if (abs >= 1000) return '฿' + (v / 1000).toFixed(1) + 'K';
+  return '฿' + Math.round(v).toLocaleString('th-TH');
+}
+
 function frBarChart(canvasId, key, labels, data, opts) {
   const { maxRotation = 0, rotateLabels = false } = opts || {};
   frDestroyChart(key);
   // ตัวเลข label เหนือแท่งกราฟชนกันเวลาแท่งอยู่ชิดกัน (เดือน/พนักงาน/หน่วยงาน) — เอียง label ขึ้น 45 องศา
-  // เพื่อให้แต่ละตัวใช้พื้นที่แนวทแยงแทนแนวนอน ลดโอกาสทับกัน
+  // เพื่อให้แต่ละตัวใช้พื้นที่แนวทแยงแทนแนวนอน ลดโอกาสทับกัน และย่อเลขให้สั้นลงกันล้นกรอบกราฟด้านบน
   const dl = {
     display: true, anchor: 'end', align: 'end', color: '#1a2540',
-    font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
-    formatter: v => v > 0 ? formatMoney(v) : '',
+    font: { family: "'Kanit','Sarabun',sans-serif", size: 12, weight: '700' },
+    formatter: v => v > 0 ? frCompactMoney(v) : '',
     rotation: rotateLabels ? -45 : 0,
   };
   frCharts[key] = new Chart(document.getElementById(canvasId), {
@@ -68,10 +77,10 @@ function frBarChart(canvasId, key, labels, data, opts) {
     data: { labels, datasets: [{ label: 'เรทเชื้อเพลิง (บาท)', data, backgroundColor: FR_CHART_COLORS[key].bg, borderColor: FR_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: rotateLabels ? 24 : 0 } },
+      layout: { padding: { top: rotateLabels ? 40 : 20 } },
       plugins: { legend: { display: false }, datalabels: dl },
       scales: {
-        y: { beginAtZero: true, grace: '20%', grid: FR_CHART_GRID, ticks: { ...FR_CHART_TICK, precision: 0 } },
+        y: { beginAtZero: true, grace: '30%', grid: FR_CHART_GRID, ticks: { ...FR_CHART_TICK, precision: 0 } },
         x: { grid: { display: false }, ticks: { ...FR_CHART_TICK, autoSkip: false, minRotation: maxRotation || 0, maxRotation: maxRotation || 0 } },
       },
     },
