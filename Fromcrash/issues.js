@@ -372,6 +372,7 @@ function wiApplyServer(serverIssues) {
   workIssues = serverIssues;
   wiSave();
   wiRenderList();
+  if (document.getElementById('wi-subpage-dashboard')?.classList.contains('active')) wiRenderDashboard();
 }
 async function wiWriteFB() {
   if (!wiRef) return;

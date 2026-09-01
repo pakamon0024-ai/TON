@@ -374,6 +374,7 @@ function frApplyServer(serverRecords) {
   frRecords = serverRecords;
   frSave();
   frRenderList();
+  if (document.getElementById('fr-subpage-dashboard')?.classList.contains('active')) frRenderDashboard();
 }
 async function frWriteFB() {
   if (!frRef) return;

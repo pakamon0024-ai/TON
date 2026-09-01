@@ -386,6 +386,7 @@ function gvApplyServer(serverRecords) {
   gvRecords = serverRecords;
   gvSave();
   gvRenderList();
+  if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) gvRenderDashboard();
 }
 async function gvWriteFB() {
   if (!gvRef) return;

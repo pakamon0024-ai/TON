@@ -514,6 +514,7 @@ function pbApplyServer(serverRecords) {
   probationRecords = serverRecords;
   pbSave();
   pbRenderList();
+  if (document.getElementById('pb-subpage-dashboard')?.classList.contains('active')) pbRenderDashboard();
 }
 async function pbWriteFB() {
   if (!pbRef) return;

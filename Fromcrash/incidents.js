@@ -1275,6 +1275,7 @@ function ghApplyServer(serverRecords) {
   ghRecords = serverRecords;
   ghSave();
   ghRenderList();
+  if (document.getElementById('gh-subpage-dashboard')?.classList.contains('active')) ghRenderDashboard();
 }
 async function ghWriteFB() {
   if (!ghRef) return;

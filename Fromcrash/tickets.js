@@ -516,6 +516,7 @@ function tkApplyServer(serverTickets) {
   tickets = serverTickets;
   tkSave();
   tkRenderList();
+  if (document.getElementById('tk-subpage-dashboard')?.classList.contains('active')) tkRenderDashboard();
 }
 async function tkWriteFB() {
   if (!tkRef) return;
