@@ -965,6 +965,12 @@ function formatMoney(val) {
   return '฿' + num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// เหมือน formatMoney แต่ไม่โชว์จุดทศนิยม — ใช้กับตัวเลข label บนกราฟ/badge ที่ไม่จำเป็นต้องละเอียดถึงสตางค์
+function formatMoneyRound(val) {
+  const num = parseFloat(val) || 0;
+  return '฿' + Math.round(num).toLocaleString('th-TH');
+}
+
 function formatDate(val) {
   if (!val) return '-';
   const d = new Date(val);
@@ -997,11 +1003,12 @@ function debouncedRender(fnName) {
 // ===== ยอดรวมมุมบนขวาของทุกกราฟแดชบอร์ด =====
 // เรียกหลังสร้าง/อัปเดตกราฟแต่ละอัน — หา badge ที่ id "{canvasId}-total" (คู่กับ id ของ <canvas> เอง)
 // ใส่ไว้ใน chart-title ของแต่ละการ์ดใน index.html แล้ว ไม่ต้องส่ง element เข้ามาเอง
-function setChartTotal(canvasId, values, isMoney) {
+function setChartTotal(canvasId, values, isMoney, moneyNoDecimals) {
   const el = document.getElementById(`${canvasId}-total`);
   if (!el) return;
   const total = (values || []).reduce((s, v) => s + (v || 0), 0);
-  el.textContent = 'รวม ' + (isMoney ? formatMoney(total) : total.toLocaleString('th-TH'));
+  const moneyText = moneyNoDecimals ? formatMoneyRound(total) : formatMoney(total);
+  el.textContent = 'รวม ' + (isMoney ? moneyText : total.toLocaleString('th-TH'));
 }
 
 // ===== ช่องกรอกเวลาแบบ 24 ชม. (select ชั่วโมง/นาทีเอง) =====

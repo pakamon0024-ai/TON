@@ -923,7 +923,8 @@ function ghBarChart(canvasId, key, labels, data, opts) {
   const dl = {
     display: true, anchor: 'end', align: 'end', color: '#1a2540',
     font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
-    formatter: v => v > 0 ? (isMoney ? formatMoney(v) : v) : '',
+    // ค่าใช้จ่ายบนกราฟไม่ต้องละเอียดถึงสตางค์ — ปัดเป็นจำนวนเต็มให้อ่านง่ายขึ้น
+    formatter: v => v > 0 ? (isMoney ? formatMoneyRound(v) : v) : '',
   };
   ghCharts[key] = new Chart(document.getElementById(canvasId), {
     type: 'bar',
@@ -937,7 +938,7 @@ function ghBarChart(canvasId, key, labels, data, opts) {
       },
     },
   });
-  setChartTotal(canvasId, data, isMoney);
+  setChartTotal(canvasId, data, isMoney, true);
 }
 
 function ghDashFillSelect(id, list) {
