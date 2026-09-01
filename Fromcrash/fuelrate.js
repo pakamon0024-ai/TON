@@ -22,7 +22,7 @@ function frSwitchTab(tab) {
     document.getElementById(`fr-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`fr-subpage-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'dashboard') frRenderDashboard();
+  if (tab === 'dashboard') { frRefreshDashFilters(); frRenderDashboard(); }
   if (tab === 'list') frRenderList();
   if (tab === 'add' && !frEditingId) frClearForm();
 }
@@ -30,7 +30,10 @@ function frSwitchTab(tab) {
 function frOnPageShown() {
   frRefreshLookupDropdowns();
   frRenderList();
-  if (document.getElementById('fr-subpage-dashboard')?.classList.contains('active')) frRenderDashboard();
+  if (document.getElementById('fr-subpage-dashboard')?.classList.contains('active')) {
+    frRefreshDashFilters();
+    frRenderDashboard();
+  }
 }
 
 // ===== Dashboard =====
@@ -70,10 +73,26 @@ function frBarChart(canvasId, key, labels, data, maxRotation) {
   });
 }
 
+function frDashFillSelect(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  const placeholder = el.options[0]?.outerHTML || '<option value="">ทั้งหมด</option>';
+  el.innerHTML = placeholder + (list || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+  if (list && list.includes(current)) el.value = current;
+}
+
+function frRefreshDashFilters() {
+  frDashFillSelect('fr-dash-yard', mdYards);
+}
+
 function frRenderDashboard() {
+  const yardFilter = document.getElementById('fr-dash-yard')?.value || '';
+  const filtered = yardFilter ? frRecords.filter(r => r.yard === yardFilter) : frRecords;
+
   const curYear = new Date().getFullYear();
   const monthSum = new Array(12).fill(0);
-  frRecords.forEach(r => {
+  filtered.forEach(r => {
     if (!r.date) return;
     const d = new Date(r.date);
     if (!isNaN(d) && d.getFullYear() === curYear) monthSum[d.getMonth()] += r.amount || 0;
@@ -82,11 +101,12 @@ function frRenderDashboard() {
 
   const sumBy = field => {
     const map = {};
-    frRecords.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + (r.amount || 0); });
+    filtered.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + (r.amount || 0); });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
 
-  const driverSorted = sumBy('driverName');
+  // เรทเชื้อเพลิงตามพนักงาน — จัด Top 10 เท่านั้น (กันกราฟรก ถ้ามีพนักงานเยอะ)
+  const driverSorted = sumBy('driverName').slice(0, 10);
   frBarChart('fr-chart-driver', 'driver', driverSorted.map(e => e[0]), driverSorted.map(e => e[1]), 30);
 
   const yardSorted = sumBy('yard');
