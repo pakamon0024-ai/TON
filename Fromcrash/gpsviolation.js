@@ -117,7 +117,8 @@ function gvRenderDashboard() {
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
 
-  const plateSorted = countBy('plate');
+  // จำนวนครั้งตามทะเบียนรถ — จัด Top 10 เท่านั้น (กันกราฟรกเวลามีทะเบียนรถเยอะ)
+  const plateSorted = countBy('plate').slice(0, 10);
   gvBarChart('gv-chart-plate', 'plate', plateSorted.map(e => e[0]), plateSorted.map(e => e[1]), 30);
 
   const yardSorted = countBy('yard');
