@@ -36,7 +36,7 @@ const GV_CHART_COLORS = {
   month: { bg: 'rgba(244,63,94,0.85)', border: '#f43f5e' },
   plate: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
   yard:  { bg: 'rgba(255,209,102,0.9)', border: '#e0a800' },
-  bu:    { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
+  driver: { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
 };
 const GV_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -124,8 +124,9 @@ function gvRenderDashboard() {
   const yardSorted = countBy('yard');
   gvBarChart('gv-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), 30);
 
-  const buSorted = countBy('businessUnit');
-  gvBarChart('gv-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]), 30);
+  // จำนวนครั้งตามพนักงานขับรถ — จัด Top 10 เท่านั้น (กันกราฟรกเวลามีพนักงานเยอะ)
+  const driverSorted = countBy('driverName').slice(0, 10);
+  gvBarChart('gv-chart-driver', 'driver', driverSorted.map(e => e[0]), driverSorted.map(e => e[1]), 30);
 
   const countEl = document.getElementById('gv-dash-count');
   if (countEl) countEl.textContent = `พบทั้งหมด ${list.length} ครั้ง`;
