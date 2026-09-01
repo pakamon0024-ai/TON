@@ -145,6 +145,7 @@ function alcSaveRoster() {
   const now = new Date();
   const timeStr = now.toTimeString().substring(0, 5); // เวลาจริงตอนกดบันทึก
   let failCount = 0;
+  const touched = []; // เก็บเฉพาะ record ที่เปลี่ยนจริงรอบนี้ ไว้ sync ขึ้น Firebase แบบเจาะจง
 
   rows.forEach(row => {
     const name = row.dataset.name;
@@ -160,8 +161,9 @@ function alcSaveRoster() {
     if (idx >= 0) {
       alcTests[idx] = { ...alcTests[idx], time: timeStr, level, resultOut, resultReturn, note, businessUnit, updatedAt: now.toISOString() };
       delete alcTests[idx].result; // เลิกใช้ฟิลด์เดี่ยวเดิม แยกเป็น 2 รอบแล้ว
+      touched.push(alcTests[idx]);
     } else {
-      alcTests.unshift({
+      const rec = {
         id: 'ALC_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
         runningNo: alcNextRunningNo(),
         date, time: timeStr,
@@ -170,12 +172,14 @@ function alcSaveRoster() {
         level,
         resultOut, resultReturn, note,
         createdAt: now.toISOString(),
-      });
+      };
+      alcTests.unshift(rec);
+      touched.push(rec);
     }
   });
 
   alcSave();
-  alcPushIfReady();
+  alcPushManyIfReady(touched);
   alcRenderList();
   alcRenderRoster();
   alcRenderSummary();
@@ -202,7 +206,7 @@ function alcDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   alcTests = alcTests.filter(t => t.id !== id);
   alcSave();
-  alcPushIfReady();
+  alcRemoveOneIfReady(id);
   alcRenderList();
   alcRenderRoster();
   alcRenderSummary();
@@ -740,6 +744,30 @@ async function alcWriteFB() {
   } catch (e) { console.warn('alcWriteFB error', e); }
 }
 function alcPushIfReady() { if (alcReady) alcWriteFB(); }
+
+// ===== เขียนเฉพาะรายการที่เปลี่ยนจริง (ไม่ใช่ทั้งอาเรย์) =====
+// alcSaveRoster บันทึกทีเดียวหลายสิบคน (ทั้งลาน) แต่ก่อนหน้านี้ยังคง set() ทับข้อมูลย้อนหลังทั้งหมดทุกครั้ง
+// (เป็นหมื่นกว่า record/ปีถ้าบันทึกทุกวัน) ทำให้ยิ่งใช้นานยิ่งช้า — เปลี่ยนมาใช้ update() แบบ multi-path
+// อัปเดตเฉพาะ record ที่เปลี่ยนของวันนั้น ส่วนรายการเก่าที่ไม่เปลี่ยนจะไม่ถูกแตะต้อง/ส่งซ้ำเลย
+async function alcWriteMany(records) {
+  if (!alcRef || !records || !records.length) return;
+  try {
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const updates = {};
+    records.forEach(r => { if (r && r.id) updates[`/alcoholTests/${r.id}`] = r; });
+    await update(ref(fbDb), updates);
+  } catch (e) { console.warn('alcWriteMany error', e); }
+}
+function alcPushManyIfReady(records) { if (alcReady) alcWriteMany(records); }
+
+async function alcRemoveOne(id) {
+  if (!alcRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/alcoholTests/${id}`));
+  } catch (e) { console.warn('alcRemoveOne error', e); }
+}
+function alcRemoveOneIfReady(id) { if (alcReady) alcRemoveOne(id); }
 
 function alcWaitForFirebase() {
   return new Promise(resolve => {

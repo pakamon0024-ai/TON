@@ -174,25 +174,28 @@ function frSaveRecord() {
     amount: parseFloat(document.getElementById('fr-amount').value) || 0,
   };
 
+  let savedRecord;
   if (frEditingId) {
     const idx = frRecords.findIndex(r => r.id === frEditingId);
     if (idx >= 0) {
       frRecords[idx] = { ...frRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = frRecords[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
     }
     frCancelEdit();
   } else {
-    frRecords.unshift({
+    savedRecord = {
       id: 'FR_' + Date.now(),
       runningNo: frNextRunningNo(),
       ...record,
       createdAt: new Date().toISOString(),
-    });
+    };
+    frRecords.unshift(savedRecord);
     showToast('บันทึกข้อมูลแล้ว', 'success');
     frClearForm();
   }
   frSave();
-  frPushIfReady();
+  frPushOneIfReady(savedRecord);
   frRenderList();
 }
 
@@ -226,7 +229,7 @@ function frDeleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   frRecords = frRecords.filter(r => r.id !== id);
   frSave();
-  frPushIfReady();
+  frRemoveOneIfReady(id);
   frRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -380,6 +383,24 @@ async function frWriteFB() {
   } catch (e) { console.warn('frWriteFB error', e); }
 }
 function frPushIfReady() { if (frReady) frWriteFB(); }
+
+async function frWriteOne(record) {
+  if (!frRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/fuelRate/${record.id}`), record);
+  } catch (e) { console.warn('frWriteOne error', e); }
+}
+function frPushOneIfReady(record) { if (frReady) frWriteOne(record); }
+
+async function frRemoveOne(id) {
+  if (!frRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/fuelRate/${id}`));
+  } catch (e) { console.warn('frRemoveOne error', e); }
+}
+function frRemoveOneIfReady(id) { if (frReady) frRemoveOne(id); }
 
 function frWaitForFirebase() {
   return new Promise(resolve => {

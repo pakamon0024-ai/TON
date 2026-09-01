@@ -211,9 +211,11 @@ function incSaveCase() {
   };
   record.total = incCalcTotal();
 
+  let savedRecord;
   if (incEditingId) {
     const idx = incidents.findIndex(i => i.id === incEditingId);
     if (idx >= 0) incidents[idx] = { ...incidents[idx], ...record };
+    savedRecord = incidents[idx];
     showToast('✅ แก้ไขบันทึกแล้ว', 'success');
     incCancelEdit();
   } else {
@@ -221,6 +223,7 @@ function incSaveCase() {
     record.runningNo = incNextRunningNo();
     record.createdAt = new Date().toISOString();
     incidents.unshift(record);
+    savedRecord = record;
     showToast('✅ บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -230,7 +233,7 @@ function incSaveCase() {
     incClearForm();
   }
   incSave();
-  incPushIfReady();
+  incPushOneIfReady(savedRecord);
   incRenderList();
 }
 
@@ -320,7 +323,7 @@ function incDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   incidents = incidents.filter(i => i.id !== id);
   incSave();
-  incPushIfReady();
+  incRemoveOneIfReady(id);
   incRenderList();
   incRenderDashboard();
   showToast('ลบแล้ว', 'warning');
@@ -804,6 +807,26 @@ async function incWriteFB() {
 }
 function incPushIfReady() { if (incReady) incWriteFB(); }
 
+// ===== เขียน/ลบเฉพาะรายการเดียว (ไม่ใช่ทั้งอาเรย์) — ใช้ตอนเพิ่ม/แก้ไข/ลบทีละรายการ =====
+// เดิม incPushIfReady() จะ set() ทับข้อมูลทั้งหมดทุกครั้งที่บันทึก 1 รายการ พอข้อมูลสะสมเยอะขึ้นการบันทึกจะยิ่งช้าลง
+async function incWriteOne(record) {
+  if (!incRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/incidents/${record.id}`), record);
+  } catch (e) { console.warn('incWriteOne error', e); }
+}
+function incPushOneIfReady(record) { if (incReady) incWriteOne(record); }
+
+async function incRemoveOne(id) {
+  if (!incRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/incidents/${id}`));
+  } catch (e) { console.warn('incRemoveOne error', e); }
+}
+function incRemoveOneIfReady(id) { if (incReady) incRemoveOne(id); }
+
 function incWaitForFirebase() {
   return new Promise(resolve => {
     const check = () => {
@@ -1006,25 +1029,28 @@ function ghSaveRecord() {
     cost: parseFloat(document.getElementById('gh-cost').value) || 0,
   };
 
+  let savedRecord;
   if (ghEditingId) {
     const idx = ghRecords.findIndex(r => r.id === ghEditingId);
     if (idx >= 0) {
       ghRecords[idx] = { ...ghRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = ghRecords[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
     }
     ghCancelEdit();
   } else {
-    ghRecords.unshift({
+    savedRecord = {
       id: 'GH_' + Date.now(),
       runningNo: ghNextRunningNo(),
       ...record,
       createdAt: new Date().toISOString(),
-    });
+    };
+    ghRecords.unshift(savedRecord);
     showToast('บันทึกข้อมูลแล้ว', 'success');
     ghClearForm();
   }
   ghSave();
-  ghPushIfReady();
+  ghPushOneIfReady(savedRecord);
   ghRenderList();
 }
 
@@ -1061,7 +1087,7 @@ function ghDeleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   ghRecords = ghRecords.filter(r => r.id !== id);
   ghSave();
-  ghPushIfReady();
+  ghRemoveOneIfReady(id);
   ghRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -1258,6 +1284,24 @@ async function ghWriteFB() {
   } catch (e) { console.warn('ghWriteFB error', e); }
 }
 function ghPushIfReady() { if (ghReady) ghWriteFB(); }
+
+async function ghWriteOne(record) {
+  if (!ghRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/garageHistory/${record.id}`), record);
+  } catch (e) { console.warn('ghWriteOne error', e); }
+}
+function ghPushOneIfReady(record) { if (ghReady) ghWriteOne(record); }
+
+async function ghRemoveOne(id) {
+  if (!ghRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/garageHistory/${id}`));
+  } catch (e) { console.warn('ghRemoveOne error', e); }
+}
+function ghRemoveOneIfReady(id) { if (ghReady) ghRemoveOne(id); }
 
 async function ghInit() {
   await incWaitForFirebase();

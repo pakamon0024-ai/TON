@@ -118,10 +118,12 @@ function jvSaveCase() {
     JV_LEAVE_CHECK_FIELDS.forEach(([id, key]) => { record[key] = document.getElementById(id).checked; });
   }
 
+  let savedRecord;
   if (jvEditingId) {
     const idx = jvRecords.findIndex(r => r.id === jvEditingId);
     if (idx >= 0) {
       jvRecords[idx] = { ...record, id: jvRecords[idx].id, runningNo: jvRecords[idx].runningNo, createdAt: jvRecords[idx].createdAt, updatedAt: new Date().toISOString() };
+      savedRecord = jvRecords[idx];
       showToast('✅ บันทึกการแก้ไขแล้ว', 'success');
     }
     jvCancelEdit();
@@ -130,6 +132,7 @@ function jvSaveCase() {
     record.runningNo = jvNextRunningNo();
     record.createdAt = new Date().toISOString();
     jvRecords.unshift(record);
+    savedRecord = record;
     showToast('✅ บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       const msg = type === 'join'
@@ -140,7 +143,7 @@ function jvSaveCase() {
     jvClearForm();
   }
   jvSave();
-  jvPushIfReady();
+  jvPushOneIfReady(savedRecord);
   jvRenderList();
 }
 
@@ -195,7 +198,7 @@ function jvDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   jvRecords = jvRecords.filter(r => r.id !== id);
   jvSave();
-  jvPushIfReady();
+  jvRemoveOneIfReady(id);
   jvRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -361,6 +364,24 @@ async function jvWriteFB() {
 }
 function jvPushIfReady() { if (jvReady) jvWriteFB(); }
 
+async function jvWriteOne(record) {
+  if (!jvRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/jointVehicles/${record.id}`), record);
+  } catch (e) { console.warn('jvWriteOne error', e); }
+}
+function jvPushOneIfReady(record) { if (jvReady) jvWriteOne(record); }
+
+async function jvRemoveOne(id) {
+  if (!jvRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/jointVehicles/${id}`));
+  } catch (e) { console.warn('jvRemoveOne error', e); }
+}
+function jvRemoveOneIfReady(id) { if (jvReady) jvRemoveOne(id); }
+
 function jvWaitForFirebase() {
   return new Promise(resolve => {
     const check = () => {
@@ -479,25 +500,28 @@ function jvdbSaveRecord() {
     cargoInsExpiry: document.getElementById('jvdb-cargoins').value,
   };
 
+  let savedRecord;
   if (jvdbEditingId) {
     const idx = jvdbRecords.findIndex(r => r.id === jvdbEditingId);
     if (idx >= 0) {
       jvdbRecords[idx] = { ...jvdbRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = jvdbRecords[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
     }
     jvdbCancelEdit();
   } else {
-    jvdbRecords.unshift({
+    savedRecord = {
       id: 'JVDB_' + Date.now(),
       runningNo: jvdbNextRunningNo(),
       ...record,
       createdAt: new Date().toISOString(),
-    });
+    };
+    jvdbRecords.unshift(savedRecord);
     showToast('บันทึกข้อมูลแล้ว', 'success');
     jvdbClearForm();
   }
   jvdbSave();
-  jvdbPushIfReady();
+  jvdbPushOneIfReady(savedRecord);
   jvdbRenderList();
 }
 
@@ -535,7 +559,7 @@ function jvdbDeleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   jvdbRecords = jvdbRecords.filter(r => r.id !== id);
   jvdbSave();
-  jvdbPushIfReady();
+  jvdbRemoveOneIfReady(id);
   jvdbRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -699,6 +723,24 @@ async function jvdbWriteFB() {
   } catch (e) { console.warn('jvdbWriteFB error', e); }
 }
 function jvdbPushIfReady() { if (jvdbReady) jvdbWriteFB(); }
+
+async function jvdbWriteOne(record) {
+  if (!jvdbRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/jointVehicleDB/${record.id}`), record);
+  } catch (e) { console.warn('jvdbWriteOne error', e); }
+}
+function jvdbPushOneIfReady(record) { if (jvdbReady) jvdbWriteOne(record); }
+
+async function jvdbRemoveOne(id) {
+  if (!jvdbRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/jointVehicleDB/${id}`));
+  } catch (e) { console.warn('jvdbRemoveOne error', e); }
+}
+function jvdbRemoveOneIfReady(id) { if (jvdbReady) jvdbRemoveOne(id); }
 
 async function jvdbInit() {
   await jvWaitForFirebase();

@@ -45,6 +45,25 @@ function rsPushIfReady() {
   if (rsReady) rsWriteFB();
 }
 
+// ===== เขียน/ลบเฉพาะรายการเดียว (ไม่ใช่ทั้งอาเรย์) =====
+async function rsWriteOne(record) {
+  if (!rsRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/finflow_records/${record.id}`), record);
+  } catch (e) { console.error('rsWriteOne error', e); }
+}
+function rsPushOneIfReady(record) { if (rsReady) rsWriteOne(record); }
+
+async function rsRemoveOne(id) {
+  if (!rsRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/finflow_records/${id}`));
+  } catch (e) { console.error('rsRemoveOne error', e); }
+}
+function rsRemoveOneIfReady(id) { if (rsReady) rsRemoveOne(id); }
+
 function rsWaitForFirebase() {
   return new Promise(resolve => {
     const check = () => {

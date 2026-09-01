@@ -170,20 +170,23 @@ function gvSaveRecord() {
     note: document.getElementById('gv-note').value.trim(),
   };
 
+  let savedRecord;
   if (gvEditingId) {
     const idx = gvRecords.findIndex(r => r.id === gvEditingId);
     if (idx >= 0) {
       gvRecords[idx] = { ...gvRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = gvRecords[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
     }
     gvCancelEdit();
   } else {
-    gvRecords.unshift({
+    savedRecord = {
       id: 'GV_' + Date.now(),
       runningNo: gvNextRunningNo(),
       ...record,
       createdAt: new Date().toISOString(),
-    });
+    };
+    gvRecords.unshift(savedRecord);
     showToast('บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -193,7 +196,7 @@ function gvSaveRecord() {
     gvClearForm();
   }
   gvSave();
-  gvPushIfReady();
+  gvPushOneIfReady(savedRecord);
   gvRenderList();
 }
 
@@ -232,7 +235,7 @@ function gvDeleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   gvRecords = gvRecords.filter(r => r.id !== id);
   gvSave();
-  gvPushIfReady();
+  gvRemoveOneIfReady(id);
   gvRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -392,6 +395,24 @@ async function gvWriteFB() {
   } catch (e) { console.warn('gvWriteFB error', e); }
 }
 function gvPushIfReady() { if (gvReady) gvWriteFB(); }
+
+async function gvWriteOne(record) {
+  if (!gvRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/gpsViolations/${record.id}`), record);
+  } catch (e) { console.warn('gvWriteOne error', e); }
+}
+function gvPushOneIfReady(record) { if (gvReady) gvWriteOne(record); }
+
+async function gvRemoveOne(id) {
+  if (!gvRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/gpsViolations/${id}`));
+  } catch (e) { console.warn('gvRemoveOne error', e); }
+}
+function gvRemoveOneIfReady(id) { if (gvReady) gvRemoveOne(id); }
 
 function gvWaitForFirebase() {
   return new Promise(resolve => {

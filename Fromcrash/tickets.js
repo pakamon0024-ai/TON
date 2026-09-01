@@ -114,10 +114,12 @@ function tkSaveCase() {
     note: document.getElementById('tk-note').value.trim(),
   };
 
+  let savedRecord;
   if (tkEditingId) {
     const idx = tickets.findIndex(t => t.id === tkEditingId);
     if (idx >= 0) {
       tickets[idx] = { ...tickets[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = tickets[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
       if (typeof sendTelegramNotification === 'function') {
         sendTelegramNotification(`✏️ <b>แก้ไขบันทึกใบสั่ง</b>\nเลขที่: ${tickets[idx].runningNo}\nทะเบียน: ${escapeHtml(plate)}\nข้อหา: ${escapeHtml(charge)}`);
@@ -129,6 +131,7 @@ function tkSaveCase() {
     record.runningNo = tkNextRunningNo();
     record.createdAt = new Date().toISOString();
     tickets.unshift(record);
+    savedRecord = record;
     showToast('บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -138,7 +141,7 @@ function tkSaveCase() {
     tkClearForm();
   }
   tkSave();
-  tkPushIfReady();
+  tkPushOneIfReady(savedRecord);
   tkRenderList();
 }
 
@@ -189,7 +192,7 @@ function tkDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   tickets = tickets.filter(t => t.id !== id);
   tkSave();
-  tkPushIfReady();
+  tkRemoveOneIfReady(id);
   tkRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -522,6 +525,24 @@ async function tkWriteFB() {
   } catch (e) { console.warn('tkWriteFB error', e); }
 }
 function tkPushIfReady() { if (tkReady) tkWriteFB(); }
+
+async function tkWriteOne(record) {
+  if (!tkRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/tickets/${record.id}`), record);
+  } catch (e) { console.warn('tkWriteOne error', e); }
+}
+function tkPushOneIfReady(record) { if (tkReady) tkWriteOne(record); }
+
+async function tkRemoveOne(id) {
+  if (!tkRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/tickets/${id}`));
+  } catch (e) { console.warn('tkRemoveOne error', e); }
+}
+function tkRemoveOneIfReady(id) { if (tkReady) tkRemoveOne(id); }
 
 function tkWaitForFirebase() {
   return new Promise(resolve => {

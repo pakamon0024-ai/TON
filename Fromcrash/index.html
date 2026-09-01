@@ -570,7 +570,7 @@
             </div>
             <div class="filter-group">
               <label>ค้นหา</label>
-              <input type="text" id="filterSearch" placeholder="ค้นหารายการ..." oninput="renderHistory()" />
+              <input type="text" id="filterSearch" placeholder="ค้นหารายการ..." oninput="debouncedRender('renderHistory')" />
             </div>
             <button class="btn-secondary" onclick="exportHistoryPDF()">📄 Export ประวัติ PDF</button>
             <button class="btn-danger" onclick="clearAllHistory()">🗑️ ล้างประวัติทั้งหมด</button>
@@ -666,7 +666,7 @@
               <div class="form-group" style="margin-top:16px; max-width:320px;">
                 <label>ค้นหาพนักงาน</label>
                 <input type="text" id="md-driver-search" placeholder="พิมพ์ชื่อพนักงาน..."
-                  oninput="renderDriversTable()" />
+                  oninput="debouncedRender('renderDriversTable')" />
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
@@ -742,7 +742,7 @@
               <div class="form-group" style="margin-top:16px; max-width:320px;">
                 <label>ค้นหารถ</label>
                 <input type="text" id="md-vehicle-search" placeholder="พิมพ์ทะเบียนหรือเจ้าของรถ..."
-                  oninput="renderVehiclesTable()" />
+                  oninput="debouncedRender('renderVehiclesTable')" />
               </div>
               <div class="recent-table-wrap" style="margin-top:16px;">
                 <table class="data-table">
@@ -1446,7 +1446,7 @@
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="inc-lf-search"
-                  placeholder="ทะเบียน / ชื่อพนักงาน..." oninput="incRenderList()" /></div>
+                  placeholder="ทะเบียน / ชื่อพนักงาน..." oninput="debouncedRender('incRenderList')" /></div>
               <button class="btn-secondary" onclick="incClearListFilters()">🔄 ล้าง</button>
             </div>
             <div class="filter-bar">
@@ -1742,7 +1742,7 @@
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gh-f-search"
-                  placeholder="ทะเบียน / อู่ / สาเหตุ..." oninput="ghRenderList()" /></div>
+                  placeholder="ทะเบียน / อู่ / สาเหตุ..." oninput="debouncedRender('ghRenderList')" /></div>
               <button class="btn-secondary" onclick="ghClearListFilters()">🔄 ล้างตัวกรอง</button>
             </div>
             <div class="filter-bar">
@@ -1901,7 +1901,7 @@
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="wi-f-search"
-                  placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="wiRenderList()" /></div>
+                  placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="debouncedRender('wiRenderList')" /></div>
               <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้าง</button>
               <button class="btn-secondary" onclick="wiExportExcel()">📥 Export</button>
               <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
@@ -2055,7 +2055,7 @@
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="tk-f-search"
-                  placeholder="ทะเบียน / พนักงาน / ข้อหา..." oninput="tkRenderList()" /></div>
+                  placeholder="ทะเบียน / พนักงาน / ข้อหา..." oninput="debouncedRender('tkRenderList')" /></div>
               <button class="btn-secondary" onclick="tkClearListFilters()">🔄 ล้าง</button>
               <button class="btn-secondary" onclick="tkExportExcel()">📥 Export</button>
               <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
@@ -2238,7 +2238,7 @@
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="pb-f-search"
-                  placeholder="ชื่อ / ตำแหน่ง / ข้อหา..." oninput="pbRenderList()" /></div>
+                  placeholder="ชื่อ / ตำแหน่ง / ข้อหา..." oninput="debouncedRender('pbRenderList')" /></div>
               <button class="btn-secondary" onclick="pbClearListFilters()">🔄 ล้าง</button>
               <button class="btn-secondary" onclick="pbExportExcel()">📥 Export</button>
               <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
@@ -2422,7 +2422,7 @@
                 <div class="form-group">
                   <label>ค้นหาพนักงาน</label>
                   <input type="text" id="alc-roster-search" placeholder="พิมพ์ชื่อพนักงาน..."
-                    oninput="alcFilterRosterRows()" />
+                    oninput="debouncedRender('alcFilterRosterRows')" />
                 </div>
                 <div class="form-group">
                   <label>&nbsp;</label>
@@ -2513,7 +2513,7 @@
           <div class="subpage active" id="jv-subpage-list">
             <div class="filter-bar">
               <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="jv-f-plate"
-                  placeholder="ทะเบียนรถ..." oninput="jvRenderList()" /></div>
+                  placeholder="ทะเบียนรถ..." oninput="debouncedRender('jvRenderList')" /></div>
               <div class="filter-group">
                 <label>ประเภท</label>
                 <select id="jv-f-type" onchange="jvRenderList()">
@@ -2648,7 +2648,7 @@
           <div class="subpage" id="jv-subpage-db">
             <div class="filter-bar">
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="jvdb-f-search"
-                  placeholder="ทะเบียน / เจ้าของ / หน่วยงาน / ลานจอด..." oninput="jvdbRenderList()" /></div>
+                  placeholder="ทะเบียน / เจ้าของ / หน่วยงาน / ลานจอด..." oninput="debouncedRender('jvdbRenderList')" /></div>
               <button class="btn-secondary" onclick="jvdbClearListFilters()">🔄 ล้างตัวกรอง</button>
             </div>
             <div class="filter-bar">
@@ -2759,7 +2759,7 @@
           <div class="subpage active" id="gc-subpage-list">
             <div class="filter-bar">
               <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gc-f-plate"
-                  placeholder="ทะเบียนรถ..." oninput="gcRenderList()" /></div>
+                  placeholder="ทะเบียนรถ..." oninput="debouncedRender('gcRenderList')" /></div>
               <div class="filter-group">
                 <label>ประเภทอุปกรณ์</label>
                 <select id="gc-f-device" onchange="gcRenderList()">
@@ -2855,7 +2855,7 @@
           <div class="subpage" id="gc-subpage-replist">
             <div class="filter-bar">
               <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gr-f-plate"
-                  placeholder="ทะเบียนรถ..." oninput="grRenderList()" /></div>
+                  placeholder="ทะเบียนรถ..." oninput="debouncedRender('grRenderList')" /></div>
               <div class="filter-group">
                 <label>ประเภทอุปกรณ์</label>
                 <select id="gr-f-device" onchange="grRenderList()">
@@ -2959,7 +2959,7 @@
           <div class="subpage" id="gc-subpage-live">
             <div class="filter-bar">
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gc-live-search"
-                  placeholder="ทะเบียน / ชื่อคนขับ..." oninput="gcRenderLiveTable()" /></div>
+                  placeholder="ทะเบียน / ชื่อคนขับ..." oninput="debouncedRender('gcRenderLiveTable')" /></div>
               <button class="btn-primary" onclick="gcRefreshLiveTracking()">🔄 รีเฟรชตำแหน่งสด</button>
               <span id="gc-live-loading" style="display:none;color:var(--text-muted);font-size:0.85rem;">กำลังดึงข้อมูล...</span>
             </div>
@@ -3062,7 +3062,7 @@
                 </select>
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gv-f-search"
-                  placeholder="ทะเบียน / พนักงาน / รายละเอียด..." oninput="gvRenderList()" /></div>
+                  placeholder="ทะเบียน / พนักงาน / รายละเอียด..." oninput="debouncedRender('gvRenderList')" /></div>
               <button class="btn-secondary" onclick="gvClearListFilters()">🔄 ล้างตัวกรอง</button>
             </div>
             <div class="filter-bar">
@@ -3219,7 +3219,7 @@
           <div class="subpage" id="fr-subpage-list">
             <div class="filter-bar">
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="fr-f-search"
-                  placeholder="พนักงาน / ทะเบียน / หน่วยงาน / ลานจอด..." oninput="frRenderList()" /></div>
+                  placeholder="พนักงาน / ทะเบียน / หน่วยงาน / ลานจอด..." oninput="debouncedRender('frRenderList')" /></div>
               <button class="btn-secondary" onclick="frClearListFilters()">🔄 ล้างตัวกรอง</button>
             </div>
             <div class="filter-bar">
@@ -3459,7 +3459,7 @@
               </div>
               <div class="fg">
                 <div class="flbl">ค้นหา</div><input type="text" class="fc" id="fQ" placeholder="ทะเบียน / TMS / ชื่อ..."
-                  oninput="icRenderList()" style="min-width:180px;">
+                  oninput="debouncedRender('icRenderList')" style="min-width:180px;">
               </div>
               <button class="btn bs bxs" onclick="icClearFilters()">🔄 ล้าง</button>
             </div>

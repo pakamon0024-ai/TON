@@ -99,10 +99,12 @@ function pbSaveCase() {
     detail: document.getElementById('pb-detail').value.trim(),
   };
 
+  let savedRecord;
   if (pbEditingId) {
     const idx = probationRecords.findIndex(r => r.id === pbEditingId);
     if (idx >= 0) {
       probationRecords[idx] = { ...probationRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = probationRecords[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
       if (typeof sendTelegramNotification === 'function') {
         sendTelegramNotification(`✏️ <b>แก้ไขบันทึกใบคุมประพฤติ</b>\nเลขที่: ${probationRecords[idx].runningNo}\nชื่อ: ${escapeHtml(name)}\nข้อหา: ${escapeHtml(charge)}`);
@@ -114,6 +116,7 @@ function pbSaveCase() {
     record.runningNo = pbNextRunningNo();
     record.createdAt = new Date().toISOString();
     probationRecords.unshift(record);
+    savedRecord = record;
     showToast('บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -123,7 +126,7 @@ function pbSaveCase() {
     pbClearForm();
   }
   pbSave();
-  pbPushIfReady();
+  pbPushOneIfReady(savedRecord);
   pbRenderList();
 }
 
@@ -162,7 +165,7 @@ function pbDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   probationRecords = probationRecords.filter(r => r.id !== id);
   pbSave();
-  pbPushIfReady();
+  pbRemoveOneIfReady(id);
   pbRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -520,6 +523,24 @@ async function pbWriteFB() {
   } catch (e) { console.warn('pbWriteFB error', e); }
 }
 function pbPushIfReady() { if (pbReady) pbWriteFB(); }
+
+async function pbWriteOne(record) {
+  if (!pbRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/probationRecords/${record.id}`), record);
+  } catch (e) { console.warn('pbWriteOne error', e); }
+}
+function pbPushOneIfReady(record) { if (pbReady) pbWriteOne(record); }
+
+async function pbRemoveOne(id) {
+  if (!pbRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/probationRecords/${id}`));
+  } catch (e) { console.warn('pbRemoveOne error', e); }
+}
+function pbRemoveOneIfReady(id) { if (pbReady) pbRemoveOne(id); }
 
 function pbWaitForFirebase() {
   return new Promise(resolve => {

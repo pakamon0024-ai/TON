@@ -178,10 +178,12 @@ function wiSaveCase() {
     detail,
   };
 
+  let savedRecord;
   if (wiEditingId) {
     const idx = workIssues.findIndex(i => i.id === wiEditingId);
     if (idx >= 0) {
       workIssues[idx] = { ...workIssues[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = workIssues[idx];
       showToast('บันทึกการแก้ไขแล้ว', 'success');
       if (typeof sendTelegramNotification === 'function') {
         sendTelegramNotification(`✏️ <b>แก้ไขบันทึกปัญหาการทำงาน</b>\nเลขที่: ${workIssues[idx].runningNo}\nหัวข้อ: ${escapeHtml(topic)}`);
@@ -193,6 +195,7 @@ function wiSaveCase() {
     record.runningNo = wiNextRunningNo();
     record.createdAt = new Date().toISOString();
     workIssues.unshift(record);
+    savedRecord = record;
     showToast('บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -202,7 +205,7 @@ function wiSaveCase() {
     wiClearForm();
   }
   wiSave();
-  wiPushIfReady();
+  wiPushOneIfReady(savedRecord);
   wiRenderList();
 }
 
@@ -241,7 +244,7 @@ function wiDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
   workIssues = workIssues.filter(i => i.id !== id);
   wiSave();
-  wiPushIfReady();
+  wiRemoveOneIfReady(id);
   wiRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -378,6 +381,24 @@ async function wiWriteFB() {
   } catch (e) { console.warn('wiWriteFB error', e); }
 }
 function wiPushIfReady() { if (wiReady) wiWriteFB(); }
+
+async function wiWriteOne(record) {
+  if (!wiRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/workIssues/${record.id}`), record);
+  } catch (e) { console.warn('wiWriteOne error', e); }
+}
+function wiPushOneIfReady(record) { if (wiReady) wiWriteOne(record); }
+
+async function wiRemoveOne(id) {
+  if (!wiRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/workIssues/${id}`));
+  } catch (e) { console.warn('wiRemoveOne error', e); }
+}
+function wiRemoveOneIfReady(id) { if (wiReady) wiRemoveOne(id); }
 
 function wiWaitForFirebase() {
   return new Promise(resolve => {

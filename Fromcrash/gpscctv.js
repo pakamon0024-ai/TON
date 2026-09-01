@@ -118,10 +118,12 @@ function gcSaveCase() {
 
   const record = { plate, owner, device, company, installDate, removeDate, note };
 
+  let savedRecord;
   if (gcEditingId) {
     const idx = gcRecords.findIndex(r => r.id === gcEditingId);
     if (idx >= 0) {
       gcRecords[idx] = { ...gcRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = gcRecords[idx];
       showToast('✅ บันทึกการแก้ไขแล้ว', 'success');
     }
     gcCancelEdit();
@@ -130,6 +132,7 @@ function gcSaveCase() {
     record.runningNo = gcNextRunningNo();
     record.createdAt = new Date().toISOString();
     gcRecords.unshift(record);
+    savedRecord = record;
     showToast('✅ บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -141,7 +144,7 @@ function gcSaveCase() {
     gcClearForm();
   }
   gcSave();
-  gcPushIfReady();
+  gcPushOneIfReady(savedRecord);
   gcRenderList();
 }
 
@@ -183,7 +186,7 @@ function gcDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   gcRecords = gcRecords.filter(r => r.id !== id);
   gcSave();
-  gcPushIfReady();
+  gcRemoveOneIfReady(id);
   gcRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -268,10 +271,12 @@ function grSaveCase() {
 
   const record = { plate, owner, device, symptom, appointmentDate, repairDate, note };
 
+  let savedRecord;
   if (grEditingId) {
     const idx = grRecords.findIndex(r => r.id === grEditingId);
     if (idx >= 0) {
       grRecords[idx] = { ...grRecords[idx], ...record, updatedAt: new Date().toISOString() };
+      savedRecord = grRecords[idx];
       showToast('✅ บันทึกการแก้ไขแล้ว', 'success');
     }
     grCancelEdit();
@@ -280,6 +285,7 @@ function grSaveCase() {
     record.runningNo = grNextRunningNo();
     record.createdAt = new Date().toISOString();
     grRecords.unshift(record);
+    savedRecord = record;
     showToast('✅ บันทึกข้อมูลแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -289,7 +295,7 @@ function grSaveCase() {
     grClearForm();
   }
   grSave();
-  grPushIfReady();
+  grPushOneIfReady(savedRecord);
   grRenderList();
 }
 
@@ -328,7 +334,7 @@ function grDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   grRecords = grRecords.filter(r => r.id !== id);
   grSave();
-  grPushIfReady();
+  grRemoveOneIfReady(id);
   grRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -498,6 +504,24 @@ async function gcWriteFB() {
 }
 function gcPushIfReady() { if (gcReady) gcWriteFB(); }
 
+async function gcWriteOne(record) {
+  if (!gcRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/gpsCctvInstalls/${record.id}`), record);
+  } catch (e) { console.warn('gcWriteOne error', e); }
+}
+function gcPushOneIfReady(record) { if (gcReady) gcWriteOne(record); }
+
+async function gcRemoveOne(id) {
+  if (!gcRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/gpsCctvInstalls/${id}`));
+  } catch (e) { console.warn('gcRemoveOne error', e); }
+}
+function gcRemoveOneIfReady(id) { if (gcReady) gcRemoveOne(id); }
+
 function grApplyServer(serverRecords) { grRecords = serverRecords; grSave(); grRenderList(); }
 async function grWriteFB() {
   if (!grRef) return;
@@ -507,6 +531,24 @@ async function grWriteFB() {
   } catch (e) { console.warn('grWriteFB error', e); }
 }
 function grPushIfReady() { if (grReady) grWriteFB(); }
+
+async function grWriteOne(record) {
+  if (!grRef || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `/gpsCctvRepairs/${record.id}`), record);
+  } catch (e) { console.warn('grWriteOne error', e); }
+}
+function grPushOneIfReady(record) { if (grReady) grWriteOne(record); }
+
+async function grRemoveOne(id) {
+  if (!grRef) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `/gpsCctvRepairs/${id}`));
+  } catch (e) { console.warn('grRemoveOne error', e); }
+}
+function grRemoveOneIfReady(id) { if (grReady) grRemoveOne(id); }
 
 function gcWaitForFirebase() {
   return new Promise(resolve => {

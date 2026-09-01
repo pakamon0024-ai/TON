@@ -329,6 +329,7 @@ function savePettyCash() {
   if (data.items.some(i => !i.item)) {
     showToast('กรุณากรอกรายการค่าใช้จ่ายให้ครบ', 'warning'); return;
   }
+  let savedRecord;
   if (editingPettyId) {
     const idx = records.findIndex(r => r.id === editingPettyId);
     if (idx >= 0) {
@@ -337,6 +338,7 @@ function savePettyCash() {
         docno: data.docno, dept: data.dept, requester: data.requester, reviewer: data.reviewer, approver: data.approver,
         purpose: data.purpose, detail: data.detail, date: data.date, items: data.items, total: data.total,
       };
+      savedRecord = records[idx];
     }
     showToast('✅ แก้ไขรายการเงินสดย่อยแล้ว!', 'success');
     cancelEditPetty();
@@ -358,6 +360,7 @@ function savePettyCash() {
       savedAt: new Date().toISOString()
     };
     records.unshift(record);
+    savedRecord = record;
     showToast('✅ บันทึกรายการเงินสดย่อยแล้ว!', 'success');
     autoDocNo();
     if (typeof sendTelegramNotification === 'function') {
@@ -367,7 +370,7 @@ function savePettyCash() {
     }
   }
   saveRecords();
-  rsPushIfReady();
+  if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(savedRecord);
   renderDashboard();
   renderHistory();
 }
@@ -527,6 +530,7 @@ function saveApproval() {
   if (!data.docno || !data.requester || data.items.length === 0) {
     showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return;
   }
+  let savedRecord;
   if (editingApprovalId) {
     const idx = records.findIndex(r => r.id === editingApprovalId);
     if (idx >= 0) {
@@ -536,6 +540,7 @@ function saveApproval() {
         subject: data.subject, date: data.date, items: data.items, total: data.total,
         data: data,
       };
+      savedRecord = records[idx];
     }
     showToast('✅ แก้ไขหนังสือขออนุมัติแล้ว!', 'success');
     cancelEditApproval();
@@ -557,6 +562,7 @@ function saveApproval() {
       savedAt: new Date().toISOString()
     };
     records.unshift(record);
+    savedRecord = record;
     showToast('✅ บันทึกหนังสือขออนุมัติแล้ว!', 'success');
     autoDocNo();
     if (typeof sendTelegramNotification === 'function') {
@@ -566,7 +572,7 @@ function saveApproval() {
     }
   }
   saveRecords();
-  rsPushIfReady();
+  if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(savedRecord);
   renderDashboard();
   renderHistory();
 }
@@ -696,7 +702,12 @@ function renderHistory() {
 
 function changeStatus(id, status) {
   const rec = records.find(r => r.id === id);
-  if (rec) { rec.status = status; saveRecords(); rsPushIfReady(); renderDashboard(); }
+  if (rec) {
+    rec.status = status;
+    saveRecords();
+    if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(rec);
+    renderDashboard();
+  }
 }
 
 // ===== ยืนยันการลบด้วยรหัส (ใช้แทน confirm() ธรรมดาทุกจุดที่มีการลบข้อมูลในระบบ) =====
@@ -715,7 +726,9 @@ function confirmDeleteWithPin(message) {
 function deleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   records = records.filter(r => r.id !== id);
-  saveRecords(); rsPushIfReady(); renderHistory(); renderDashboard();
+  saveRecords();
+  if (typeof rsRemoveOneIfReady === 'function') rsRemoveOneIfReady(id);
+  renderHistory(); renderDashboard();
   showToast('ลบรายการแล้ว', 'warning');
 }
 
@@ -957,6 +970,28 @@ function formatDate(val) {
   const d = new Date(val);
   if (isNaN(d)) return val;
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+}
+
+// ===== หน่วงการเรียกฟังก์ชัน (debounce) — ใช้กับช่องค้นหาทุกหน้า =====
+// กันปัญหาตารางกระตุกเวลาพิมพ์ค้นหา เพราะเดิมทุกตัวอักษรที่พิมพ์จะสั่ง filter+sort+render ตารางทั้งหมดทันที
+// พอข้อมูลเยอะขึ้นเรื่อยๆ (โดยเฉพาะบันทึกแอลกอฮอล์ที่บันทึกแบบ roster ทุกวัน) การ render ทุกตัวอักษรจะยิ่งหน่วง
+// debounce ทำให้รอจนหยุดพิมพ์ก่อน (ค่าเริ่มต้น 250ms) ค่อย render ครั้งเดียว
+function debounce(fn, wait) {
+  let t;
+  return function (...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), wait || 250);
+  };
+}
+
+// เรียกใช้จาก HTML ตรงๆ ได้เลย เช่น oninput="debouncedRender('incRenderList')" — ไม่ต้องสร้างฟังก์ชัน
+// ห่อ debounce แยกทีละโมดูล เก็บ debounce ของแต่ละชื่อฟังก์ชันไว้ใช้ซ้ำ (สร้างครั้งแรกครั้งเดียวต่อชื่อ)
+const _debouncedRenderFns = {};
+function debouncedRender(fnName) {
+  if (!_debouncedRenderFns[fnName]) {
+    _debouncedRenderFns[fnName] = debounce(() => { if (typeof window[fnName] === 'function') window[fnName](); }, 250);
+  }
+  _debouncedRenderFns[fnName]();
 }
 
 // ===== ยอดรวมมุมบนขวาของทุกกราฟแดชบอร์ด =====

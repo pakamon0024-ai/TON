@@ -148,9 +148,11 @@ function icSaveCase() {
     remark: document.getElementById('f_remark').value.trim(),
     updatedAt: new Date().toISOString(),
   };
+  let savedRecord;
   if (editId) {
     const i = claims.findIndex(c => c.id === editId);
     if (i >= 0) claims[i] = { ...claims[i], ...d };
+    savedRecord = claims[i];
     icToast('อัปเดตสำเร็จ ✓', 'ok');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -162,6 +164,7 @@ function icSaveCase() {
     d.seq = icNextSeq();
     d.createdAt = new Date().toISOString();
     claims.push(d);
+    savedRecord = d;
     icToast('บันทึกเคสใหม่สำเร็จ ✓', 'ok');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
@@ -172,7 +175,7 @@ function icSaveCase() {
   icSave();
   icUpdate();
   editId = null;
-  icPushIfOK();
+  icPushOneIfOK(savedRecord);
   icGoTo('list');
 }
 
@@ -504,8 +507,9 @@ function icEditCase(id) { const c = claims.find(x => x.id === id); if (!c) retur
 function icPromptDel(id) { delId = id; document.getElementById('confirmModal').classList.add('on'); }
 function icCloseConfirm() { delId = null; document.getElementById('confirmModal').classList.remove('on'); }
 function icDoDelete() {
+  const removedId = delId;
   claims = claims.filter(c => c.id !== delId);
-  icSave(); icUpdate(); icCloseConfirm(); icRenderList(); icPushIfOK();
+  icSave(); icUpdate(); icCloseConfirm(); icRenderList(); icRemoveOne(removedId);
   icToast('ลบเคสสำเร็จ', 'ok');
 }
 
@@ -843,6 +847,25 @@ async function icSyncNow() { await icPullFromFB(); await icWriteFB(); }
 
 async function icPushIfOK() {
   await icWriteFB();
+}
+
+// ===== เขียน/ลบเฉพาะเคสเดียว (ไม่ใช่ทั้งอาเรย์) — ใช้ child() ต่อจาก fbRef เพราะ path เก็บใน cfg.dbPath ที่ผู้ใช้ตั้งเอง =====
+async function icWriteOne(record) {
+  if (!fbOK || !fbRef || !fbReady || !record?.id) return;
+  try {
+    const { child, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(child(fbRef, record.id), record);
+    icAddLog('⬆️ Sync เคส #' + (record.seq || record.id));
+  } catch (e) { icAddLog('⚠️ Sync error: ' + e.message); }
+}
+async function icPushOneIfOK(record) { await icWriteOne(record); }
+
+async function icRemoveOne(id) {
+  if (!fbOK || !fbRef || !fbReady) return;
+  try {
+    const { child, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(child(fbRef, id));
+  } catch (e) { icAddLog('⚠️ Remove error: ' + e.message); }
 }
 
 function icClearFbConfig() {
