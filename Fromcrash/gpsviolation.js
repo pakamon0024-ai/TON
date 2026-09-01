@@ -75,7 +75,21 @@ function gvDashFillSelect(id, list) {
   if (list && list.includes(current)) el.value = current;
 }
 
+// ช่องประเภทความผิดในฟอร์มเพิ่มบันทึกเป็นข้อความอิสระ (พิมพ์เองได้ ไม่ได้บังคับแค่ 2 ตัวเลือกที่ตั้งไว้)
+// เดิม dropdown แดชบอร์ดมีแค่ 2 ตัวเลือกตายตัว — ถ้าใครพิมพ์ประเภทอื่นที่ไม่ตรงเป๊ะ รายการนั้นจะไม่โผล่ในแดชบอร์ดเลย
+// แก้โดยเพิ่ม "ทั้งหมด" เป็นตัวเลือกแรก และเติมประเภทอื่นๆ ที่มีอยู่จริงในข้อมูล (นอกเหนือจาก 2 ตัวหลัก) ต่อท้ายให้เลือกได้ด้วย
 function gvRefreshDashFilters() {
+  const typeSelect = document.getElementById('gv-dash-type');
+  if (typeSelect) {
+    const current = typeSelect.value;
+    const extraTypes = [...new Set(gvRecords.map(r => r.type).filter(Boolean))]
+      .filter(t => !GV_TYPE_PRESETS.includes(t));
+    const extraHtml = extraTypes.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    const baseHtml = '<option value="">ทั้งหมด</option>' +
+      GV_TYPE_PRESETS.map(t => `<option value="${escapeHtml(t)}">${t === 'จอดรถติดเครื่องนาน' ? 'จอดรถไม่ดับเครื่องนานเกิน' : escapeHtml(t)}</option>`).join('');
+    typeSelect.innerHTML = baseHtml + extraHtml;
+    if ([...typeSelect.options].some(o => o.value === current)) typeSelect.value = current;
+  }
   gvDashFillSelect('gv-dash-yard', mdYards);
   gvDashFillSelect('gv-dash-bu', mdBusinessUnits);
 }
@@ -85,7 +99,7 @@ function gvRenderDashboard() {
   const yardFilter = document.getElementById('gv-dash-yard')?.value || '';
   const buFilter = document.getElementById('gv-dash-bu')?.value || '';
   const list = gvRecords.filter(r =>
-    r.type === type && (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
+    (!type || r.type === type) && (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
   );
 
   const curYear = new Date().getFullYear();
