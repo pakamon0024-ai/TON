@@ -23,7 +23,7 @@ function tkSwitchTab(tab) {
     document.getElementById(`tk-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`tk-subpage-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'dashboard') tkRenderDashboard();
+  if (tab === 'dashboard') { tkRefreshDashFilters(); tkRenderDashboard(); }
   if (tab === 'list') tkRenderList();
   if (tab === 'add' && !tkEditingId) tkClearForm();
 }
@@ -235,12 +235,24 @@ function tkBarChart(canvasId, key, labels, data, maxRotation) {
       },
     },
   });
+  setChartTotal(canvasId, data);
+}
+
+function tkRefreshDashFilters() {
+  tkFillSelect('tk-dash-yard', mdYards);
+  tkFillSelect('tk-dash-bu', mdBusinessUnits);
 }
 
 function tkRenderDashboard() {
+  const yardFilter = document.getElementById('tk-dash-yard')?.value || '';
+  const buFilter = document.getElementById('tk-dash-bu')?.value || '';
+  const filtered = tickets.filter(t =>
+    (!yardFilter || t.yard === yardFilter) && (!buFilter || t.businessUnit === buFilter)
+  );
+
   const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
-  tickets.forEach(t => {
+  filtered.forEach(t => {
     if (!t.date) return;
     const d = new Date(t.date);
     if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
@@ -249,7 +261,7 @@ function tkRenderDashboard() {
 
   const countBy = field => {
     const map = {};
-    tickets.forEach(t => { const v = t[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    filtered.forEach(t => { const v = t[field]; if (v) map[v] = (map[v] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
 

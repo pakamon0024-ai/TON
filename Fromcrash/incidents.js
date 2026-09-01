@@ -63,7 +63,10 @@ function incOnPageShown() {
   incRenderDashboard();
   ghRefreshLookupDropdowns();
   ghRenderList();
-  if (document.getElementById('gh-subpage-dashboard')?.classList.contains('active')) ghRenderDashboard();
+  if (document.getElementById('gh-subpage-dashboard')?.classList.contains('active')) {
+    ghRefreshDashFilters();
+    ghRenderDashboard();
+  }
 }
 
 // ===== Auto-calc helpers =====
@@ -438,6 +441,7 @@ function incRenderDashboard() {
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: INC_CHART_FONT, boxWidth: 14 } }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
+  setChartTotal('inc-chart-month', monthCount); // นับเฉพาะแท่งปีปัจจุบัน ไม่รวมเส้นปีที่แล้ว
 
   const yardCount = {}; data.forEach(i => { if (i.yard) yardCount[i.yard] = (yardCount[i.yard]||0)+1; });
   const yardSorted = Object.entries(yardCount).sort((a,b)=>b[1]-a[1]);
@@ -447,6 +451,7 @@ function incRenderDashboard() {
     data: { labels: yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
+  setChartTotal('inc-chart-yard', yardSorted.map(e => e[1]));
 
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
   const patternSorted = Object.entries(patternCount).sort((a,b) => b[1]-a[1]);
@@ -456,6 +461,7 @@ function incRenderDashboard() {
     data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: { ...INC_CHART_TICK, maxRotation: 30 } } } }
   });
+  setChartTotal('inc-chart-pattern', patternSorted.map(e => e[1]));
 
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
   const buSorted = Object.entries(buCount).sort((a,b) => b[1]-a[1]);
@@ -465,6 +471,7 @@ function incRenderDashboard() {
     data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
+  setChartTotal('inc-chart-bu', buSorted.map(e => e[1]));
 
   const areaCount = {}; data.forEach(i => { const a = incNormalizeArea(i.area); if (a) areaCount[a] = (areaCount[a]||0)+1; });
   const areaSorted = Object.entries(areaCount).sort((a,b)=>b[1]-a[1]);
@@ -474,6 +481,7 @@ function incRenderDashboard() {
     data: { labels: areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
+  setChartTotal('inc-chart-area', areaSorted.map(e => e[1]));
 }
 
 // ===== การจัดส่งรายงาน Trouble Report (ติดตามเคสที่สถานะ TMS = NG ยังไม่ได้ส่ง) =====
@@ -843,8 +851,8 @@ let ghCharts = {};
 let ghSortField = null; // null = ใช้ลำดับ default (วันที่เข้าอู่ใหม่สุดก่อน)
 let ghSortDir = 1;
 
-const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'ลานจอด', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
-const GH_XLSX_COLWIDTHS = [8, 14, 12, 20, 18, 18, 30, 14];
+const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'ลานจอด', 'หน่วยงาน', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
+const GH_XLSX_COLWIDTHS = [8, 14, 12, 16, 20, 18, 18, 30, 14];
 const GH_NUMERIC_FIELDS = ['runningNo', 'cost'];
 const GH_DATE_FIELDS = ['inDate', 'outDate'];
 
@@ -865,7 +873,7 @@ function ghSwitchTab(tab) {
     document.getElementById(`gh-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gh-subpage-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'dashboard') ghRenderDashboard();
+  if (tab === 'dashboard') { ghRefreshDashFilters(); ghRenderDashboard(); }
   if (tab === 'list') ghRenderList();
   if (tab === 'add' && !ghEditingId) ghClearForm();
 }
@@ -906,13 +914,34 @@ function ghBarChart(canvasId, key, labels, data, opts) {
       },
     },
   });
+  setChartTotal(canvasId, data, isMoney);
+}
+
+function ghDashFillSelect(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  const placeholder = el.options[0]?.outerHTML || '<option value="">ทั้งหมด</option>';
+  el.innerHTML = placeholder + (list || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+  if (list && list.includes(current)) el.value = current;
+}
+
+function ghRefreshDashFilters() {
+  ghDashFillSelect('gh-dash-yard', mdYards);
+  ghDashFillSelect('gh-dash-bu', mdBusinessUnits);
 }
 
 function ghRenderDashboard() {
+  const yardFilter = document.getElementById('gh-dash-yard')?.value || '';
+  const buFilter = document.getElementById('gh-dash-bu')?.value || '';
+  const filtered = ghRecords.filter(r =>
+    (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
+  );
+
   const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
   const monthCost = new Array(12).fill(0);
-  ghRecords.forEach(r => {
+  filtered.forEach(r => {
     if (!r.inDate) return;
     const d = new Date(r.inDate);
     if (!isNaN(d) && d.getFullYear() === curYear) {
@@ -925,7 +954,7 @@ function ghRenderDashboard() {
 
   const countBy = field => {
     const map = {};
-    ghRecords.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    filtered.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
 
@@ -946,6 +975,8 @@ function ghFillDatalist(id, list) {
 function ghRefreshLookupDropdowns() {
   ghFillDatalist('gh-plate-list', (mdVehicles || []).map(v => v.plate).filter(Boolean));
   ghFillDatalist('gh-yard-list', mdYards);
+  ghFillDatalist('gh-bu-list', mdBusinessUnits);
+  ghDashFillSelect('gh-f-bu', mdBusinessUnits);
 }
 
 function ghCalcRepairDays() {
@@ -967,6 +998,7 @@ function ghSaveRecord() {
   const record = {
     plate,
     yard: document.getElementById('gh-yard').value.trim(),
+    businessUnit: document.getElementById('gh-bu').value.trim(),
     inDate,
     outDate: document.getElementById('gh-out').value,
     shop: document.getElementById('gh-shop').value.trim(),
@@ -1000,7 +1032,7 @@ function ghClearForm() {
   ghEditingId = null;
   const banner = document.getElementById('gh-edit-banner');
   if (banner) banner.style.display = 'none';
-  ['gh-plate', 'gh-yard', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
+  ['gh-plate', 'gh-yard', 'gh-bu', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 }
 
@@ -1012,6 +1044,7 @@ function ghEditRecord(id) {
   document.getElementById('gh-edit-no').textContent = rec.runningNo;
   document.getElementById('gh-plate').value = rec.plate || '';
   document.getElementById('gh-yard').value = rec.yard || '';
+  document.getElementById('gh-bu').value = rec.businessUnit || '';
   document.getElementById('gh-shop').value = rec.shop || '';
   document.getElementById('gh-in').value = rec.inDate || '';
   document.getElementById('gh-out').value = rec.outDate || '';
@@ -1045,10 +1078,13 @@ function ghDeleteAllRecords() {
 
 // ===== List / Filter =====
 function ghFilteredList() {
+  const bu = document.getElementById('gh-f-bu')?.value || '';
   const search = (document.getElementById('gh-f-search')?.value || '').toLowerCase().trim();
-  const list = search
-    ? ghRecords.filter(r => `${r.plate} ${r.yard} ${r.shop} ${r.reason}`.toLowerCase().includes(search))
-    : [...ghRecords];
+  const list = ghRecords.filter(r => {
+    if (bu && r.businessUnit !== bu) return false;
+    if (search && !(`${r.plate} ${r.yard} ${r.shop} ${r.reason}`.toLowerCase().includes(search))) return false;
+    return true;
+  });
   if (!ghSortField) return list.sort((a, b) => new Date(b.inDate || 0) - new Date(a.inDate || 0));
   return list.sort((a, b) => ghCompareValues(a, b, ghSortField) * ghSortDir);
 }
@@ -1081,8 +1117,7 @@ function ghUpdateSortIndicators() {
 }
 
 function ghClearListFilters() {
-  const el = document.getElementById('gh-f-search');
-  if (el) el.value = '';
+  ['gh-f-bu', 'gh-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ghRenderList();
 }
 
@@ -1100,7 +1135,7 @@ function ghRenderList() {
   ghUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
@@ -1108,6 +1143,7 @@ function ghRenderList() {
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
+      <td>${escapeHtml(r.businessUnit || '-')}</td>
       <td>${escapeHtml(r.shop || '-')}</td>
       <td>${r.inDate ? formatDate(r.inDate) : '-'}</td>
       <td>${r.outDate ? formatDate(r.outDate) : '-'}</td>
@@ -1126,7 +1162,7 @@ function ghRenderList() {
 function ghDownloadTemplate() {
   const sample = [
     GH_XLSX_HEADERS,
-    ['', '70-1234', 'ABC', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500'],
+    ['', '70-1234', 'ABC', 'Trailer', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500'],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -1139,7 +1175,7 @@ function ghDownloadTemplate() {
 function ghExportExcel() {
   if (!ghRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [GH_XLSX_HEADERS, ...ghRecords.map(r => [
-    r.runningNo, r.plate || '', r.yard || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0,
+    r.runningNo, r.plate || '', r.yard || '', r.businessUnit || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0,
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -1166,11 +1202,12 @@ function ghImportExcel(evt) {
         const data = {
           plate,
           yard: String(row[2] || '').trim(),
-          shop: String(row[3] || '').trim(),
-          inDate: normalizeImportDate(row[4]),
-          outDate: normalizeImportDate(row[5]),
-          reason: String(row[6] || '').trim(),
-          cost: parseFloat(row[7]) || 0,
+          businessUnit: String(row[3] || '').trim(),
+          shop: String(row[4] || '').trim(),
+          inDate: normalizeImportDate(row[5]),
+          outDate: normalizeImportDate(row[6]),
+          reason: String(row[7] || '').trim(),
+          cost: parseFloat(row[8]) || 0,
         };
         // จับคู่ด้วย "ลำดับที่" (คอลัมน์แรก) — ถ้ามีเลขนี้อยู่แล้วให้แก้ไขรายการเดิมแทนการเพิ่มซ้ำ
         const rowNo = parseInt(row[0]);

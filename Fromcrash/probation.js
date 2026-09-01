@@ -12,8 +12,8 @@ let pbCharts = {};
 const PB_NUMERIC_FIELDS = ['runningNo'];
 const PB_DATE_FIELDS = ['date'];
 
-const PB_XLSX_HEADERS = ['ลำดับที่','วันที่','ชื่อ','ตำแหน่ง','ลานจอด','ข้อหา','รายละเอียด'];
-const PB_XLSX_COLWIDTHS = [8, 14, 20, 16, 12, 20, 40];
+const PB_XLSX_HEADERS = ['ลำดับที่','วันที่','ชื่อ','ตำแหน่ง','ลานจอด','หน่วยงาน','ข้อหา','รายละเอียด'];
+const PB_XLSX_COLWIDTHS = [8, 14, 20, 16, 12, 16, 20, 40];
 
 function pbSave() { localStorage.setItem('finflow_probation', JSON.stringify(probationRecords)); }
 
@@ -23,7 +23,7 @@ function pbSwitchTab(tab) {
     document.getElementById(`pb-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`pb-subpage-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'dashboard') pbRenderDashboard();
+  if (tab === 'dashboard') { pbRefreshDashFilters(); pbRenderDashboard(); }
   if (tab === 'list') pbRenderList();
   if (tab === 'add' && !pbEditingId) pbClearForm();
 }
@@ -52,8 +52,10 @@ function pbFillSelect(id, list) {
 function pbRefreshLookupDropdowns() {
   pbFillDatalist('pb-name-list', (mdDrivers || []).map(d => d.name).filter(Boolean));
   pbFillDatalist('pb-yard-list', mdYards);
+  pbFillDatalist('pb-bu-list', mdBusinessUnits);
   pbFillDatalist('pb-charge-list', mdChargeTypes);
   pbFillSelect('pb-f-yard', mdYards);
+  pbFillSelect('pb-f-bu', mdBusinessUnits);
 }
 
 function pbQuickAddCharge() {
@@ -93,6 +95,7 @@ function pbSaveCase() {
     date, name, charge,
     position: document.getElementById('pb-position').value.trim(),
     yard: document.getElementById('pb-yard').value.trim(),
+    businessUnit: document.getElementById('pb-bu').value.trim(),
     detail: document.getElementById('pb-detail').value.trim(),
   };
 
@@ -131,6 +134,7 @@ function pbClearForm() {
   document.getElementById('pb-name').value = '';
   document.getElementById('pb-position').value = '';
   document.getElementById('pb-yard').value = '';
+  document.getElementById('pb-bu').value = '';
   document.getElementById('pb-charge').value = '';
   document.getElementById('pb-detail').value = '';
 }
@@ -145,6 +149,7 @@ function pbEditCase(id) {
   document.getElementById('pb-name').value = rec.name || '';
   document.getElementById('pb-position').value = rec.position || '';
   document.getElementById('pb-yard').value = rec.yard || '';
+  document.getElementById('pb-bu').value = rec.businessUnit || '';
   document.getElementById('pb-charge').value = rec.charge || '';
   document.getElementById('pb-detail').value = rec.detail || '';
   pbSwitchTab('add');
@@ -202,12 +207,24 @@ function pbBarChart(canvasId, key, labels, data, maxRotation) {
       },
     },
   });
+  setChartTotal(canvasId, data);
+}
+
+function pbRefreshDashFilters() {
+  pbFillSelect('pb-dash-yard', mdYards);
+  pbFillSelect('pb-dash-bu', mdBusinessUnits);
 }
 
 function pbRenderDashboard() {
+  const yardFilter = document.getElementById('pb-dash-yard')?.value || '';
+  const buFilter = document.getElementById('pb-dash-bu')?.value || '';
+  const filtered = probationRecords.filter(r =>
+    (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
+  );
+
   const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
-  probationRecords.forEach(r => {
+  filtered.forEach(r => {
     if (!r.date) return;
     const d = new Date(r.date);
     if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
@@ -216,7 +233,7 @@ function pbRenderDashboard() {
 
   const countBy = field => {
     const map = {};
-    probationRecords.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    filtered.forEach(r => { const v = r[field]; if (v) map[v] = (map[v] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
 
@@ -230,9 +247,11 @@ function pbRenderDashboard() {
 // ===== List / Filter =====
 function pbFilteredList() {
   const yard = document.getElementById('pb-f-yard')?.value || '';
+  const bu = document.getElementById('pb-f-bu')?.value || '';
   const search = (document.getElementById('pb-f-search')?.value || '').toLowerCase().trim();
   const filtered = probationRecords.filter(r => {
     if (yard && r.yard !== yard) return false;
+    if (bu && r.businessUnit !== bu) return false;
     if (search && !(`${r.name} ${r.position} ${r.charge} ${r.detail}`.toLowerCase().includes(search))) return false;
     return true;
   });
@@ -261,7 +280,7 @@ function pbUpdateSortIndicators() {
 }
 
 function pbClearListFilters() {
-  ['pb-f-yard', 'pb-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['pb-f-yard', 'pb-f-bu', 'pb-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   pbRenderList();
 }
 
@@ -273,7 +292,7 @@ function pbRenderList() {
   pbUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     return;
   }
   tbody.innerHTML = list.map(r => `
@@ -283,6 +302,7 @@ function pbRenderList() {
       <td>${escapeHtml(r.name || '-')}</td>
       <td>${escapeHtml(r.position || '-')}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
+      <td>${escapeHtml(r.businessUnit || '-')}</td>
       <td>${escapeHtml(r.charge || '-')}</td>
       <td>
         <div style="display:flex;gap:6px">
@@ -407,7 +427,7 @@ function pbShowMemoPrint(id) {
 function pbExportExcel() {
   if (!probationRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [PB_XLSX_HEADERS, ...probationRecords.map(r => [
-    r.runningNo, formatDMY(r.date), r.name || '', r.position || '', r.yard || '', r.charge || '', r.detail || '',
+    r.runningNo, formatDMY(r.date), r.name || '', r.position || '', r.yard || '', r.businessUnit || '', r.charge || '', r.detail || '',
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = PB_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -420,7 +440,7 @@ function pbExportExcel() {
 function pbDownloadTemplate() {
   const sample = [
     PB_XLSX_HEADERS,
-    ['', '15/01/2026', 'นายสมชาย ใจดี', 'พนักงานขับรถ', 'ABC', 'ฝ่าฝืนกฎระเบียบวินัยจราจร', 'ตัวอย่างรายละเอียด'],
+    ['', '15/01/2026', 'นายสมชาย ใจดี', 'พนักงานขับรถ', 'ABC', 'Trailer', 'ฝ่าฝืนกฎระเบียบวินัยจราจร', 'ตัวอย่างรายละเอียด'],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   ws['!cols'] = PB_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -448,8 +468,9 @@ function pbImportExcel(evt) {
           name: String(row[2] || '').trim(),
           position: String(row[3] || '').trim(),
           yard: String(row[4] || '').trim(),
-          charge: String(row[5] || '').trim(),
-          detail: String(row[6] || '').trim(),
+          businessUnit: String(row[5] || '').trim(),
+          charge: String(row[6] || '').trim(),
+          detail: String(row[7] || '').trim(),
         };
         const rowNo = parseInt(row[0]);
         const existingIdx = rowNo ? probationRecords.findIndex(r => r.runningNo === rowNo) : -1;

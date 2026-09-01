@@ -959,6 +959,16 @@ function formatDate(val) {
   return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
 }
 
+// ===== ยอดรวมมุมบนขวาของทุกกราฟแดชบอร์ด =====
+// เรียกหลังสร้าง/อัปเดตกราฟแต่ละอัน — หา badge ที่ id "{canvasId}-total" (คู่กับ id ของ <canvas> เอง)
+// ใส่ไว้ใน chart-title ของแต่ละการ์ดใน index.html แล้ว ไม่ต้องส่ง element เข้ามาเอง
+function setChartTotal(canvasId, values, isMoney) {
+  const el = document.getElementById(`${canvasId}-total`);
+  if (!el) return;
+  const total = (values || []).reduce((s, v) => s + (v || 0), 0);
+  el.textContent = 'รวม ' + (isMoney ? formatMoney(total) : total.toLocaleString('th-TH'));
+}
+
 // ===== ช่องกรอกเวลาแบบ 24 ชม. (select ชั่วโมง/นาทีเอง) =====
 // input type="time" ของ browser จะโชว์ AM/PM หรือ 24 ชม. ตาม locale ของเครื่อง/เบราว์เซอร์ผู้ใช้แต่ละคน
 // ไม่ใช่ตาม lang ของหน้าเว็บ (ทดสอบแล้วว่า lang="th" บน input ไม่มีผล) จึงต้องทำ select เองเพื่อบังคับ 24 ชม. เสมอ

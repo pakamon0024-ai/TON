@@ -23,7 +23,7 @@ function gvSwitchTab(tab) {
     document.getElementById(`gv-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gv-subpage-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'dashboard') gvRenderDashboard();
+  if (tab === 'dashboard') { gvRefreshDashFilters(); gvRenderDashboard(); }
   if (tab === 'list') gvRenderList();
   if (tab === 'add' && !gvEditingId) gvClearForm();
 }
@@ -63,11 +63,30 @@ function gvBarChart(canvasId, key, labels, data, maxRotation) {
       },
     },
   });
+  setChartTotal(canvasId, data);
+}
+
+function gvDashFillSelect(id, list) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  const placeholder = el.options[0]?.outerHTML || '<option value="">ทั้งหมด</option>';
+  el.innerHTML = placeholder + (list || []).map(name => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join('');
+  if (list && list.includes(current)) el.value = current;
+}
+
+function gvRefreshDashFilters() {
+  gvDashFillSelect('gv-dash-yard', mdYards);
+  gvDashFillSelect('gv-dash-bu', mdBusinessUnits);
 }
 
 function gvRenderDashboard() {
   const type = document.getElementById('gv-dash-type').value;
-  const list = gvRecords.filter(r => r.type === type);
+  const yardFilter = document.getElementById('gv-dash-yard')?.value || '';
+  const buFilter = document.getElementById('gv-dash-bu')?.value || '';
+  const list = gvRecords.filter(r =>
+    r.type === type && (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
+  );
 
   const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
@@ -99,7 +118,10 @@ function gvRenderDashboard() {
 
 function gvOnPageShown() {
   gvRefreshLookupDropdowns();
-  if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) gvRenderDashboard();
+  if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) {
+    gvRefreshDashFilters();
+    gvRenderDashboard();
+  }
   gvRenderList();
 }
 

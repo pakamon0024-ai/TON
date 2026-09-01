@@ -17,7 +17,7 @@ function wiSwitchTab(tab) {
     document.getElementById(`wi-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`wi-subpage-${t}`).classList.toggle('active', t === tab);
   });
-  if (tab === 'dashboard') wiRenderDashboard();
+  if (tab === 'dashboard') { wiRefreshDashFilters(); wiRenderDashboard(); }
   if (tab === 'list') wiRenderList();
   if (tab === 'add' && !wiEditingId) wiClearForm();
 }
@@ -25,7 +25,10 @@ function wiSwitchTab(tab) {
 function wiOnPageShown() {
   wiRefreshLookupDropdowns();
   wiRenderList();
-  if (document.getElementById('wi-subpage-dashboard')?.classList.contains('active')) wiRenderDashboard();
+  if (document.getElementById('wi-subpage-dashboard')?.classList.contains('active')) {
+    wiRefreshDashFilters();
+    wiRenderDashboard();
+  }
 }
 
 // ===== Dashboard =====
@@ -63,12 +66,24 @@ function wiBarChart(canvasId, key, labels, data, maxRotation) {
       },
     },
   });
+  setChartTotal(canvasId, data);
+}
+
+function wiRefreshDashFilters() {
+  wiFillSelect('wi-dash-yard', mdYards);
+  wiFillSelect('wi-dash-bu', mdBusinessUnits);
 }
 
 function wiRenderDashboard() {
+  const yardFilter = document.getElementById('wi-dash-yard')?.value || '';
+  const buFilter = document.getElementById('wi-dash-bu')?.value || '';
+  const filtered = workIssues.filter(i =>
+    (!yardFilter || i.yard === yardFilter) && (!buFilter || i.businessUnit === buFilter)
+  );
+
   const curYear = new Date().getFullYear();
   const monthCount = new Array(12).fill(0);
-  workIssues.forEach(i => {
+  filtered.forEach(i => {
     if (!i.date) return;
     const d = new Date(i.date);
     if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
@@ -77,7 +92,7 @@ function wiRenderDashboard() {
 
   const countBy = field => {
     const map = {};
-    workIssues.forEach(i => { const v = i[field]; if (v) map[v] = (map[v] || 0) + 1; });
+    filtered.forEach(i => { const v = i[field]; if (v) map[v] = (map[v] || 0) + 1; });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
 

@@ -1393,23 +1393,23 @@
             <!-- Chart grid -->
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">สถิติรายเดือน</div>
+                <div class="chart-title"><span>สถิติรายเดือน</span><span class="chart-total" id="inc-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="inc-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">ตามลานจอด</div>
+                <div class="chart-title"><span>ตามลานจอด</span><span class="chart-total" id="inc-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="inc-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">หน่วยงาน</div>
+                <div class="chart-title"><span>หน่วยงาน</span><span class="chart-total" id="inc-chart-bu-total"></span></div>
                 <div class="chart-box"><canvas id="inc-chart-bu"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">สถานะอุบัติเหตุ (พื้นที่)</div>
+                <div class="chart-title"><span>สถานะอุบัติเหตุ (พื้นที่)</span><span class="chart-total" id="inc-chart-area-total"></span></div>
                 <div class="chart-box"><canvas id="inc-chart-area"></canvas></div>
               </div>
               <div class="chart-card span-2">
-                <div class="chart-title">ลักษณะการเกิดเหตุ (เรียงจากมากไปน้อย)</div>
+                <div class="chart-title"><span>ลักษณะการเกิดเหตุ (เรียงจากมากไปน้อย)</span><span class="chart-total" id="inc-chart-pattern-total"></span></div>
                 <div class="chart-box" style="height:210px;"><canvas id="inc-chart-pattern"></canvas></div>
               </div>
             </div>
@@ -1698,21 +1698,35 @@
 
           <!-- GARAGE HISTORY — DASHBOARD SUBPAGE -->
           <div class="subpage" id="gh-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="gh-dash-yard" onchange="ghRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="gh-dash-bu" onchange="ghRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งที่เข้าอู่รายเดือน</div>
+                <div class="chart-title"><span>จำนวนครั้งที่เข้าอู่รายเดือน</span><span class="chart-total" id="gh-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="gh-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">ค่าใช้จ่ายรวมรายเดือน</div>
+                <div class="chart-title"><span>ค่าใช้จ่ายรวมรายเดือน</span><span class="chart-total" id="gh-chart-cost-total"></span></div>
                 <div class="chart-box"><canvas id="gh-chart-cost"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งตามลานจอด</div>
+                <div class="chart-title"><span>จำนวนครั้งตามลานจอด</span><span class="chart-total" id="gh-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="gh-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งตามอู่/ศูนย์ซ่อม</div>
+                <div class="chart-title"><span>จำนวนครั้งตามอู่/ศูนย์ซ่อม</span><span class="chart-total" id="gh-chart-shop-total"></span></div>
                 <div class="chart-box"><canvas id="gh-chart-shop"></canvas></div>
               </div>
             </div>
@@ -1721,6 +1735,12 @@
           <!-- GARAGE HISTORY — LIST SUBPAGE -->
           <div class="subpage" id="gh-subpage-list">
             <div class="filter-bar">
+              <div class="filter-group">
+                <label>หน่วยงาน</label>
+                <select id="gh-f-bu" onchange="ghRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gh-f-search"
                   placeholder="ทะเบียน / อู่ / สาเหตุ..." oninput="ghRenderList()" /></div>
               <button class="btn-secondary" onclick="ghClearListFilters()">🔄 ล้างตัวกรอง</button>
@@ -1744,6 +1764,7 @@
                     <th class="tk-sortable" onclick="ghSortBy('runningNo')">เลขที่<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-runningNo"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('plate')">ทะเบียนรถ<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-plate"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('yard')">ลานจอด<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-yard"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('businessUnit')">หน่วยงาน<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-businessUnit"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('shop')">อู่/ศูนย์ซ่อม<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-shop"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('inDate')">วันที่เข้าอู่<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-inDate"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('outDate')">วันที่ซ่อมเสร็จ<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-outDate"></span></th>
@@ -1755,7 +1776,7 @@
                 </thead>
                 <tbody id="gh-list-body">
                   <tr>
-                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -1789,6 +1810,10 @@
                   <input type="text" id="gh-days" readonly /></div>
               </div>
               <div class="form-row-3">
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="gh-bu" list="gh-bu-list" placeholder="เลือก/พิมพ์หน่วยงาน..." />
+                  <datalist id="gh-bu-list"></datalist>
+                </div>
                 <div class="form-group"><label>ค่าใช้จ่ายรอบนี้</label>
                   <input type="number" min="0" step="0.01" id="gh-cost" placeholder="0.00" /></div>
               </div>
@@ -1826,21 +1851,35 @@
 
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage active" id="wi-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="wi-dash-yard" onchange="wiRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="wi-dash-bu" onchange="wiRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">จำนวนรายการรายเดือน</div>
+                <div class="chart-title"><span>จำนวนรายการรายเดือน</span><span class="chart-total" id="wi-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="wi-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนรายการตามหัวข้อปัญหา</div>
+                <div class="chart-title"><span>จำนวนรายการตามหัวข้อปัญหา</span><span class="chart-total" id="wi-chart-topic-total"></span></div>
                 <div class="chart-box"><canvas id="wi-chart-topic"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนรายการตามลานจอด</div>
+                <div class="chart-title"><span>จำนวนรายการตามลานจอด</span><span class="chart-total" id="wi-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="wi-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนรายการตามหน่วยงาน</div>
+                <div class="chart-title"><span>จำนวนรายการตามหน่วยงาน</span><span class="chart-total" id="wi-chart-bu-total"></span></div>
                 <div class="chart-box"><canvas id="wi-chart-bu"></canvas></div>
               </div>
             </div>
@@ -1972,21 +2011,35 @@
 
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage" id="tk-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="tk-dash-yard" onchange="tkRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="tk-dash-bu" onchange="tkRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">จำนวนใบสั่งรายเดือน</div>
+                <div class="chart-title"><span>จำนวนใบสั่งรายเดือน</span><span class="chart-total" id="tk-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="tk-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนใบสั่งตามลานจอด</div>
+                <div class="chart-title"><span>จำนวนใบสั่งตามลานจอด</span><span class="chart-total" id="tk-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="tk-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนใบสั่งตามหน่วยงาน</div>
+                <div class="chart-title"><span>จำนวนใบสั่งตามหน่วยงาน</span><span class="chart-total" id="tk-chart-bu-total"></span></div>
                 <div class="chart-box"><canvas id="tk-chart-bu"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนข้อหา</div>
+                <div class="chart-title"><span>จำนวนข้อหา</span><span class="chart-total" id="tk-chart-charge-total"></span></div>
                 <div class="chart-box"><canvas id="tk-chart-charge"></canvas></div>
               </div>
             </div>
@@ -2139,17 +2192,31 @@
 
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage" id="pb-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="pb-dash-yard" onchange="pbRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="pb-dash-bu" onchange="pbRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">จำนวนรายการรายเดือน</div>
+                <div class="chart-title"><span>จำนวนรายการรายเดือน</span><span class="chart-total" id="pb-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="pb-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนรายการตามลานจอด</div>
+                <div class="chart-title"><span>จำนวนรายการตามลานจอด</span><span class="chart-total" id="pb-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="pb-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนข้อหา</div>
+                <div class="chart-title"><span>จำนวนข้อหา</span><span class="chart-total" id="pb-chart-charge-total"></span></div>
                 <div class="chart-box"><canvas id="pb-chart-charge"></canvas></div>
               </div>
             </div>
@@ -2161,6 +2228,12 @@
               <div class="filter-group">
                 <label>ลานจอด</label>
                 <select id="pb-f-yard" onchange="pbRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>หน่วยงาน</label>
+                <select id="pb-f-bu" onchange="pbRenderList()">
                   <option value="">ทั้งหมด</option>
                 </select>
               </div>
@@ -2187,13 +2260,14 @@
                     <th class="tk-sortable" onclick="pbSortBy('name')">ชื่อ<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-name"></span></th>
                     <th class="tk-sortable" onclick="pbSortBy('position')">ตำแหน่ง<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-position"></span></th>
                     <th class="tk-sortable" onclick="pbSortBy('yard')">ลานจอด<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-yard"></span></th>
+                    <th class="tk-sortable" onclick="pbSortBy('businessUnit')">หน่วยงาน<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-businessUnit"></span></th>
                     <th class="tk-sortable" onclick="pbSortBy('charge')">ข้อหา<span class="pb-sort-ind tk-sort-ind" id="pb-sort-ind-charge"></span></th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="pb-list-body">
                   <tr>
-                    <td colspan="7" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -2224,6 +2298,12 @@
                   <input type="text" id="pb-yard" list="pb-yard-list" placeholder="พิมพ์หรือเลือก..." />
                   <datalist id="pb-yard-list"></datalist>
                 </div>
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="pb-bu" list="pb-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="pb-bu-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
                 <div class="form-group" style="grid-column:span 2;"><label>ข้อหา <span class="req">*</span></label>
                   <div style="display:flex; gap:6px;">
                     <input type="text" id="pb-charge" list="pb-charge-list" placeholder="พิมพ์หรือเลือก..." style="flex:1;" />
@@ -2935,24 +3015,36 @@
                   <option value="จอดรถติดเครื่องนาน">จอดรถไม่ดับเครื่องนานเกิน</option>
                 </select>
               </div>
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="gv-dash-yard" onchange="gvRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="gv-dash-bu" onchange="gvRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
               <div class="ctxt" id="gv-dash-count" style="color:var(--text-muted);font-size:0.82rem;align-self:center;">
               </div>
             </div>
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งรายเดือน</div>
+                <div class="chart-title"><span>จำนวนครั้งรายเดือน</span><span class="chart-total" id="gv-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="gv-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งตามทะเบียนรถ</div>
+                <div class="chart-title"><span>จำนวนครั้งตามทะเบียนรถ</span><span class="chart-total" id="gv-chart-plate-total"></span></div>
                 <div class="chart-box"><canvas id="gv-chart-plate"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งตามลานจอด</div>
+                <div class="chart-title"><span>จำนวนครั้งตามลานจอด</span><span class="chart-total" id="gv-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="gv-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">จำนวนครั้งตามหน่วยงาน</div>
+                <div class="chart-title"><span>จำนวนครั้งตามหน่วยงาน</span><span class="chart-total" id="gv-chart-bu-total"></span></div>
                 <div class="chart-box"><canvas id="gv-chart-bu"></canvas></div>
               </div>
             </div>
@@ -3096,22 +3188,28 @@
                   <option value="">ทั้งหมด</option>
                 </select>
               </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="fr-dash-bu" onchange="frRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
             </div>
             <div class="chart-grid">
               <div class="chart-card">
-                <div class="chart-title">เรทเชื้อเพลิงรวมรายเดือน</div>
+                <div class="chart-title"><span>เรทเชื้อเพลิงรวมรายเดือน</span><span class="chart-total" id="fr-chart-month-total"></span></div>
                 <div class="chart-box"><canvas id="fr-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">เรทเชื้อเพลิงรวมตามพนักงาน (Top 10)</div>
+                <div class="chart-title"><span>เรทเชื้อเพลิงรวมตามพนักงาน (Top 10)</span><span class="chart-total" id="fr-chart-driver-total"></span></div>
                 <div class="chart-box"><canvas id="fr-chart-driver"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">เรทเชื้อเพลิงรวมตามลานจอด</div>
+                <div class="chart-title"><span>เรทเชื้อเพลิงรวมตามลานจอด</span><span class="chart-total" id="fr-chart-yard-total"></span></div>
                 <div class="chart-box"><canvas id="fr-chart-yard"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title">เรทเชื้อเพลิงรวมตามหน่วยงาน</div>
+                <div class="chart-title"><span>เรทเชื้อเพลิงรวมตามหน่วยงาน</span><span class="chart-total" id="fr-chart-bu-total"></span></div>
                 <div class="chart-box"><canvas id="fr-chart-bu"></canvas></div>
               </div>
             </div>

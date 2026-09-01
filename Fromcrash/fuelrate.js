@@ -52,25 +52,31 @@ function frDestroyChart(id) {
   if (frCharts[id]) { frCharts[id].destroy(); delete frCharts[id]; }
 }
 
-function frBarChart(canvasId, key, labels, data, maxRotation) {
+function frBarChart(canvasId, key, labels, data, opts) {
+  const { maxRotation = 0, rotateLabels = false } = opts || {};
   frDestroyChart(key);
+  // ตัวเลข label เหนือแท่งกราฟชนกันเวลาแท่งอยู่ชิดกัน (เดือน/พนักงาน/หน่วยงาน) — เอียง label ขึ้น 45 องศา
+  // เพื่อให้แต่ละตัวใช้พื้นที่แนวทแยงแทนแนวนอน ลดโอกาสทับกัน
   const dl = {
     display: true, anchor: 'end', align: 'end', color: '#1a2540',
     font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
     formatter: v => v > 0 ? formatMoney(v) : '',
+    rotation: rotateLabels ? -45 : 0,
   };
   frCharts[key] = new Chart(document.getElementById(canvasId), {
     type: 'bar',
     data: { labels, datasets: [{ label: 'เรทเชื้อเพลิง (บาท)', data, backgroundColor: FR_CHART_COLORS[key].bg, borderColor: FR_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: rotateLabels ? 24 : 0 } },
       plugins: { legend: { display: false }, datalabels: dl },
       scales: {
-        y: { beginAtZero: true, grace: '15%', grid: FR_CHART_GRID, ticks: { ...FR_CHART_TICK, precision: 0 } },
+        y: { beginAtZero: true, grace: '20%', grid: FR_CHART_GRID, ticks: { ...FR_CHART_TICK, precision: 0 } },
         x: { grid: { display: false }, ticks: { ...FR_CHART_TICK, autoSkip: false, minRotation: maxRotation || 0, maxRotation: maxRotation || 0 } },
       },
     },
   });
+  setChartTotal(canvasId, data, true);
 }
 
 function frDashFillSelect(id, list) {
@@ -84,11 +90,15 @@ function frDashFillSelect(id, list) {
 
 function frRefreshDashFilters() {
   frDashFillSelect('fr-dash-yard', mdYards);
+  frDashFillSelect('fr-dash-bu', mdBusinessUnits);
 }
 
 function frRenderDashboard() {
   const yardFilter = document.getElementById('fr-dash-yard')?.value || '';
-  const filtered = yardFilter ? frRecords.filter(r => r.yard === yardFilter) : frRecords;
+  const buFilter = document.getElementById('fr-dash-bu')?.value || '';
+  const filtered = frRecords.filter(r =>
+    (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
+  );
 
   const curYear = new Date().getFullYear();
   const monthSum = new Array(12).fill(0);
@@ -97,7 +107,7 @@ function frRenderDashboard() {
     const d = new Date(r.date);
     if (!isNaN(d) && d.getFullYear() === curYear) monthSum[d.getMonth()] += r.amount || 0;
   });
-  frBarChart('fr-chart-month', 'month', FR_MONTH_LABELS_TH, monthSum);
+  frBarChart('fr-chart-month', 'month', FR_MONTH_LABELS_TH, monthSum, { rotateLabels: true });
 
   const sumBy = field => {
     const map = {};
@@ -107,13 +117,13 @@ function frRenderDashboard() {
 
   // เรทเชื้อเพลิงตามพนักงาน — จัด Top 10 เท่านั้น (กันกราฟรก ถ้ามีพนักงานเยอะ)
   const driverSorted = sumBy('driverName').slice(0, 10);
-  frBarChart('fr-chart-driver', 'driver', driverSorted.map(e => e[0]), driverSorted.map(e => e[1]), 30);
+  frBarChart('fr-chart-driver', 'driver', driverSorted.map(e => e[0]), driverSorted.map(e => e[1]), { maxRotation: 30, rotateLabels: true });
 
   const yardSorted = sumBy('yard');
-  frBarChart('fr-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), 30);
+  frBarChart('fr-chart-yard', 'yard', yardSorted.map(e => e[0]), yardSorted.map(e => e[1]), { maxRotation: 30 });
 
   const buSorted = sumBy('businessUnit');
-  frBarChart('fr-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]), 30);
+  frBarChart('fr-chart-bu', 'bu', buSorted.map(e => e[0]), buSorted.map(e => e[1]), { maxRotation: 30, rotateLabels: true });
 }
 
 // ===== Lookup dropdowns =====
