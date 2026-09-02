@@ -533,11 +533,10 @@ function alcDailyReportData(monthVal) {
   const fullStaff = mdAbcStaffActiveForMonth(monthVal).length;
 
   // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ ใช้สูตรเดียวกัน):
-  // ตรวจ(คน) = มาทำงาน - ต่อเนื่อง (ไม่ได้นับจากผลตรวจจริงอีกต่อไป — เป็นตัวเลขคำนวณ กันปัญหา % เกิน 100%)
-  // ไม่ผ่าน = นับจากผลตรวจจริงตามเดิม
+  // ตรวจ(คน) = นับเฉพาะรอบที่เป่าจริงแล้ว (ผ่าน/ไม่ผ่าน) — ถ้ายังเป็น "ยังไม่เป่า" ไม่นับว่าตรวจแล้ว
   // % = ตรวจ(คน) / (มาทำงาน - ต่อเนื่อง) — ไม่นับพนักงานที่วิ่งต่อเนื่องเข้าฐานคำนวนเลย เพราะไม่ได้อยู่ในรอบตรวจนี้ตั้งแต่ต้น
   const roundStats = (dayRecords, getResult, atWork, continuous) => {
-    const checked = Math.max(atWork - continuous, 0);
+    const checked = dayRecords.filter(r => getResult(r) === 'ผ่าน' || getResult(r) === 'ไม่ผ่าน').length;
     const failed = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน').length;
     const base = atWork - continuous;
     const pct = base > 0 ? Math.round(checked / base * 100) : 0;
