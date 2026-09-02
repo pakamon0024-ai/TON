@@ -530,7 +530,10 @@ function alcDailyReportData(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   // นับพนักงานทั้งหมดตามสถานะ ณ เดือนนั้นๆ (เดือนก่อนถูกลบยังนับ, เดือนที่ลบเป็นต้นไปไม่นับ) — mdAbcStaffActiveForMonth ใน masterdata.js
-  const fullStaff = mdAbcStaffActiveForMonth(monthVal).length;
+  const activeStaffForMonth = mdAbcStaffActiveForMonth(monthVal);
+  const fullStaff = activeStaffForMonth.length;
+  // record ของพนักงานที่ถูกลบไปแล้วก่อน/ในเดือนนี้ ต้องไม่เอามาคำนวนสถิติของวันด้วย ไม่งั้นจะบวกเกินจำนวนพนักงานทั้งหมดที่นับได้
+  const activeNamesForMonth = new Set(activeStaffForMonth.map(s => s.name));
 
   // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ ใช้สูตรเดียวกัน):
   // ตรวจ(คน) = นับเฉพาะรอบที่เป่าจริงแล้ว (ผ่าน/ไม่ผ่าน) — ถ้ายังเป็น "ยังไม่เป่า" ไม่นับว่าตรวจแล้ว
@@ -547,7 +550,7 @@ function alcDailyReportData(monthVal) {
     const day = i + 1;
     const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dow = new Date(y, m - 1, day).getDay();
-    const dayRecords = alcTests.filter(t => t.date === dateStr);
+    const dayRecords = alcTests.filter(t => t.date === dateStr && activeNamesForMonth.has(t.employee));
 
     // พนักงานที่มีสถานะ "ลาออก" ในวันนั้น ไม่นับรวมใน "ทั้งหมด (คน)" ของวันนั้น
     // (ต่างจาก "ขาด/ลา" ที่ยังนับเป็นพนักงานทั้งหมดอยู่ แค่ไม่ได้มาทำงานวันนั้นวันเดียว)
