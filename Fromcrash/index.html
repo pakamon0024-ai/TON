@@ -735,7 +735,9 @@
                 </div>
               </div>
               <div class="form-actions" style="justify-content:flex-start;">
-                <button class="btn-primary" onclick="addVehicleDB()">+ เพิ่มรถ</button>
+                <button class="btn-primary" id="md-vehicle-save-btn" onclick="addVehicleDB()">+ เพิ่มรถ</button>
+                <button class="btn-secondary" id="md-vehicle-cancel-btn" style="display:none;"
+                  onclick="cancelEditVehicleDB()">ยกเลิกการแก้ไข</button>
                 <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllVehiclesDB()">🗑️
                   ลบทั้งหมด</button>
               </div>

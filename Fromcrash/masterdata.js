@@ -213,17 +213,32 @@ function updateDriverDatalist() {
 }
 
 // ===== ทะเบียนรถ =====
+let mdVehicleEditId = null; // null = โหมดเพิ่มใหม่, มีค่า = กำลังแก้ไขรถคันนี้อยู่
+
 function addVehicleDB() {
   const plate = document.getElementById('md-vehicle-plate').value.trim();
   if (!plate) { showToast('กรุณากรอกทะเบียนรถ', 'error'); return; }
-  mdVehicles.push({
-    id: Date.now(),
+  const data = {
     plate,
     owner: document.getElementById('md-vehicle-owner').value,
     registerDate: document.getElementById('md-vehicle-date').value,
     gpsInstallDate: document.getElementById('md-vehicle-gps-date').value,
     cctvInstallDate: document.getElementById('md-vehicle-cctv-date').value,
-  });
+  };
+
+  if (mdVehicleEditId !== null) {
+    const idx = mdVehicles.findIndex(v => v.id === mdVehicleEditId);
+    if (idx >= 0) mdVehicles[idx] = { ...mdVehicles[idx], ...data };
+    cancelEditVehicleDB();
+    saveVehiclesDB();
+    renderVehiclesTable();
+    updatePlateDatalist();
+    mdPushIfReady();
+    showToast('แก้ไขข้อมูลรถแล้ว', 'success');
+    return;
+  }
+
+  mdVehicles.push({ id: Date.now(), ...data });
   saveVehiclesDB();
   document.getElementById('md-vehicle-plate').value = '';
   document.getElementById('md-vehicle-owner').value = '';
@@ -236,9 +251,39 @@ function addVehicleDB() {
   showToast('เพิ่มรถแล้ว', 'success');
 }
 
+function editVehicleDB(id) {
+  const v = mdVehicles.find(v => v.id === id);
+  if (!v) return;
+  mdVehicleEditId = id;
+  document.getElementById('md-vehicle-plate').value = v.plate || '';
+  document.getElementById('md-vehicle-owner').value = v.owner || '';
+  document.getElementById('md-vehicle-date').value = v.registerDate || '';
+  document.getElementById('md-vehicle-gps-date').value = v.gpsInstallDate || '';
+  document.getElementById('md-vehicle-cctv-date').value = v.cctvInstallDate || '';
+  const btn = document.getElementById('md-vehicle-save-btn');
+  if (btn) btn.textContent = '💾 บันทึกการแก้ไข';
+  const cancelBtn = document.getElementById('md-vehicle-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = '';
+  document.getElementById('md-vehicle-plate').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditVehicleDB() {
+  mdVehicleEditId = null;
+  document.getElementById('md-vehicle-plate').value = '';
+  document.getElementById('md-vehicle-owner').value = '';
+  document.getElementById('md-vehicle-date').value = '';
+  document.getElementById('md-vehicle-gps-date').value = '';
+  document.getElementById('md-vehicle-cctv-date').value = '';
+  const btn = document.getElementById('md-vehicle-save-btn');
+  if (btn) btn.textContent = '+ เพิ่มรถ';
+  const cancelBtn = document.getElementById('md-vehicle-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
 function deleteVehicleDB(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรถคันนี้?')) return;
   mdVehicles = mdVehicles.filter(v => v.id !== id);
+  if (mdVehicleEditId === id) cancelEditVehicleDB();
   saveVehiclesDB();
   renderVehiclesTable();
   updatePlateDatalist();
@@ -273,7 +318,10 @@ function renderVehiclesTable() {
       <td>${formatDuration(v.registerDate)}</td>
       <td>${v.gpsInstallDate ? formatDate(v.gpsInstallDate) : '-'}</td>
       <td>${v.cctvInstallDate ? formatDate(v.cctvInstallDate) : '-'}</td>
-      <td><button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button></td>
+      <td>
+        <button class="action-btn action-view" onclick="editVehicleDB(${v.id})">แก้ไข</button>
+        <button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button>
+      </td>
     </tr>
   `).join('');
 }
