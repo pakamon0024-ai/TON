@@ -534,11 +534,13 @@ function alcDailyReportData(monthVal) {
 
   // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ ใช้สูตรเดียวกัน):
   // ตรวจ(คน) = มาทำงาน - ต่อเนื่อง (ไม่ได้นับจากผลตรวจจริงอีกต่อไป — เป็นตัวเลขคำนวณ กันปัญหา % เกิน 100%)
-  // ไม่ผ่าน = นับจากผลตรวจจริงตามเดิม, % = ตรวจ(คน)/มาทำงาน (ไม่บวกต่อเนื่องเข้าไปในตัวเศษแล้ว)
+  // ไม่ผ่าน = นับจากผลตรวจจริงตามเดิม
+  // % = ตรวจ(คน) / (มาทำงาน - ต่อเนื่อง) — ไม่นับพนักงานที่วิ่งต่อเนื่องเข้าฐานคำนวนเลย เพราะไม่ได้อยู่ในรอบตรวจนี้ตั้งแต่ต้น
   const roundStats = (dayRecords, getResult, atWork, continuous) => {
     const checked = Math.max(atWork - continuous, 0);
     const failed = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน').length;
-    const pct = atWork > 0 ? Math.round(checked / atWork * 100) : 0;
+    const base = atWork - continuous;
+    const pct = base > 0 ? Math.round(checked / base * 100) : 0;
     return { checked, failed, pct };
   };
 
@@ -566,7 +568,7 @@ function alcDailyReportData(monthVal) {
 
     return {
       day, dow, dateStr, hasData: dayRecords.length > 0,
-      totalStaff, atWork, continuous, leaveAbsent, out, ret, summaryPct,
+      totalStaff, atWork, continuous, continuousReturn, leaveAbsent, out, ret, summaryPct,
     };
   });
 }
@@ -579,11 +581,12 @@ function alcDailyReportTotals(rows) {
   const sumOut = key => withData.reduce((s, r) => s + r.out[key], 0);
   const sumRet = key => withData.reduce((s, r) => s + r.ret[key], 0);
 
-  const totalStaff = sum('totalStaff'), atWork = sum('atWork'), continuous = sum('continuous'), leaveAbsent = sum('leaveAbsent');
+  const totalStaff = sum('totalStaff'), atWork = sum('atWork'), continuous = sum('continuous'), continuousReturn = sum('continuousReturn'), leaveAbsent = sum('leaveAbsent');
   const outChecked = sumOut('checked'), outFailed = sumOut('failed');
   const retChecked = sumRet('checked'), retFailed = sumRet('failed');
-  const outPct = atWork > 0 ? Math.round(outChecked / atWork * 100) : 0;
-  const retPct = atWork > 0 ? Math.round(retChecked / atWork * 100) : 0;
+  const outBase = atWork - continuous, retBase = atWork - continuousReturn;
+  const outPct = outBase > 0 ? Math.round(outChecked / outBase * 100) : 0;
+  const retPct = retBase > 0 ? Math.round(retChecked / retBase * 100) : 0;
   const summaryPct = Math.round((outPct + retPct) / 2);
 
   const total = { totalStaff, atWork, continuous, leaveAbsent, out: { checked: outChecked, failed: outFailed, pct: outPct }, ret: { checked: retChecked, failed: retFailed, pct: retPct }, summaryPct };
