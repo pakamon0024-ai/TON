@@ -554,11 +554,14 @@ function alcDailyReportData(monthVal) {
     const totalStaff = fullStaff - resigned;
 
     const leaveAbsent = dayRecords.filter(r => (r.resultOut || r.result) === 'ขาด/ลา').length;
+    // "ต่อเนื่อง" นับแยกฝั่งขาไป/ขากลับ เพราะขาไปมักเป็นต่อเนื่อง (ไม่ได้เป่าจริง) ส่วนขากลับคือรอบที่เป่าจริง
+    // ทำให้ % ขาไปและขากลับต่างกันได้ตามการทำงานจริง ไม่ใช่ตัวเลขเดียวกันเสมอ
     const continuous = dayRecords.filter(r => (r.resultOut || r.result) === 'ต่อเนื่อง').length;
+    const continuousReturn = dayRecords.filter(r => r.resultReturn === 'ต่อเนื่อง').length;
     const atWork = totalStaff - leaveAbsent;
 
     const out = roundStats(dayRecords, r => r.resultOut || r.result, atWork, continuous);
-    const ret = roundStats(dayRecords, r => r.resultReturn, atWork, continuous);
+    const ret = roundStats(dayRecords, r => r.resultReturn, atWork, continuousReturn);
     const summaryPct = Math.round((out.pct + ret.pct) / 2);
 
     return {
