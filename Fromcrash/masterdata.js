@@ -768,7 +768,7 @@ function addAbcStaffDB() {
   const name = nameInput.value.trim();
   const businessUnit = buInput.value.trim();
   if (!name) { nameInput.focus(); return; }
-  if (mdAbcStaff.some(s => s.name === name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
+  if (mdAbcStaffActive().some(s => s.name === name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
   mdAbcStaff.push({ id: Date.now(), name, businessUnit });
   saveAbcStaffDB();
   nameInput.value = ''; buInput.value = ''; nameInput.focus();
@@ -777,14 +777,28 @@ function addAbcStaffDB() {
   mdPushIfReady();
   showToast('เพิ่มพนักงานแล้ว', 'success');
 }
+// ลบแบบ "soft delete": ไม่ลบ record ทิ้งจริง แค่ประทับเดือนที่ลบ (removedMonth)
+// เพื่อให้รายงานย้อนหลัง (เดือนก่อนลบ) ยังนับพนักงานคนนี้เหมือนเดิม ส่วนเดือนที่ลบเป็นต้นไปจะไม่ถูกนับแล้ว
 function deleteAbcStaffDB(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบพนักงานคนนี้?')) return;
-  mdAbcStaff = mdAbcStaff.filter(s => s.id !== id);
+  const idx = mdAbcStaff.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  mdAbcStaff[idx] = { ...mdAbcStaff[idx], removedMonth: new Date().toISOString().substring(0, 7) };
   saveAbcStaffDB();
   renderAbcStaffTable();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
   mdPushIfReady();
   showToast('ลบแล้ว', 'warning');
+}
+
+// รายชื่อพนักงานที่ "ยังทำงานอยู่" ณ ตอนนี้ (ไม่รวมคนที่ถูกลบ) — ใช้กับหน้าเพิ่ม/แก้ไขข้อมูล
+function mdAbcStaffActive() {
+  return (mdAbcStaff || []).filter(s => !s.removedMonth);
+}
+// รายชื่อพนักงานที่ "นับเป็นพนักงานทั้งหมด" ของเดือนนั้นๆ — คนที่ถูกลบหลังเดือนนี้ (หรือยังไม่ถูกลบ) ยังนับรวม
+// คนที่ถูกลบในเดือนนี้หรือก่อนหน้า จะไม่นับ (ตัดออกตั้งแต่เดือนที่ลบเป็นต้นไป เดือนก่อนหน้ายังนับตามเดิม)
+function mdAbcStaffActiveForMonth(monthVal) {
+  return (mdAbcStaff || []).filter(s => !s.removedMonth || monthVal < s.removedMonth);
 }
 function deleteAllAbcStaffDB() {
   if (!mdConfirmDeleteAll('พนักงานลาน ABC')) return;
@@ -799,8 +813,9 @@ function deleteAllAbcStaffDB() {
 function renderAbcStaffTable() {
   const tbody = document.getElementById('md-abcstaff-body');
   if (!tbody) return;
-  if (mdAbcStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdAbcStaff.map(s => `
+  const activeStaff = mdAbcStaffActive();
+  if (activeStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
+  tbody.innerHTML = activeStaff.map(s => `
     <tr>
       <td>${escapeHtml(s.name)}</td>
       <td>${escapeHtml(s.businessUnit || '-')}</td>

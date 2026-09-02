@@ -59,7 +59,7 @@ function alcFillSelect(id, names) {
   if (names && names.includes(current)) el.value = current;
 }
 function alcRefreshLookupDropdowns() {
-  alcFillSelect('alc-f-employee', mdAbcStaff.map(s => s.name));
+  alcFillSelect('alc-f-employee', mdAbcStaffActive().map(s => s.name));
   alcRenderRoster();
 }
 
@@ -93,11 +93,12 @@ function alcRenderRoster() {
   const tbody = document.getElementById('alc-roster-body');
   if (!tbody) return;
   const date = document.getElementById('alc-roster-date')?.value || '';
-  if (!mdAbcStaff || mdAbcStaff.length === 0) {
+  const rosterStaff = mdAbcStaffActive();
+  if (!rosterStaff || rosterStaff.length === 0) {
     tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่ปุ่ม "+ เพิ่มพนักงานใหม่" ด้านบน</td></tr>';
     return;
   }
-  tbody.innerHTML = mdAbcStaff.map((emp, i) => {
+  tbody.innerHTML = rosterStaff.map((emp, i) => {
     const name = emp.name;
     const existing = date ? alcTests.find(t => t.date === date && t.employee === name) : null;
     // ค่าเริ่มต้นต้องเป็น "ยังไม่เป่า" เสมอสำหรับคนที่ยังไม่มีบันทึกในวันนี้ — ไม่สืบทอดค่า
@@ -421,7 +422,7 @@ function alcSummaryDataForMonth(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-  const rows = (mdAbcStaff || []).map(emp => {
+  const rows = mdAbcStaffActiveForMonth(monthVal).map(emp => {
     const recordsForEmp = alcTests.filter(t => t.employee === emp.name && t.date && t.date.startsWith(monthVal));
     const levels = recordsForEmp.map(r => r.level).filter(v => typeof v === 'number' && !isNaN(v));
     const maxLevel = levels.length ? Math.max(...levels) : null;
@@ -438,7 +439,7 @@ function alcRenderSummary() {
   const monthVal = alcSummaryMonthValue();
   const { y, m, days, rows } = alcSummaryDataForMonth(monthVal);
 
-  if (!mdAbcStaff || mdAbcStaff.length === 0) {
+  if (rows.length === 0) {
     wrap.innerHTML = '<p class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่หน้า "เพิ่มบันทึก"</p>';
     return;
   }
@@ -528,7 +529,8 @@ function alcDailyMonthValue() {
 function alcDailyReportData(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
-  const fullStaff = (mdAbcStaff || []).length;
+  // นับพนักงานทั้งหมดตามสถานะ ณ เดือนนั้นๆ (เดือนก่อนถูกลบยังนับ, เดือนที่ลบเป็นต้นไปไม่นับ) — mdAbcStaffActiveForMonth ใน masterdata.js
+  const fullStaff = mdAbcStaffActiveForMonth(monthVal).length;
 
   // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ ใช้สูตรเดียวกัน):
   // ตรวจ(คน) = มาทำงาน - ต่อเนื่อง (ไม่ได้นับจากผลตรวจจริงอีกต่อไป — เป็นตัวเลขคำนวณ กันปัญหา % เกิน 100%)
