@@ -307,7 +307,7 @@ function renderVehiclesTable() {
   const search = (document.getElementById('md-vehicle-search')?.value || '').trim().toLowerCase();
   const list = search ? mdVehicles.filter(v => (v.plate || '').toLowerCase().includes(search) || (v.owner || '').toLowerCase().includes(search)) : mdVehicles;
   if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
     return;
   }
   tbody.innerHTML = list.map(v => `
@@ -316,8 +316,6 @@ function renderVehiclesTable() {
       <td>${escapeHtml(v.owner || '-')}</td>
       <td>${formatDate(v.registerDate)}</td>
       <td>${formatDuration(v.registerDate)}</td>
-      <td>${v.gpsInstallDate ? formatDate(v.gpsInstallDate) : '-'}</td>
-      <td>${v.cctvInstallDate ? formatDate(v.cctvInstallDate) : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="editVehicleDB(${v.id})">แก้ไข</button>
         <button class="action-btn action-delete" onclick="deleteVehicleDB(${v.id})">ลบ</button>
@@ -377,6 +375,12 @@ function importVehicleExcel(event) {
 function updatePlateDatalist() {
   const dl = document.getElementById('plateNoList');
   if (dl) dl.innerHTML = mdVehicles.map(v => `<option value="${escapeHtml(v.plate)}"></option>`).join('');
+  const ownerDl = document.getElementById('vehicleOwnerList');
+  if (ownerDl) {
+    const presets = ['AP', 'Subcontractor'];
+    const extraOwners = [...new Set(mdVehicles.map(v => v.owner).filter(Boolean))].filter(o => !presets.includes(o));
+    ownerDl.innerHTML = presets.concat(extraOwners).map(o => `<option value="${escapeHtml(o)}"></option>`).join('');
+  }
 }
 
 // ===== ลูกค้า =====
