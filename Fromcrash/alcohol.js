@@ -406,11 +406,13 @@ function alcSummaryMonthValue() {
 
 // จำนวนรอบที่เป่าจริงของวันนั้น (0-2) — นับจากผลตรวจที่ไม่ใช่ "ยังไม่เป่า" ของขาไป+ขากลับรวมกัน
 // 1 = เป่าแค่ขาเดียว, 2 = เป่าครบทั้ง 2 ขา
+// นับเฉพาะรอบที่ "เป่าจริง" (ผ่าน/ไม่ผ่าน) เท่านั้น — "ต่อเนื่อง" ไม่ใช่การเป่าจริงในวันนั้น (แค่ผลเดิมพ่วงมา)
+// จึงไม่นับเป็นรอบที่ตรวจ แม้สถานะจะไม่ใช่ "ยังไม่เป่า" ก็ตาม เช่น ขาไป=ต่อเนื่อง/ขากลับ=ผ่าน ต้องนับแค่ 1 ไม่ใช่ 2
 function alcTestedCount(rec) {
   if (!rec) return 0;
   let count = 0;
-  if (rec.resultOut && rec.resultOut !== ALC_RESULT_OPTIONS[0]) count++;
-  if (rec.resultReturn && rec.resultReturn !== ALC_RESULT_OPTIONS[0]) count++;
+  if (rec.resultOut === 'ผ่าน' || rec.resultOut === 'ไม่ผ่าน') count++;
+  if (rec.resultReturn === 'ผ่าน' || rec.resultReturn === 'ไม่ผ่าน') count++;
   return count;
 }
 
