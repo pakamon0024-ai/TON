@@ -528,11 +528,13 @@ function alcDailyReportData(monthVal) {
   const daysInMonth = new Date(y, m, 0).getDate();
   const fullStaff = (mdAbcStaff || []).length;
 
-  // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ): ตรวจแล้ว(ผ่าน+ไม่ผ่าน) / ไม่ผ่าน / % = (ตรวจ+ต่อเนื่อง)/มาทำงาน
+  // สถิติของรอบตรวจหนึ่งรอบ (ขาไปหรือขากลับ ใช้สูตรเดียวกัน):
+  // ตรวจ(คน) = มาทำงาน - ต่อเนื่อง (ไม่ได้นับจากผลตรวจจริงอีกต่อไป — เป็นตัวเลขคำนวณ กันปัญหา % เกิน 100%)
+  // ไม่ผ่าน = นับจากผลตรวจจริงตามเดิม, % = ตรวจ(คน)/มาทำงาน (ไม่บวกต่อเนื่องเข้าไปในตัวเศษแล้ว)
   const roundStats = (dayRecords, getResult, atWork, continuous) => {
-    const checked = dayRecords.filter(r => getResult(r) === 'ผ่าน' || getResult(r) === 'ไม่ผ่าน').length;
+    const checked = Math.max(atWork - continuous, 0);
     const failed = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน').length;
-    const pct = atWork > 0 ? Math.round((checked + continuous) / atWork * 100) : 0;
+    const pct = atWork > 0 ? Math.round(checked / atWork * 100) : 0;
     return { checked, failed, pct };
   };
 
@@ -573,8 +575,8 @@ function alcDailyReportTotals(rows) {
   const totalStaff = sum('totalStaff'), atWork = sum('atWork'), continuous = sum('continuous'), leaveAbsent = sum('leaveAbsent');
   const outChecked = sumOut('checked'), outFailed = sumOut('failed');
   const retChecked = sumRet('checked'), retFailed = sumRet('failed');
-  const outPct = atWork > 0 ? Math.round((outChecked + continuous) / atWork * 100) : 0;
-  const retPct = atWork > 0 ? Math.round((retChecked + continuous) / atWork * 100) : 0;
+  const outPct = atWork > 0 ? Math.round(outChecked / atWork * 100) : 0;
+  const retPct = atWork > 0 ? Math.round(retChecked / atWork * 100) : 0;
   const summaryPct = Math.round((outPct + retPct) / 2);
 
   const total = { totalStaff, atWork, continuous, leaveAbsent, out: { checked: outChecked, failed: outFailed, pct: outPct }, ret: { checked: retChecked, failed: retFailed, pct: retPct }, summaryPct };
