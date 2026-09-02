@@ -591,13 +591,13 @@ function alcDailyReportTotals(rows) {
   const retPct = retBase > 0 ? Math.round(retChecked / retBase * 100) : 0;
   const summaryPct = Math.round((outPct + retPct) / 2);
 
-  const total = { totalStaff, atWork, continuous, leaveAbsent, out: { checked: outChecked, failed: outFailed, pct: outPct }, ret: { checked: retChecked, failed: retFailed, pct: retPct }, summaryPct };
+  const total = { totalStaff, atWork, continuous, continuousReturn, leaveAbsent, out: { checked: outChecked, failed: outFailed, pct: outPct }, ret: { checked: retChecked, failed: retFailed, pct: retPct }, summaryPct };
   const avg = n > 0 ? {
-    totalStaff: totalStaff / n, atWork: atWork / n, continuous: continuous / n, leaveAbsent: leaveAbsent / n,
+    totalStaff: totalStaff / n, atWork: atWork / n, continuous: continuous / n, continuousReturn: continuousReturn / n, leaveAbsent: leaveAbsent / n,
     out: { checked: outChecked / n, failed: outFailed / n, pct: outPct },
     ret: { checked: retChecked / n, failed: retFailed / n, pct: retPct },
     summaryPct,
-  } : { totalStaff: 0, atWork: 0, continuous: 0, leaveAbsent: 0, out: { checked: 0, failed: 0, pct: 0 }, ret: { checked: 0, failed: 0, pct: 0 }, summaryPct: 0 };
+  } : { totalStaff: 0, atWork: 0, continuous: 0, continuousReturn: 0, leaveAbsent: 0, out: { checked: 0, failed: 0, pct: 0 }, ret: { checked: 0, failed: 0, pct: 0 }, summaryPct: 0 };
   return { total, avg, n };
 }
 
@@ -620,7 +620,7 @@ function alcRenderDailyReport() {
 
   const bodyRows = rows.map(r => {
     if (!r.hasData) {
-      return `<tr class="alc-daily-empty"><td>${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}</td><td colspan="11"></td></tr>`;
+      return `<tr class="alc-daily-empty"><td>${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}</td><td colspan="12"></td></tr>`;
     }
     return `
       <tr>
@@ -632,6 +632,7 @@ function alcRenderDailyReport() {
         <td class="alc-daily-col-out">${r.out.checked}</td>
         <td class="alc-daily-col-out"><span class="alc-daily-pct alc-daily-pct-out">${r.out.pct}%</span></td>
         <td class="alc-daily-col-out">${r.out.failed}</td>
+        <td class="alc-daily-col-ret">${r.continuousReturn}</td>
         <td class="alc-daily-col-ret">${r.ret.checked}</td>
         <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${r.ret.pct}%</span></td>
         <td class="alc-daily-col-ret">${r.ret.failed}</td>
@@ -651,6 +652,7 @@ function alcRenderDailyReport() {
       <td class="alc-daily-col-out">${total.out.checked}</td>
       <td class="alc-daily-col-out"><span class="alc-daily-pct alc-daily-pct-out">${total.out.pct}%</span></td>
       <td class="alc-daily-col-out">${total.out.failed}</td>
+      <td class="alc-daily-col-ret">${total.continuousReturn}</td>
       <td class="alc-daily-col-ret">${total.ret.checked}</td>
       <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${total.ret.pct}%</span></td>
       <td class="alc-daily-col-ret">${total.ret.failed}</td>
@@ -665,6 +667,7 @@ function alcRenderDailyReport() {
       <td class="alc-daily-col-out">${avg.out.checked.toFixed(2)}</td>
       <td class="alc-daily-col-out"><span class="alc-daily-pct alc-daily-pct-out">${avg.out.pct}%</span></td>
       <td class="alc-daily-col-out">${avg.out.failed.toFixed(2)}</td>
+      <td class="alc-daily-col-ret">${avg.continuousReturn.toFixed(2)}</td>
       <td class="alc-daily-col-ret">${avg.ret.checked.toFixed(2)}</td>
       <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${avg.ret.pct}%</span></td>
       <td class="alc-daily-col-ret">${avg.ret.failed.toFixed(2)}</td>
@@ -683,7 +686,7 @@ function alcRenderDailyReport() {
           <th rowspan="2">วันที่</th>
           <th colspan="4" class="alc-daily-grp-emp">พนักงาน</th>
           <th colspan="3" class="alc-daily-grp-out">ขาไป (ก่อนปฏิบัติงาน)</th>
-          <th colspan="3" class="alc-daily-grp-ret">ขากลับ (หลังปฏิบัติงาน)</th>
+          <th colspan="4" class="alc-daily-grp-ret">ขากลับ (หลังปฏิบัติงาน)</th>
           <th rowspan="2" class="alc-daily-grp-summary">% สรุปการตรวจ<br>(เฉลี่ยทั้งไปและกลับ)</th>
         </tr>
         <tr>
@@ -694,6 +697,7 @@ function alcRenderDailyReport() {
           <th class="alc-daily-col-out">ตรวจ<br>(คน)</th>
           <th class="alc-daily-col-out">%</th>
           <th class="alc-daily-col-out">ไม่ผ่าน<br>(คน)</th>
+          <th class="alc-daily-col-ret">ต่อเนื่อง<br>(คน)</th>
           <th class="alc-daily-col-ret">ตรวจ<br>(คน)</th>
           <th class="alc-daily-col-ret">%</th>
           <th class="alc-daily-col-ret">ไม่ผ่าน<br>(คน)</th>
@@ -710,19 +714,19 @@ function alcExportDailyReportExcel() {
   const rows = alcDailyReportData(monthVal);
   if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
 
-  const header1 = ['วันที่', 'พนักงาน', '', '', '', 'ขาไป (ก่อนปฏิบัติงาน)', '', '', 'ขากลับ (หลังปฏิบัติงาน)', '', '', '% สรุปการตรวจ (เฉลี่ยทั้งไปและกลับ)'];
-  const header2 = ['', 'ทั้งหมด (คน)', 'มาทำงาน (คน)', 'ต่อเนื่อง (คน)', 'ขาด/ลา (คน)', 'ตรวจ (คน)', '%', 'ไม่ผ่าน (คน)', 'ตรวจ (คน)', '%', 'ไม่ผ่าน (คน)', ''];
+  const header1 = ['วันที่', 'พนักงาน', '', '', '', 'ขาไป (ก่อนปฏิบัติงาน)', '', '', 'ขากลับ (หลังปฏิบัติงาน)', '', '', '', '% สรุปการตรวจ (เฉลี่ยทั้งไปและกลับ)'];
+  const header2 = ['', 'ทั้งหมด (คน)', 'มาทำงาน (คน)', 'ต่อเนื่อง (คน)', 'ขาด/ลา (คน)', 'ตรวจ (คน)', '%', 'ไม่ผ่าน (คน)', 'ต่อเนื่อง (คน)', 'ตรวจ (คน)', '%', 'ไม่ผ่าน (คน)', ''];
   const toRow = r => r.hasData
-    ? [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, r.totalStaff, r.atWork, r.continuous, r.leaveAbsent, r.out.checked, `${r.out.pct}%`, r.out.failed, r.ret.checked, `${r.ret.pct}%`, r.ret.failed, `${r.summaryPct}%`]
-    : [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, '', '', '', '', '', '', '', '', '', '', ''];
+    ? [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, r.totalStaff, r.atWork, r.continuous, r.leaveAbsent, r.out.checked, `${r.out.pct}%`, r.out.failed, r.continuousReturn, r.ret.checked, `${r.ret.pct}%`, r.ret.failed, `${r.summaryPct}%`]
+    : [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, '', '', '', '', '', '', '', '', '', '', '', ''];
 
   const { total, avg } = alcDailyReportTotals(rows);
   const sheetRows = [
     [`รายงานการตรวจสอบแอลกอฮอล์ ประจำวันที่ ${ALC_MONTH_FULL_TH[m - 1]} ${y}`],
     header1, header2,
     ...rows.map(toRow),
-    ['รวม', total.totalStaff, total.atWork, total.continuous, total.leaveAbsent, total.out.checked, `${total.out.pct}%`, total.out.failed, total.ret.checked, `${total.ret.pct}%`, total.ret.failed, `${total.summaryPct}%`],
-    ['เฉลี่ย', avg.totalStaff.toFixed(2), avg.atWork.toFixed(2), avg.continuous.toFixed(2), avg.leaveAbsent.toFixed(2), avg.out.checked.toFixed(2), `${avg.out.pct}%`, avg.out.failed.toFixed(2), avg.ret.checked.toFixed(2), `${avg.ret.pct}%`, avg.ret.failed.toFixed(2), `${avg.summaryPct}%`],
+    ['รวม', total.totalStaff, total.atWork, total.continuous, total.leaveAbsent, total.out.checked, `${total.out.pct}%`, total.out.failed, total.continuousReturn, total.ret.checked, `${total.ret.pct}%`, total.ret.failed, `${total.summaryPct}%`],
+    ['เฉลี่ย', avg.totalStaff.toFixed(2), avg.atWork.toFixed(2), avg.continuous.toFixed(2), avg.leaveAbsent.toFixed(2), avg.out.checked.toFixed(2), `${avg.out.pct}%`, avg.out.failed.toFixed(2), avg.continuousReturn.toFixed(2), avg.ret.checked.toFixed(2), `${avg.ret.pct}%`, avg.ret.failed.toFixed(2), `${avg.summaryPct}%`],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(sheetRows);

@@ -2484,8 +2484,8 @@
               </div>
               <button class="btn-secondary" onclick="alcExportDailyReportExcel()">📊 Export Excel</button>
             </div>
-            <p class="readonly-hint">แยกผลตรวจขาไป (ก่อนปฏิบัติงาน) และขากลับ (หลังปฏิบัติงาน) ต่อวัน · % แต่ละรอบ =
-              (ตรวจแล้ว + ต่อเนื่อง) ÷ พนักงานมาทำงาน · % สรุปการตรวจ = ค่าเฉลี่ยของขาไปและขากลับ</p>
+            <p class="readonly-hint">แยกผลตรวจขาไป (ก่อนปฏิบัติงาน) และขากลับ (หลังปฏิบัติงาน) ต่อวัน แต่ละรอบนับ "ต่อเนื่อง" แยกกัน · % แต่ละรอบ =
+              ตรวจแล้ว ÷ (พนักงานมาทำงาน − ต่อเนื่องของรอบนั้น) · % สรุปการตรวจ = ค่าเฉลี่ยของขาไปและขากลับ</p>
             <div class="recent-table-wrap" id="alc-daily-table-wrap" style="margin-top:10px;"></div>
           </div>
         </div>
