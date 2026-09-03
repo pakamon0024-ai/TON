@@ -385,6 +385,7 @@ function incRenderList() {
 
 // ===== Dashboard =====
 function incFilteredForDashboard() {
+  const month = document.getElementById('inc-f-month')?.value;
   const damageType = document.getElementById('inc-f-damagetype')?.value;
   const fault = document.getElementById('inc-f-fault')?.value;
   const yard = document.getElementById('inc-f-yard')?.value;
@@ -392,6 +393,7 @@ function incFilteredForDashboard() {
   const area = document.getElementById('inc-f-area')?.value;
   const pattern = document.getElementById('inc-f-pattern')?.value;
   return incidents.filter(i => {
+    if (month && !(i.incidentDate || '').startsWith(month)) return false;
     if (damageType && i.damageType !== damageType) return false;
     if (fault && i.faultStatus !== fault) return false;
     if (yard && i.yard !== yard) return false;
@@ -403,7 +405,7 @@ function incFilteredForDashboard() {
 }
 
 function incClearDashFilters() {
-  ['inc-f-damagetype','inc-f-fault','inc-f-yard','inc-f-bu','inc-f-area','inc-f-pattern'].forEach(id => { document.getElementById(id).value = ''; });
+  ['inc-f-month','inc-f-damagetype','inc-f-fault','inc-f-yard','inc-f-bu','inc-f-area','inc-f-pattern'].forEach(id => { document.getElementById(id).value = ''; });
   incRenderDashboard();
 }
 
