@@ -500,7 +500,7 @@ async function gcWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(gcRef, gcRecordsToObj(gcRecords));
-  } catch (e) { console.warn('gcWriteFB error', e); }
+  } catch (e) { console.warn('gcWriteFB error', e); notifySyncWriteError(); }
 }
 function gcPushIfReady() { if (gcReady) gcWriteFB(); }
 
@@ -509,7 +509,7 @@ async function gcWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/gpsCctvInstalls/${record.id}`), record);
-  } catch (e) { console.warn('gcWriteOne error', e); }
+  } catch (e) { console.warn('gcWriteOne error', e); notifySyncWriteError(); }
 }
 function gcPushOneIfReady(record) { if (gcReady) gcWriteOne(record); }
 
@@ -518,7 +518,7 @@ async function gcRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/gpsCctvInstalls/${id}`));
-  } catch (e) { console.warn('gcRemoveOne error', e); }
+  } catch (e) { console.warn('gcRemoveOne error', e); notifySyncWriteError(); }
 }
 function gcRemoveOneIfReady(id) { if (gcReady) gcRemoveOne(id); }
 
@@ -528,7 +528,7 @@ async function grWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(grRef, gcRecordsToObj(grRecords));
-  } catch (e) { console.warn('grWriteFB error', e); }
+  } catch (e) { console.warn('grWriteFB error', e); notifySyncWriteError(); }
 }
 function grPushIfReady() { if (grReady) grWriteFB(); }
 
@@ -537,7 +537,7 @@ async function grWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/gpsCctvRepairs/${record.id}`), record);
-  } catch (e) { console.warn('grWriteOne error', e); }
+  } catch (e) { console.warn('grWriteOne error', e); notifySyncWriteError(); }
 }
 function grPushOneIfReady(record) { if (grReady) grWriteOne(record); }
 
@@ -546,7 +546,7 @@ async function grRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/gpsCctvRepairs/${id}`));
-  } catch (e) { console.warn('grRemoveOne error', e); }
+  } catch (e) { console.warn('grRemoveOne error', e); notifySyncWriteError(); }
 }
 function grRemoveOneIfReady(id) { if (grReady) grRemoveOne(id); }
 
@@ -577,6 +577,7 @@ async function gcInit() {
     onValue(grRef, s => { if (s.exists()) grApplyServer(gcObjToRecords(s.val())); });
   } catch (e) {
     console.warn('gcInit error', e);
+    notifySyncLoadError();
   }
 }
 

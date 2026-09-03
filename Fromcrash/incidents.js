@@ -805,7 +805,7 @@ async function incWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(incRef, incRecordsToObj(incidents));
-  } catch (e) { console.warn('incWriteFB error', e); }
+  } catch (e) { console.warn('incWriteFB error', e); notifySyncWriteError(); }
 }
 function incPushIfReady() { if (incReady) incWriteFB(); }
 
@@ -816,7 +816,7 @@ async function incWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/incidents/${record.id}`), record);
-  } catch (e) { console.warn('incWriteOne error', e); }
+  } catch (e) { console.warn('incWriteOne error', e); notifySyncWriteError(); }
 }
 function incPushOneIfReady(record) { if (incReady) incWriteOne(record); }
 
@@ -825,7 +825,7 @@ async function incRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/incidents/${id}`));
-  } catch (e) { console.warn('incRemoveOne error', e); }
+  } catch (e) { console.warn('incRemoveOne error', e); notifySyncWriteError(); }
 }
 function incRemoveOneIfReady(id) { if (incReady) incRemoveOne(id); }
 
@@ -851,6 +851,7 @@ async function incInit() {
     onValue(incRef, s => { if (s.exists()) incApplyServer(incObjToRecords(s.val())); });
   } catch (e) {
     console.warn('incInit error', e);
+    notifySyncLoadError();
   }
 }
 
@@ -1287,7 +1288,7 @@ async function ghWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ghRef, ghRecordsToObj(ghRecords));
-  } catch (e) { console.warn('ghWriteFB error', e); }
+  } catch (e) { console.warn('ghWriteFB error', e); notifySyncWriteError(); }
 }
 function ghPushIfReady() { if (ghReady) ghWriteFB(); }
 
@@ -1296,7 +1297,7 @@ async function ghWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/garageHistory/${record.id}`), record);
-  } catch (e) { console.warn('ghWriteOne error', e); }
+  } catch (e) { console.warn('ghWriteOne error', e); notifySyncWriteError(); }
 }
 function ghPushOneIfReady(record) { if (ghReady) ghWriteOne(record); }
 
@@ -1305,7 +1306,7 @@ async function ghRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/garageHistory/${id}`));
-  } catch (e) { console.warn('ghRemoveOne error', e); }
+  } catch (e) { console.warn('ghRemoveOne error', e); notifySyncWriteError(); }
 }
 function ghRemoveOneIfReady(id) { if (ghReady) ghRemoveOne(id); }
 
@@ -1319,5 +1320,5 @@ async function ghInit() {
     ghReady = true;
     if (!snap.exists() && ghRecords.length > 0) await ghWriteFB();
     onValue(ghRef, s => { if (s.exists()) ghApplyServer(ghObjToRecords(s.val())); });
-  } catch (e) { console.warn('ghInit error', e); }
+  } catch (e) { console.warn('ghInit error', e); notifySyncLoadError(); }
 }

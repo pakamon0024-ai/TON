@@ -383,7 +383,7 @@ async function frWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(frRef, frRecordsToObj(frRecords));
-  } catch (e) { console.warn('frWriteFB error', e); }
+  } catch (e) { console.warn('frWriteFB error', e); notifySyncWriteError(); }
 }
 function frPushIfReady() { if (frReady) frWriteFB(); }
 
@@ -392,7 +392,7 @@ async function frWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/fuelRate/${record.id}`), record);
-  } catch (e) { console.warn('frWriteOne error', e); }
+  } catch (e) { console.warn('frWriteOne error', e); notifySyncWriteError(); }
 }
 function frPushOneIfReady(record) { if (frReady) frWriteOne(record); }
 
@@ -401,7 +401,7 @@ async function frRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/fuelRate/${id}`));
-  } catch (e) { console.warn('frRemoveOne error', e); }
+  } catch (e) { console.warn('frRemoveOne error', e); notifySyncWriteError(); }
 }
 function frRemoveOneIfReady(id) { if (frReady) frRemoveOne(id); }
 
@@ -425,7 +425,7 @@ async function frInit() {
     frReady = true;
     if (!snap.exists() && frRecords.length > 0) await frWriteFB();
     onValue(frRef, s => { if (s.exists()) frApplyServer(frObjToRecords(s.val())); });
-  } catch (e) { console.warn('frInit error', e); }
+  } catch (e) { console.warn('frInit error', e); notifySyncLoadError(); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

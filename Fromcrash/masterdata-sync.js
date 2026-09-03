@@ -51,7 +51,7 @@ async function mdWriteEmployees() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(mdEmpRef, mdRecordsToObj(mdDrivers));
-  } catch (e) { console.warn('mdWriteEmployees error', e); }
+  } catch (e) { console.warn('mdWriteEmployees error', e); notifySyncWriteError(); }
 }
 
 async function mdWriteVehicles() {
@@ -59,7 +59,7 @@ async function mdWriteVehicles() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(mdVehRef, mdRecordsToObj(mdVehicles));
-  } catch (e) { console.warn('mdWriteVehicles error', e); }
+  } catch (e) { console.warn('mdWriteVehicles error', e); notifySyncWriteError(); }
 }
 
 async function mdWriteAbcStaff() {
@@ -67,7 +67,7 @@ async function mdWriteAbcStaff() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(mdAbcRef, mdRecordsToObj(mdAbcStaff));
-  } catch (e) { console.warn('mdWriteAbcStaff error', e); }
+  } catch (e) { console.warn('mdWriteAbcStaff error', e); notifySyncWriteError(); }
 }
 
 async function mdWriteBreathalyzers() {
@@ -75,7 +75,7 @@ async function mdWriteBreathalyzers() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(mdBzRef, mdRecordsToObj(mdBreathalyzers));
-  } catch (e) { console.warn('mdWriteBreathalyzers error', e); }
+  } catch (e) { console.warn('mdWriteBreathalyzers error', e); notifySyncWriteError(); }
 }
 
 async function mdWriteSimpleList(ref, arr) {
@@ -83,7 +83,7 @@ async function mdWriteSimpleList(ref, arr) {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref, arr || []);
-  } catch (e) { console.warn('mdWriteSimpleList error', e); }
+  } catch (e) { console.warn('mdWriteSimpleList error', e); notifySyncWriteError(); }
 }
 
 function mdPushIfReady() {
@@ -192,6 +192,7 @@ async function mdInit() {
     onValue(mdBzRef, snap => { if (snap.exists()) mdApplyServerBreathalyzers(mdObjToRecords(snap.val())); });
   } catch (e) {
     console.warn('mdInit error', e);
+    notifySyncLoadError();
   }
 }
 

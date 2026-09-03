@@ -1105,3 +1105,12 @@ function showToast(msg, type = 'success') {
   toastTimer = setTimeout(() => { t.classList.remove('show'); }, 3000);
 }
 
+// เรียกจาก catch ของฟังก์ชันเขียน/ลบข้อมูลขึ้น Firebase ทุกโมดูล — เดิม error พวกนี้เงียบ (แค่ console.warn)
+// ทำให้ผู้ใช้เห็นข้อมูล "บันทึกสำเร็จ" (เพราะ localStorage เซฟได้) ทั้งที่จริงเพื่อนร่วมงานไม่เห็นข้อมูลนั้นเลยเพราะ sync ขึ้น Firebase ล้มเหลว
+function notifySyncWriteError() {
+  showToast('⚠️ บันทึกขึ้น Firebase ไม่สำเร็จ เพื่อนร่วมงานอาจยังไม่เห็นข้อมูลนี้ (เช็คอินเทอร์เน็ตแล้วลองใหม่)', 'error');
+}
+function notifySyncLoadError() {
+  showToast('⚠️ โหลดข้อมูลจาก Firebase ไม่สำเร็จ ข้อมูลที่เห็นอยู่อาจไม่ใช่ข้อมูลล่าสุด (เช็คอินเทอร์เน็ตแล้วรีเฟรช)', 'error');
+}
+

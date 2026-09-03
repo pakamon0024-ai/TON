@@ -523,7 +523,7 @@ async function pbWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(pbRef, pbRecordsToObj(probationRecords));
-  } catch (e) { console.warn('pbWriteFB error', e); }
+  } catch (e) { console.warn('pbWriteFB error', e); notifySyncWriteError(); }
 }
 function pbPushIfReady() { if (pbReady) pbWriteFB(); }
 
@@ -532,7 +532,7 @@ async function pbWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/probationRecords/${record.id}`), record);
-  } catch (e) { console.warn('pbWriteOne error', e); }
+  } catch (e) { console.warn('pbWriteOne error', e); notifySyncWriteError(); }
 }
 function pbPushOneIfReady(record) { if (pbReady) pbWriteOne(record); }
 
@@ -541,7 +541,7 @@ async function pbRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/probationRecords/${id}`));
-  } catch (e) { console.warn('pbRemoveOne error', e); }
+  } catch (e) { console.warn('pbRemoveOne error', e); notifySyncWriteError(); }
 }
 function pbRemoveOneIfReady(id) { if (pbReady) pbRemoveOne(id); }
 
@@ -565,7 +565,7 @@ async function pbInit() {
     pbReady = true;
     if (!snap.exists() && probationRecords.length > 0) await pbWriteFB();
     onValue(pbRef, s => { if (s.exists()) pbApplyServer(pbObjToRecords(s.val())); });
-  } catch (e) { console.warn('pbInit error', e); }
+  } catch (e) { console.warn('pbInit error', e); notifySyncLoadError(); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

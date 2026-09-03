@@ -858,7 +858,7 @@ async function icWriteOne(record) {
     const { child, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(child(fbRef, record.id), record);
     icAddLog('⬆️ Sync เคส #' + (record.seq || record.id));
-  } catch (e) { icAddLog('⚠️ Sync error: ' + e.message); }
+  } catch (e) { icAddLog('⚠️ Sync error: ' + e.message); icToast('บันทึกขึ้น Firebase ไม่สำเร็จ', 'err'); }
 }
 async function icPushOneIfOK(record) { await icWriteOne(record); }
 
@@ -867,7 +867,7 @@ async function icRemoveOne(id) {
   try {
     const { child, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(child(fbRef, id));
-  } catch (e) { icAddLog('⚠️ Remove error: ' + e.message); }
+  } catch (e) { icAddLog('⚠️ Remove error: ' + e.message); icToast('ลบขึ้น Firebase ไม่สำเร็จ', 'err'); }
 }
 
 function icClearFbConfig() {

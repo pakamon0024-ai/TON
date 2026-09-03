@@ -411,7 +411,7 @@ async function gvWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(gvRef, gvRecordsToObj(gvRecords));
-  } catch (e) { console.warn('gvWriteFB error', e); }
+  } catch (e) { console.warn('gvWriteFB error', e); notifySyncWriteError(); }
 }
 function gvPushIfReady() { if (gvReady) gvWriteFB(); }
 
@@ -420,7 +420,7 @@ async function gvWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/gpsViolations/${record.id}`), record);
-  } catch (e) { console.warn('gvWriteOne error', e); }
+  } catch (e) { console.warn('gvWriteOne error', e); notifySyncWriteError(); }
 }
 function gvPushOneIfReady(record) { if (gvReady) gvWriteOne(record); }
 
@@ -429,7 +429,7 @@ async function gvRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/gpsViolations/${id}`));
-  } catch (e) { console.warn('gvRemoveOne error', e); }
+  } catch (e) { console.warn('gvRemoveOne error', e); notifySyncWriteError(); }
 }
 function gvRemoveOneIfReady(id) { if (gvReady) gvRemoveOne(id); }
 
@@ -453,7 +453,7 @@ async function gvInit() {
     gvReady = true;
     if (!snap.exists() && gvRecords.length > 0) await gvWriteFB();
     onValue(gvRef, s => { if (s.exists()) gvApplyServer(gvObjToRecords(s.val())); });
-  } catch (e) { console.warn('gvInit error', e); }
+  } catch (e) { console.warn('gvInit error', e); notifySyncLoadError(); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
