@@ -55,7 +55,7 @@ function clearTelegramSettings() {
 async function testTelegramNotification() {
   const cfg = getTelegramConfig();
   if (!cfg.botToken || !cfg.chatId) { showToast('กรุณาบันทึกการตั้งค่าก่อน', 'error'); return; }
-  await sendTelegramNotification('✅ ทดสอบการแจ้งเตือนจากระบบ FinFlow สำเร็จ!');
+  await sendTelegramNotification('✅ ทดสอบการแจ้งเตือนจากระบบ QA APP สำเร็จ!');
   showToast('ส่งข้อความทดสอบแล้ว เช็คที่ Telegram', 'success');
 }
 

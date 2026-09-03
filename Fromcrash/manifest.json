@@ -1,6 +1,6 @@
 {
-  "name": "FinFlow - ระบบการเงิน",
-  "short_name": "FinFlow",
+  "name": "QA APP - ระบบการเงิน",
+  "short_name": "QA APP",
   "description": "ระบบเงินสดย่อย, อนุมัติสำรองจ่าย, เคลมประกันภัย และฐานข้อมูลหลัก",
   "start_url": "./index.html",
   "scope": "./",
