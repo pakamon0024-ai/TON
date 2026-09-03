@@ -95,10 +95,12 @@ function gvRefreshDashFilters() {
 }
 
 function gvRenderDashboard() {
+  const month = document.getElementById('gv-dash-month')?.value || '';
   const type = document.getElementById('gv-dash-type').value;
   const yardFilter = document.getElementById('gv-dash-yard')?.value || '';
   const buFilter = document.getElementById('gv-dash-bu')?.value || '';
   const list = gvRecords.filter(r =>
+    (!month || (r.date || '').startsWith(month)) &&
     (!type || r.type === type) && (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
   );
 

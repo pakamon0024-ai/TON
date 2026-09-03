@@ -958,9 +958,11 @@ function ghRefreshDashFilters() {
 }
 
 function ghRenderDashboard() {
+  const month = document.getElementById('gh-dash-month')?.value || '';
   const yardFilter = document.getElementById('gh-dash-yard')?.value || '';
   const buFilter = document.getElementById('gh-dash-bu')?.value || '';
   const filtered = ghRecords.filter(r =>
+    (!month || (r.inDate || '').startsWith(month)) &&
     (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
   );
 

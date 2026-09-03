@@ -75,9 +75,11 @@ function wiRefreshDashFilters() {
 }
 
 function wiRenderDashboard() {
+  const month = document.getElementById('wi-dash-month')?.value || '';
   const yardFilter = document.getElementById('wi-dash-yard')?.value || '';
   const buFilter = document.getElementById('wi-dash-bu')?.value || '';
   const filtered = workIssues.filter(i =>
+    (!month || (i.date || '').startsWith(month)) &&
     (!yardFilter || i.yard === yardFilter) && (!buFilter || i.businessUnit === buFilter)
   );
 

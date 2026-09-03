@@ -103,9 +103,11 @@ function frRefreshDashFilters() {
 }
 
 function frRenderDashboard() {
+  const month = document.getElementById('fr-dash-month')?.value || '';
   const yardFilter = document.getElementById('fr-dash-yard')?.value || '';
   const buFilter = document.getElementById('fr-dash-bu')?.value || '';
   const filtered = frRecords.filter(r =>
+    (!month || (r.date || '').startsWith(month)) &&
     (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
   );
 

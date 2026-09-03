@@ -202,10 +202,12 @@ function icChartColors() {
 }
 
 function icRenderDash() {
-  const n = claims.length, sc = [0,0,0,0,0];
+  const dashMonth = document.getElementById('ic-dash-month')?.value || '';
+  const data = dashMonth ? claims.filter(c => (c.incidentDate || '').startsWith(dashMonth)) : claims;
+  const n = data.length, sc = [0,0,0,0,0];
   let tC = 0, tI = 0;
   const CC = icChartColors();
-  claims.forEach(c => { sc[icGetStatus(c)]++; tC += c.claimAmount || 0; tI += c.insAmount || 0; });
+  data.forEach(c => { sc[icGetStatus(c)]++; tC += c.claimAmount || 0; tI += c.insAmount || 0; });
 
   document.getElementById('statGrid').innerHTML = `
     <div class="sc ca"><div class="sc-l">เคสทั้งหมด</div><div class="sc-v">${n}</div><div class="sc-u">รายการ</div></div>
@@ -243,7 +245,7 @@ function icRenderDash() {
   });
 
   // Yard bar
-  const ym = {}; claims.forEach(c => { if (c.yard) ym[c.yard] = (ym[c.yard] || 0) + 1; });
+  const ym = {}; data.forEach(c => { if (c.yard) ym[c.yard] = (ym[c.yard] || 0) + 1; });
   icDestroyChart('cYard');
   charts['cYard'] = new Chart(document.getElementById('cYard'), {
     type: 'bar',
@@ -258,7 +260,7 @@ function icRenderDash() {
   });
 
   // Monthly bar
-  const mm = {}; claims.forEach(c => {
+  const mm = {}; data.forEach(c => {
     if (!c.incidentDate) return;
     const m = c.incidentDate.substring(0,7);
     if (!mm[m]) mm[m] = { c:0, i:0 };
@@ -287,7 +289,7 @@ function icRenderDash() {
   });
 
   // Driver hbar
-  const dm = {}; claims.forEach(c => { if (c.driver) dm[c.driver] = (dm[c.driver] || 0) + 1; });
+  const dm = {}; data.forEach(c => { if (c.driver) dm[c.driver] = (dm[c.driver] || 0) + 1; });
   const top = Object.entries(dm).sort((a,b) => b[1]-a[1]).slice(0,7);
   icDestroyChart('cDriver');
   charts['cDriver'] = new Chart(document.getElementById('cDriver'), {

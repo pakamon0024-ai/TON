@@ -1703,6 +1703,10 @@
           <div class="subpage" id="gh-subpage-dashboard">
             <div class="filter-bar">
               <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="gh-dash-month" onchange="ghRenderDashboard()" />
+              </div>
+              <div class="filter-group">
                 <label>กรองตามลานจอด</label>
                 <select id="gh-dash-yard" onchange="ghRenderDashboard()">
                   <option value="">ทั้งหมด</option>
@@ -1855,6 +1859,10 @@
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage active" id="wi-subpage-dashboard">
             <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="wi-dash-month" onchange="wiRenderDashboard()" />
+              </div>
               <div class="filter-group">
                 <label>กรองตามลานจอด</label>
                 <select id="wi-dash-yard" onchange="wiRenderDashboard()">
@@ -2015,6 +2023,10 @@
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage" id="tk-subpage-dashboard">
             <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="tk-dash-month" onchange="tkRenderDashboard()" />
+              </div>
               <div class="filter-group">
                 <label>กรองตามลานจอด</label>
                 <select id="tk-dash-yard" onchange="tkRenderDashboard()">
@@ -2196,6 +2208,10 @@
           <!-- DASHBOARD SUBPAGE -->
           <div class="subpage" id="pb-subpage-dashboard">
             <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="pb-dash-month" onchange="pbRenderDashboard()" />
+              </div>
               <div class="filter-group">
                 <label>กรองตามลานจอด</label>
                 <select id="pb-dash-yard" onchange="pbRenderDashboard()">
@@ -3012,6 +3028,10 @@
           <div class="subpage active" id="gv-subpage-dashboard">
             <div class="filter-bar">
               <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="gv-dash-month" onchange="gvRenderDashboard()" />
+              </div>
+              <div class="filter-group">
                 <label>แสดงแดชบอร์ดของ</label>
                 <select id="gv-dash-type" onchange="gvRenderDashboard()">
                   <option value="">ทั้งหมด</option>
@@ -3187,6 +3207,10 @@
           <div class="subpage active" id="fr-subpage-dashboard">
             <div class="filter-bar">
               <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="fr-dash-month" onchange="frRenderDashboard()" />
+              </div>
+              <div class="filter-group">
                 <label>กรองตามลานจอด</label>
                 <select id="fr-dash-yard" onchange="frRenderDashboard()">
                   <option value="">ทั้งหมด</option>
@@ -3354,6 +3378,7 @@
           <div class="pg on" id="pg-dashboard">
             <div class="trow">
               <div class="pgttl">📊 แดชบอร์ด</div>
+              <input type="month" id="ic-dash-month" onchange="icRenderDash()" style="margin-left:auto;" />
               <div class="ctxt" id="dashUp"></div>
             </div>
             <div class="sg" id="statGrid"></div>

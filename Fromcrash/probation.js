@@ -219,9 +219,11 @@ function pbRefreshDashFilters() {
 }
 
 function pbRenderDashboard() {
+  const month = document.getElementById('pb-dash-month')?.value || '';
   const yardFilter = document.getElementById('pb-dash-yard')?.value || '';
   const buFilter = document.getElementById('pb-dash-bu')?.value || '';
   const filtered = probationRecords.filter(r =>
+    (!month || (r.date || '').startsWith(month)) &&
     (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
   );
 

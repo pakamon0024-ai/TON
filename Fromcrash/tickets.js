@@ -247,9 +247,11 @@ function tkRefreshDashFilters() {
 }
 
 function tkRenderDashboard() {
+  const month = document.getElementById('tk-dash-month')?.value || '';
   const yardFilter = document.getElementById('tk-dash-yard')?.value || '';
   const buFilter = document.getElementById('tk-dash-bu')?.value || '';
   const filtered = tickets.filter(t =>
+    (!month || (t.date || '').startsWith(month)) &&
     (!yardFilter || t.yard === yardFilter) && (!buFilter || t.businessUnit === buFilter)
   );
 
