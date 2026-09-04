@@ -100,9 +100,11 @@ function incCalcRepairDays() {
   el.value = diff >= 0 ? diff + ' วัน' : '-';
 }
 
-// "มูลค่าความเสียหายรวม" ยึดจาก "ยอดที่แจ้งประกัน" เพียงช่องเดียวเท่านั้น (ไม่ใช่ผลรวมของทุกช่องการเงินอีกต่อไป)
+// "มูลค่าความเสียหายรวม" = ยอดที่แจ้งประกัน + เรียกเก็บจากพนักงาน เท่านั้น (ไม่ใช่ผลรวมของทุกช่องการเงินอีกต่อไป)
 function incCalcTotal() {
-  const total = parseFloat(document.getElementById('inc-insurance-reported').value) || 0;
+  const insuranceReported = parseFloat(document.getElementById('inc-insurance-reported').value) || 0;
+  const chargedEmployee = parseFloat(document.getElementById('inc-charged-employee').value) || 0;
+  const total = insuranceReported + chargedEmployee;
   document.getElementById('inc-total-display').textContent = formatMoney(total);
   return total;
 }
@@ -372,7 +374,7 @@ function incRenderList() {
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.faultStatus || '-')}</td>
-      <td>${formatMoney(i.insuranceReportedAmount || 0)}</td>
+      <td>${formatMoney((i.insuranceReportedAmount || 0) + (i.chargedToEmployee || 0))}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="action-btn action-view" onclick="incEditCase('${i.id}')">แก้ไข</button>
@@ -415,9 +417,9 @@ function incDestroyChart(id) {
 
 function incRenderDashboard() {
   const data = incFilteredForDashboard();
-  // รวมจาก "ยอดที่แจ้งประกัน" ของแต่ละเคสสดๆ ตรงนี้ (ไม่พึ่งค่า i.total ที่บันทึกไว้)
+  // รวมจาก "ยอดที่แจ้งประกัน" + "เรียกเก็บจากพนักงาน" ของแต่ละเคสสดๆ ตรงนี้ (ไม่พึ่งค่า i.total ที่บันทึกไว้)
   // เพื่อให้เคสเก่าที่บันทึกไว้ก่อนเปลี่ยนสูตรคำนวณ ก็ยังรวมยอดถูกต้องในแดชบอร์ดโดยไม่ต้องแก้ไขทีละเคส
-  const totalCost = data.reduce((s, i) => s + (i.insuranceReportedAmount || 0), 0);
+  const totalCost = data.reduce((s, i) => s + (i.insuranceReportedAmount || 0) + (i.chargedToEmployee || 0), 0);
   document.getElementById('inc-kpi-total').textContent = formatMoney(totalCost);
   document.getElementById('inc-kpi-count').textContent = data.length;
 
@@ -606,7 +608,7 @@ function incParseImportRow(row) {
     remarkCost: String(row[28]||'').trim(), injuryStatus: String(row[29]||'').trim(),
     otherPartyName: String(row[30]||'').trim(), otherPartyPhone: String(row[31]||'').trim(), otherPartyPlate: String(row[32]||'').trim(),
     caseStatus: String(row[33]||'').trim() || 'Open', suspensionDays: parseFloat(row[34])||0,
-    total: parseFloat(row[26])||0,
+    total: (parseFloat(row[26])||0) + (parseFloat(row[23])||0),
   };
 }
 
