@@ -100,9 +100,9 @@ function incCalcRepairDays() {
   el.value = diff >= 0 ? diff + ' วัน' : '-';
 }
 
+// "มูลค่าความเสียหายรวม" ยึดจาก "ยอดที่แจ้งประกัน" เพียงช่องเดียวเท่านั้น (ไม่ใช่ผลรวมของทุกช่องการเงินอีกต่อไป)
 function incCalcTotal() {
-  let total = 0;
-  document.querySelectorAll('.inc-cost').forEach(el => { total += parseFloat(el.value) || 0; });
+  const total = parseFloat(document.getElementById('inc-insurance-reported').value) || 0;
   document.getElementById('inc-total-display').textContent = formatMoney(total);
   return total;
 }
@@ -372,7 +372,7 @@ function incRenderList() {
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.faultStatus || '-')}</td>
-      <td>${formatMoney(i.total)}</td>
+      <td>${formatMoney(i.insuranceReportedAmount || 0)}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="action-btn action-view" onclick="incEditCase('${i.id}')">แก้ไข</button>
@@ -415,7 +415,9 @@ function incDestroyChart(id) {
 
 function incRenderDashboard() {
   const data = incFilteredForDashboard();
-  const totalCost = data.reduce((s, i) => s + (i.total || 0), 0);
+  // รวมจาก "ยอดที่แจ้งประกัน" ของแต่ละเคสสดๆ ตรงนี้ (ไม่พึ่งค่า i.total ที่บันทึกไว้)
+  // เพื่อให้เคสเก่าที่บันทึกไว้ก่อนเปลี่ยนสูตรคำนวณ ก็ยังรวมยอดถูกต้องในแดชบอร์ดโดยไม่ต้องแก้ไขทีละเคส
+  const totalCost = data.reduce((s, i) => s + (i.insuranceReportedAmount || 0), 0);
   document.getElementById('inc-kpi-total').textContent = formatMoney(totalCost);
   document.getElementById('inc-kpi-count').textContent = data.length;
 
@@ -604,7 +606,7 @@ function incParseImportRow(row) {
     remarkCost: String(row[28]||'').trim(), injuryStatus: String(row[29]||'').trim(),
     otherPartyName: String(row[30]||'').trim(), otherPartyPhone: String(row[31]||'').trim(), otherPartyPlate: String(row[32]||'').trim(),
     caseStatus: String(row[33]||'').trim() || 'Open', suspensionDays: parseFloat(row[34])||0,
-    total: (parseFloat(row[19])||0)+(parseFloat(row[20])||0)+(parseFloat(row[21])||0)+(parseFloat(row[22])||0)+(parseFloat(row[23])||0)+(parseFloat(row[24])||0)+(parseFloat(row[25])||0),
+    total: parseFloat(row[26])||0,
   };
 }
 
