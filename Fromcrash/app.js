@@ -835,8 +835,8 @@ function buildPettyCashDoc(data) {
         <div class="print-info-row" style="grid-column:1/-1"><span class="print-label">วัตถุประสงค์:</span><span>${escapeHtml(data.purpose)}</span></div>
         ${data.detail ? `<div class="print-info-row" style="grid-column:1/-1"><span class="print-label">รายละเอียด:</span><span>${escapeHtml(data.detail)}</span></div>` : ''}
       </div>
-      <table>
-        <thead><tr><th style="width:40px">ลำดับ</th><th>รายการ</th><th>หมวดหมู่</th><th style="text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
+      <table class="expense-table">
+        <thead><tr><th style="width:40px">ลำดับ</th><th style="width:38%">รายการ</th><th style="width:24%">หมวดหมู่</th><th style="width:22%;text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
@@ -871,8 +871,8 @@ function buildApprovalDoc(data) {
         <div class="print-info-row"><span class="print-label">วันที่:</span><span>${formatDate(data.date)}</span></div>
       </div>
       <p class="print-body-text">${escapeHtml(data.reason || '')}</p>
-      <table>
-        <thead><tr><th style="width:40px">ลำดับ</th><th>รายการ</th><th>หมวดหมู่</th><th style="text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
+      <table class="expense-table">
+        <thead><tr><th style="width:40px">ลำดับ</th><th style="width:38%">รายการ</th><th style="width:24%">หมวดหมู่</th><th style="width:22%;text-align:right">จำนวนเงิน (บาท)</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div class="print-total">รวมทั้งสิ้น: ${formatMoney(data.total)}</div>
