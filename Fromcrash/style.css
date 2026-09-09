@@ -954,6 +954,25 @@ body {
    สั้นๆ ดูโหว่ๆ ลดความกว้างและจัดกึ่งกลางหน้าแทน ให้ดูพอดีกับเนื้อหาโดยไม่ต้องยืดเต็มหน้ากระดาษ */
 .print-doc table.expense-table { width: 90%; margin: 8px auto; }
 
+/* ใบรับรองแทนใบเสร็จรับเงิน — ขยายตัวหนังสือเป็น 18px เท่าเอกสารอื่น
+   ระยะเหนือเส้นลายเซ็นใช้น้อยกว่าเอกสารอื่น เพราะฟอร์มนี้มีช่องลายเซ็นถึง 5 ช่อง (3 แถว) ถ้าเว้นเท่ากันจะล้นหน้า */
+.print-doc.rc-cert-doc { font-size: 18px; line-height: 1.6; }
+.print-doc.rc-cert-doc .letterhead-name-th { font-size: 19px; }
+.print-doc.rc-cert-doc .letterhead-name-en { font-size: 15px; }
+.print-doc.rc-cert-doc .letterhead-detail { font-size: 13px; }
+.print-doc.rc-cert-doc h1 { font-size: 24px; }
+.print-doc.rc-cert-doc .rc-docno { font-size: 16px; }
+.print-doc.rc-cert-doc .print-info { font-size: 18px; gap: 10px 24px; margin-bottom: 12px; }
+.print-doc.rc-cert-doc table.expense-table th { font-size: 16px; padding: 8px 10px; }
+.print-doc.rc-cert-doc table.expense-table td { font-size: 16px; padding: 8px 10px; }
+.print-doc.rc-cert-doc .print-body-text { font-size: 18px; margin: 12px 0; }
+.print-doc.rc-cert-doc .print-sig-label { font-size: 16px; }
+.print-doc.rc-cert-doc .print-sig-name { font-size: 16px; }
+.print-doc.rc-cert-doc .print-sig-date { font-size: 14px; }
+.print-doc.rc-cert-doc .print-sig-position { font-size: 13px; }
+.print-doc.rc-cert-doc .print-sig-line { margin: 40px 16px 6px; }
+.print-doc.rc-cert-doc .print-sigs { margin-top: 20px; gap: 24px; }
+
 /* ใบรับรองแทนใบเสร็จรับเงิน — เลขที่เอกสารชิดขวาบนเหนือหัวเรื่อง ตามแบบฟอร์มกระดาษเดิม */
 .print-doc.rc-cert-doc .rc-docno { text-align: right; font-size: 14px; color: #444; margin-bottom: 4px; }
 
