@@ -101,6 +101,10 @@
           <span class="nav-icon">📝</span>
           <span>ขออนุมัติสำรองจ่าย</span>
         </a>
+        <a href="#" class="nav-item" data-page="receipt-cert" onclick="showPage('receipt-cert')">
+          <span class="nav-icon">🧾</span>
+          <span>ใบรับรองแทนใบเสร็จ</span>
+        </a>
         <a href="#" class="nav-item" data-page="history" onclick="showPage('history')">
           <span class="nav-icon">🗂️</span>
           <span>ประวัติรายการ</span>
@@ -548,6 +552,114 @@
         </div>
       </div>
 
+      <!-- RECEIPT CERTIFICATE PAGE (ใบรับรองแทนใบเสร็จรับเงิน) -->
+      <div class="page" id="page-receipt-cert">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🧾</div>
+            <div>
+              <h2>ใบรับรองแทนใบเสร็จรับเงิน</h2>
+              <p>ใช้เมื่อไม่สามารถเรียกเก็บใบเสร็จรับเงินจากผู้รับเงินได้</p>
+            </div>
+            <button class="btn-print" onclick="printReceiptCert()">🖨️ Export PDF</button>
+          </div>
+
+          <div class="edit-banner" id="rc-edit-banner" style="display:none;">
+            <span>✏️ กำลังแก้ไขรายการ <strong id="rc-edit-docno"></strong></span>
+            <button class="btn-secondary" onclick="cancelEditReceiptCert()">✕ ยกเลิกการแก้ไข</button>
+          </div>
+
+          <div class="form-card" id="receiptCertForm">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label>เลขที่เอกสาร</label>
+                <input type="text" id="rc-docno" placeholder="ABC-2026-001" />
+              </div>
+              <div class="form-group">
+                <label>วันที่</label>
+                <input type="date" id="rc-date" />
+              </div>
+              <div class="form-group">
+                <label>แผนก</label>
+                <input type="text" id="rc-dept" placeholder="แผนก" />
+              </div>
+            </div>
+
+            <div class="form-row-3">
+              <div class="form-group">
+                <label>ข้าพเจ้า (ผู้ตั้งเบิก)</label>
+                <select id="rc-requester">
+                  <option value="">-- เลือกผู้ตั้งเบิก --</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>ตำแหน่ง</label>
+                <input type="text" id="rc-position" placeholder="เช่น จป.วิชาชีพ" />
+              </div>
+              <div class="form-group">
+                <label>ผู้เบิกจ่ายเงิน</label>
+                <select id="rc-payer">
+                  <option value="">-- เลือกผู้เบิกจ่ายเงิน --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="fieldset-title">ผู้อนุมัติประจำ (แก้ไขได้หากมีการเปลี่ยนแปลงตัวบุคคล)</div>
+            <div class="form-row-3">
+              <div class="form-group">
+                <label>ผู้จัดการทั่วไป</label>
+                <input type="text" id="rc-gm" value="คุณนภาวรรณ คำภานุช" />
+              </div>
+              <div class="form-group">
+                <label>รองกรรมการ (ผู้อนุมัติ)</label>
+                <input type="text" id="rc-vp" value="คุณภิตินันท์ คำภานุช" />
+              </div>
+              <div class="form-group">
+                <label>กรรมการ (ผู้อนุมัติ)</label>
+                <input type="text" id="rc-director" value="คุณนิธิโรจน์ คำภานุช" />
+              </div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="items-section">
+              <div class="items-header">
+                <h3>รายละเอียดรายจ่าย</h3>
+                <button class="btn-add-row" onclick="addReceiptCertRow()">+ เพิ่มรายการ</button>
+              </div>
+              <div class="table-wrap">
+                <table class="items-table">
+                  <thead>
+                    <tr>
+                      <th style="width:120px">ว/ด/ป</th>
+                      <th>รายละเอียดรายจ่าย</th>
+                      <th style="width:120px">เลขที่บิล</th>
+                      <th style="width:130px">จำนวนเงิน (บาท)</th>
+                      <th>หมายเหตุ</th>
+                      <th style="width:40px"></th>
+                    </tr>
+                  </thead>
+                  <tbody id="receiptCertItemsBody">
+                  </tbody>
+                  <tfoot>
+                    <tr class="total-row">
+                      <td colspan="3" style="text-align:right;font-weight:600;">รวมเป็นเงิน</td>
+                      <td id="rc-total" style="text-align:right;font-weight:700;color:var(--accent-primary)">฿0.00</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="clearReceiptCert()">🗑️ ล้างข้อมูล</button>
+              <button class="btn-primary" onclick="saveReceiptCert()">💾 บันทึกรายการ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- HISTORY PAGE -->
       <div class="page" id="page-history">
         <div class="form-section">
@@ -566,6 +678,7 @@
                 <option value="all">ทั้งหมด</option>
                 <option value="petty">เงินสดย่อย</option>
                 <option value="approval">สำรองจ่าย</option>
+                <option value="receiptcert">ใบรับรองแทนใบเสร็จ</option>
               </select>
             </div>
             <div class="filter-group">

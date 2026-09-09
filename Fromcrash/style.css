@@ -952,6 +952,9 @@ body {
    สั้นๆ ดูโหว่ๆ ลดความกว้างและจัดกึ่งกลางหน้าแทน ให้ดูพอดีกับเนื้อหาโดยไม่ต้องยืดเต็มหน้ากระดาษ */
 .print-doc table.expense-table { width: 90%; margin: 8px auto; }
 
+/* ใบรับรองแทนใบเสร็จรับเงิน — เลขที่เอกสารชิดขวาบนเหนือหัวเรื่อง ตามแบบฟอร์มกระดาษเดิม */
+.print-doc.rc-cert-doc .rc-docno { text-align: right; font-size: 14px; color: #444; margin-bottom: 4px; }
+
 /* ===== Action Buttons in Table ===== */
 .action-btn {
   padding: 5px 10px; border-radius: 6px; border: none;

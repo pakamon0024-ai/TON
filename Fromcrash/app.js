@@ -2,10 +2,12 @@
 let records = JSON.parse(localStorage.getItem('finflow_records') || '[]');
 let pettyRows = [];
 let approvalRows = [];
+let receiptCertRows = [];
 let currentPrintFn = null;
 // requesters ถูกย้ายไปจัดการใน masterdata.js แล้ว (mdRequesters)
 let editingPettyId = null;
 let editingApprovalId = null;
+let editingReceiptCertId = null;
 
 // ===== Init =====
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHistory();
   addPettyRow();
   addApprovalRow();
+  addReceiptCertRow();
   updateCurrentDate();
   autoDocNo();
   syncRequesterDropdowns();
@@ -85,6 +88,7 @@ function setToday() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('pc-date').value = today;
   document.getElementById('ap-date').value = today;
+  document.getElementById('rc-date').value = today;
 }
 
 function autoDocNo() {
@@ -93,8 +97,10 @@ function autoDocNo() {
   const m = String(now.getMonth() + 1).padStart(2, '0');
   const pettyCnt = records.filter(r => r.type === 'petty').length + 1;
   const apCnt = records.filter(r => r.type === 'approval').length + 1;
+  const rcCnt = records.filter(r => r.type === 'receiptcert').length + 1;
   document.getElementById('pc-docno').value = `PC-${yr}${m}-${String(pettyCnt).padStart(3, '0')}`;
   document.getElementById('ap-docno').value = `AP-${yr}${m}-${String(apCnt).padStart(3, '0')}`;
+  document.getElementById('rc-docno').value = `RC-${yr}${m}-${String(rcCnt).padStart(3, '0')}`;
 }
 
 // ===== Navigation =====
@@ -108,6 +114,7 @@ function showPage(page) {
     dashboard: 'ภาพรวมระบบ',
     'petty-cash': 'ฟอร์มเงินสดย่อย',
     approval: 'หนังสือขออนุมัติสำรองจ่าย',
+    'receipt-cert': 'ใบรับรองแทนใบเสร็จรับเงิน',
     history: 'ประวัติรายการ',
     claims: 'เคลมประกันภัย',
     masterdata: 'ฐานข้อมูลหลัก',
@@ -158,6 +165,8 @@ function syncRequesterDropdowns() {
     'ap-reviewer': '-- เลือกผู้ตรวจสอบ --',
     'pc-approver': '-- เลือกผู้อนุมัติ --',
     'ap-approver': '-- เลือกผู้อนุมัติ --',
+    'rc-requester': '-- เลือกผู้ตั้งเบิก --',
+    'rc-payer': '-- เลือกผู้เบิกจ่ายเงิน --',
   };
   const list = (typeof mdRequesters !== 'undefined') ? mdRequesters : [];
   Object.keys(placeholders).forEach(id => {
@@ -389,8 +398,9 @@ function editRecord(id) {
   const rec = records.find(r => r.id === id);
   if (!rec) return;
   if (rec.type === 'petty') loadPettyCashForEdit(rec);
+  else if (rec.type === 'receiptcert') loadReceiptCertForEdit(rec.data || rec, rec.id);
   else loadApprovalForEdit(rec.data || rec, rec.id);
-  showPage(rec.type === 'petty' ? 'petty-cash' : 'approval');
+  showPage(rec.type === 'petty' ? 'petty-cash' : rec.type === 'receiptcert' ? 'receipt-cert' : 'approval');
 }
 
 function loadPettyCashForEdit(rec) {
@@ -628,6 +638,204 @@ function cancelEditApproval() {
   clearApproval();
 }
 
+// ===== ใบรับรองแทนใบเสร็จรับเงิน (Receipt Certificate) =====
+// ใช้เมื่อจ่ายเงินไปแล้วแต่เรียกเก็บใบเสร็จจากผู้รับเงินไม่ได้ — แต่ละแถวมีวันที่ของตัวเอง
+// เพราะรายจ่ายในใบเดียวกันอาจเกิดคนละวันได้ (ต่างจากเงินสดย่อย/สำรองจ่ายที่ใช้วันที่เอกสารเดียว)
+function receiptCertRowHtml(row, index) {
+  return `
+    <tr id="rc-row-${row.id}">
+      <td><input type="date" id="rc-item-date-${row.id}" /></td>
+      <td><input type="text" placeholder="รายละเอียดรายจ่าย" id="rc-item-${row.id}" oninput="calcReceiptCertTotal()" /></td>
+      <td><input type="text" placeholder="เลขที่บิล" id="rc-billno-${row.id}" /></td>
+      <td>
+        <input type="number" min="0" step="0.01" placeholder="0.00"
+          id="rc-amount-${row.id}" oninput="calcReceiptCertTotal()" style="text-align:right" />
+      </td>
+      <td><input type="text" placeholder="หมายเหตุ" id="rc-note-${row.id}" /></td>
+      <td>
+        <button class="btn-delete-row" onclick="removeReceiptCertRow(${row.id})" title="ลบรายการ">✕</button>
+      </td>
+    </tr>
+  `;
+}
+
+function addReceiptCertRow() {
+  const idx = receiptCertRows.length;
+  const row = { id: Date.now() + idx + 2000 };
+  receiptCertRows.push(row);
+  document.getElementById('receiptCertItemsBody').insertAdjacentHTML('beforeend', receiptCertRowHtml(row, receiptCertRows.length));
+  calcReceiptCertTotal();
+}
+
+function removeReceiptCertRow(id) {
+  receiptCertRows = receiptCertRows.filter(r => r.id !== id);
+  document.getElementById(`rc-row-${id}`)?.remove();
+  calcReceiptCertTotal();
+}
+
+function renderReceiptCertRows() {
+  const tbody = document.getElementById('receiptCertItemsBody');
+  tbody.innerHTML = receiptCertRows.map((row, i) => receiptCertRowHtml(row, i + 1)).join('');
+  calcReceiptCertTotal();
+}
+
+function calcReceiptCertTotal() {
+  let total = 0;
+  receiptCertRows.forEach(row => {
+    const v = parseFloat(document.getElementById(`rc-amount-${row.id}`)?.value || 0);
+    total += isNaN(v) ? 0 : v;
+  });
+  document.getElementById('rc-total').textContent = formatMoney(total);
+  return total;
+}
+
+function getReceiptCertData() {
+  const items = receiptCertRows.map((row, i) => ({
+    no: i + 1,
+    date: document.getElementById(`rc-item-date-${row.id}`)?.value || '',
+    item: document.getElementById(`rc-item-${row.id}`)?.value || '',
+    billNo: document.getElementById(`rc-billno-${row.id}`)?.value || '',
+    amount: parseFloat(document.getElementById(`rc-amount-${row.id}`)?.value || 0) || 0,
+    note: document.getElementById(`rc-note-${row.id}`)?.value || '',
+  }));
+  const total = items.reduce((s, r) => s + r.amount, 0);
+  return {
+    docno: document.getElementById('rc-docno').value,
+    date: document.getElementById('rc-date').value,
+    dept: document.getElementById('rc-dept').value,
+    requester: document.getElementById('rc-requester').value,
+    position: document.getElementById('rc-position').value,
+    payer: document.getElementById('rc-payer').value,
+    gm: document.getElementById('rc-gm').value,
+    vp: document.getElementById('rc-vp').value,
+    director: document.getElementById('rc-director').value,
+    items, total,
+  };
+}
+
+function saveReceiptCert() {
+  const data = getReceiptCertData();
+  if (!data.docno || !data.requester || data.items.length === 0) {
+    showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return;
+  }
+  if (data.items.some(i => !i.item)) {
+    showToast('กรุณากรอกรายละเอียดรายจ่ายให้ครบ', 'warning'); return;
+  }
+  let savedRecord;
+  if (editingReceiptCertId) {
+    const idx = records.findIndex(r => r.id === editingReceiptCertId);
+    if (idx >= 0) {
+      records[idx] = {
+        ...records[idx],
+        docno: data.docno, date: data.date, dept: data.dept, requester: data.requester, position: data.position,
+        payer: data.payer, gm: data.gm, vp: data.vp, director: data.director, items: data.items, total: data.total,
+        data: data,
+      };
+      savedRecord = records[idx];
+    }
+    showToast('✅ แก้ไขใบรับรองแทนใบเสร็จแล้ว!', 'success');
+    cancelEditReceiptCert();
+  } else {
+    const record = {
+      id: Date.now(),
+      type: 'receiptcert',
+      docno: data.docno,
+      date: data.date,
+      dept: data.dept,
+      requester: data.requester,
+      position: data.position,
+      payer: data.payer,
+      gm: data.gm,
+      vp: data.vp,
+      director: data.director,
+      items: data.items,
+      total: data.total,
+      status: 'pending',
+      data: data,
+      savedAt: new Date().toISOString()
+    };
+    records.unshift(record);
+    savedRecord = record;
+    showToast('✅ บันทึกใบรับรองแทนใบเสร็จแล้ว!', 'success');
+    autoDocNo();
+    if (typeof sendTelegramNotification === 'function') {
+      sendTelegramNotification(
+        `🧾 <b>บันทึกใบรับรองแทนใบเสร็จใหม่</b>\nเลขที่: ${escapeHtml(record.docno)}\nผู้ตั้งเบิก: ${escapeHtml(record.requester || '-')}\nยอดรวม: ${formatMoney(record.total)}`
+      );
+    }
+  }
+  saveRecords();
+  if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(savedRecord);
+  renderDashboard();
+  renderHistory();
+}
+
+function clearReceiptCert() {
+  receiptCertRows = [];
+  renderReceiptCertRows();
+  addReceiptCertRow();
+  setToday();
+  autoDocNo();
+  document.getElementById('rc-dept').value = '';
+  document.getElementById('rc-position').value = '';
+  showToast('ล้างข้อมูลแล้ว', 'warning');
+}
+
+function loadReceiptCertForEdit(data, recordId) {
+  editingReceiptCertId = recordId;
+  document.getElementById('rc-docno').value = data.docno || '';
+  document.getElementById('rc-date').value = data.date || '';
+  document.getElementById('rc-dept').value = data.dept || '';
+  document.getElementById('rc-position').value = data.position || '';
+  if (data.gm) document.getElementById('rc-gm').value = data.gm;
+  if (data.vp) document.getElementById('rc-vp').value = data.vp;
+  if (data.director) document.getElementById('rc-director').value = data.director;
+
+  receiptCertRows = (data.items || []).map((item, i) => ({ id: Date.now() + i + 2000 }));
+  if (receiptCertRows.length === 0) receiptCertRows = [{ id: Date.now() + 2000 }];
+  renderReceiptCertRows();
+  (data.items || []).forEach((item, i) => {
+    const row = receiptCertRows[i];
+    if (!row) return;
+    document.getElementById(`rc-item-date-${row.id}`).value = item.date || '';
+    document.getElementById(`rc-item-${row.id}`).value = item.item || '';
+    document.getElementById(`rc-billno-${row.id}`).value = item.billNo || '';
+    document.getElementById(`rc-amount-${row.id}`).value = item.amount || '';
+    document.getElementById(`rc-note-${row.id}`).value = item.note || '';
+  });
+  calcReceiptCertTotal();
+
+  setSelectValueSafe('rc-requester', data.requester || '');
+  setSelectValueSafe('rc-payer', data.payer || '');
+
+  document.getElementById('rc-edit-docno').textContent = data.docno || '';
+  document.getElementById('rc-edit-banner').style.display = 'flex';
+  showToast('โหลดข้อมูลเพื่อแก้ไขแล้ว', 'success');
+}
+
+function cancelEditReceiptCert() {
+  editingReceiptCertId = null;
+  document.getElementById('rc-edit-banner').style.display = 'none';
+  clearReceiptCert();
+}
+
+// ===== Record type helpers (ใช้ร่วมกันในหน้าแดชบอร์ด/ประวัติ/Export PDF ประวัติ) =====
+function recordTypeBadge(type) {
+  if (type === 'petty') return '<span class="badge badge-blue">💵 เงินสดย่อย</span>';
+  if (type === 'receiptcert') return '<span class="badge badge-green">🧾 ใบรับรองแทนใบเสร็จ</span>';
+  return '<span class="badge badge-purple">📝 สำรองจ่าย</span>';
+}
+function recordTypeLabel(type) {
+  if (type === 'petty') return 'เงินสดย่อย';
+  if (type === 'receiptcert') return 'ใบรับรองแทนใบเสร็จ';
+  return 'สำรองจ่าย';
+}
+function recordLabel(r) {
+  if (r.type === 'petty') return r.purpose || '-';
+  if (r.type === 'receiptcert') return (r.items || []).map(i => i.item).filter(Boolean).join(', ') || '-';
+  return r.subject || '-';
+}
+
 // ===== Dashboard =====
 function renderDashboard() {
   const total = records.reduce((s, r) => s + (r.total || 0), 0);
@@ -646,8 +854,8 @@ function renderDashboard() {
     tbody.innerHTML = recent.map(r => `
       <tr>
         <td style="font-family:monospace;font-size:0.82rem">${escapeHtml(r.docno)}</td>
-        <td>${r.type === 'petty' ? '<span class="badge badge-blue">💵 เงินสดย่อย</span>' : '<span class="badge badge-purple">📝 สำรองจ่าย</span>'}</td>
-        <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
+        <td>${recordTypeBadge(r.type)}</td>
+        <td>${escapeHtml(recordLabel(r))}</td>
         <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
         <td>${statusBadge(r.status)}</td>
         <td style="font-size:0.8rem;color:var(--text-muted)">${formatDate(r.date)}</td>
@@ -666,7 +874,7 @@ function renderHistory() {
     const matchSearch = !search ||
       r.docno?.toLowerCase().includes(search) ||
       r.requester?.toLowerCase().includes(search) ||
-      (r.purpose || r.subject || '').toLowerCase().includes(search);
+      recordLabel(r).toLowerCase().includes(search);
     return matchType && matchSearch;
   });
 
@@ -680,8 +888,8 @@ function renderHistory() {
       return `
       <tr>
         <td style="font-family:monospace;font-size:0.82rem">${escapeHtml(r.docno)}</td>
-        <td>${r.type === 'petty' ? '<span class="badge badge-blue">💵 เงินสดย่อย</span>' : '<span class="badge badge-purple">📝 สำรองจ่าย</span>'}</td>
-        <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
+        <td>${recordTypeBadge(r.type)}</td>
+        <td>${escapeHtml(recordLabel(r))}</td>
         <td>${escapeHtml(cats.join(', ') || '-')}</td>
         <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
         <td>
@@ -747,6 +955,7 @@ function viewRecord(id) {
   const rec = records.find(r => r.id === id);
   if (!rec) return;
   if (rec.type === 'petty') showPettyCashPrint(rec);
+  else if (rec.type === 'receiptcert') showReceiptCertPrint(rec.data || rec);
   else showApprovalPrint(rec.data || rec);
 }
 
@@ -789,6 +998,29 @@ function showApprovalPrint(data) {
     html2pdf().set({
       margin: [8, 8, 8, 8],
       filename: `อนุมัติสำรองจ่าย_${data.docno}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'avoid-all'] }
+    }).from(el).save();
+  };
+}
+
+function printReceiptCert() {
+  const data = getReceiptCertData();
+  showReceiptCertPrint(data);
+}
+
+function showReceiptCertPrint(data) {
+  const html = buildReceiptCertDoc(data);
+  document.getElementById('modalTitle').textContent = `ใบรับรองแทนใบเสร็จรับเงิน - ${data.docno}`;
+  document.getElementById('modalBody').innerHTML = html;
+  document.getElementById('printModal').classList.add('show');
+  currentPrintFn = () => {
+    const el = document.getElementById('modalBody');
+    html2pdf().set({
+      margin: [8, 8, 8, 8],
+      filename: `ใบรับรองแทนใบเสร็จ_${data.docno}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -888,6 +1120,50 @@ function buildApprovalDoc(data) {
   `;
 }
 
+function buildReceiptCertDoc(data) {
+  const rows = (data.items || []).map(item => `
+    <tr>
+      <td>${item.date ? formatDate(item.date) : ''}</td>
+      <td>${escapeHtml(item.item)}</td>
+      <td style="text-align:center">${escapeHtml(item.billNo || '')}</td>
+      <td style="text-align:right">${item.amount ? formatMoney(item.amount) : ''}</td>
+      <td>${escapeHtml(item.note || '')}</td>
+    </tr>
+  `).join('');
+  // ผู้อนุมัติ 3 ตำแหน่ง (ผู้จัดการทั่วไป/รองกรรมการ/กรรมการ) เป็นชุดคงที่ประจำบริษัท ไม่ได้เลือกต่อเอกสารเหมือนฟอร์มอื่น
+  // เลย์เอาต์ลายเซ็นตามแบบฟอร์มกระดาษเดิม: แถวบน 2 ช่อง (ผู้ตั้งเบิก/ผู้เบิกจ่ายเงิน) แถวกลาง 2 ช่อง (ผจก./รองกก.) แถวล่างช่องเดียวกึ่งกลาง (กก.)
+  return `
+    <div class="print-doc ap-memo-doc rc-cert-doc">
+      ${companyLetterhead()}
+      <div class="rc-docno">เลขที่ ${escapeHtml(data.docno)}</div>
+      <h1>ใบรับรองแทนใบเสร็จรับเงิน</h1>
+      <hr class="print-divider" />
+      <div class="print-info">
+        <div class="print-info-row"><span class="print-label">ข้าพเจ้า:</span><span>${escapeHtml(data.requester)}</span></div>
+        <div class="print-info-row"><span class="print-label">ตำแหน่ง:</span><span>${escapeHtml(data.position || '-')}</span></div>
+        <div class="print-info-row"><span class="print-label">วันที่:</span><span>${formatDate(data.date)}</span></div>
+      </div>
+      <table class="expense-table">
+        <thead><tr><th style="width:12%">ว/ด/ป</th><th>รายละเอียดรายจ่าย</th><th style="width:14%">เลขที่บิล</th><th style="width:16%;text-align:right">จำนวนเงิน</th><th style="width:18%">หมายเหตุ</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="3" style="text-align:right;font-weight:700;">รวมเป็นเงิน</td><td style="text-align:right;font-weight:700;">${formatMoney(data.total)}</td><td></td></tr></tfoot>
+      </table>
+      <p class="print-body-text" style="text-indent:0;">รับรองว่า รายจ่ายข้างต้นนี้ ไม่อาจเรียกเก็บใบเสร็จจากผู้รับเงินได้ และข้าพเจ้าได้จ่ายไปในงานของบริษัท จริง</p>
+      <div class="print-sigs print-sigs-2">
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตั้งเบิก</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-position">แผนก ${escapeHtml(data.dept || '-')}</div><div class="print-sig-date">(........./......../........)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้เบิกจ่ายเงิน</div><div class="print-sig-name">${escapeHtml(data.payer || '')}</div><div class="print-sig-date">(........./......../........)</div></div>
+      </div>
+      <div class="print-sigs print-sigs-2">
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${escapeHtml(data.gm || '')}</div><div class="print-sig-label">ผู้จัดการทั่วไป</div><div class="print-sig-date">(........./......../........)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${escapeHtml(data.vp || '')}</div><div class="print-sig-label">รองกรรมการ<br>ผู้อนุมัติ</div><div class="print-sig-date">(........./......../........)</div></div>
+      </div>
+      <div class="print-sigs print-sigs-2" style="grid-template-columns:1fr;max-width:30%;">
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${escapeHtml(data.director || '')}</div><div class="print-sig-label">กรรมการ<br>ผู้อนุมัติ</div><div class="print-sig-date">(........./......../........)</div></div>
+      </div>
+    </div>
+  `;
+}
+
 function doPrint() {
   if (currentPrintFn) currentPrintFn();
 }
@@ -906,8 +1182,8 @@ function exportHistoryPDF() {
     <tr>
       <td>${i + 1}</td>
       <td>${escapeHtml(r.docno)}</td>
-      <td>${r.type === 'petty' ? 'เงินสดย่อย' : 'สำรองจ่าย'}</td>
-      <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
+      <td>${recordTypeLabel(r.type)}</td>
+      <td>${escapeHtml(recordLabel(r))}</td>
       <td>${escapeHtml(r.requester)}</td>
       <td style="text-align:right">${formatMoney(r.total)}</td>
       <td>${r.status === 'approved' ? 'อนุมัติ' : r.status === 'rejected' ? 'ไม่อนุมัติ' : 'รออนุมัติ'}</td>
