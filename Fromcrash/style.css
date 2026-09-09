@@ -945,6 +945,8 @@ body {
 .print-doc.pc-voucher-doc .print-sig-name { font-size: 16px; }
 .print-doc.ap-memo-doc .print-sig-date,
 .print-doc.pc-voucher-doc .print-sig-date { font-size: 14px; }
+.print-doc.ap-memo-doc .print-sig-position,
+.print-doc.pc-voucher-doc .print-sig-position { font-size: 13px; }
 .print-doc.ap-memo-doc .print-sig-line,
 .print-doc.pc-voucher-doc .print-sig-line { margin: 96px 16px 6px; }
 

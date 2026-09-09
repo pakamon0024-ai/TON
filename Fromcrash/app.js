@@ -1130,8 +1130,10 @@ function buildReceiptCertDoc(data) {
       <td>${escapeHtml(item.note || '')}</td>
     </tr>
   `).join('');
-  // ผู้อนุมัติ 3 ตำแหน่ง (ผู้จัดการทั่วไป/รองกรรมการ/กรรมการ) เป็นชุดคงที่ประจำบริษัท ไม่ได้เลือกต่อเอกสารเหมือนฟอร์มอื่น
-  // เลย์เอาต์ลายเซ็นตามแบบฟอร์มกระดาษเดิม: แถวบน 2 ช่อง (ผู้ตั้งเบิก/ผู้เบิกจ่ายเงิน) แถวกลาง 2 ช่อง (ผจก./รองกก.) แถวล่างช่องเดียวกึ่งกลาง (กก.)
+  // ผู้อนุมัติ 3 ตำแหน่ง (ผู้จัดการทั่วไป/รองประธาน/ประธาน) เป็นชุดคงที่ประจำบริษัท ไม่ได้เลือกต่อเอกสารเหมือนฟอร์มอื่น
+  // เลย์เอาต์ลายเซ็นตามแบบฟอร์มกระดาษเดิม: เส้นลายเซ็น -> (ชื่อในวงเล็บ) -> ตำแหน่ง -> วันที่
+  // แถวบน 2 ช่อง (ผู้ตั้งเบิก/ผู้เบิกจ่ายเงิน) แถวกลาง 2 ช่อง (ผจก./รองประธาน) แถวล่างช่องเดียวกึ่งกลาง (ประธาน)
+  const sigName = name => name ? `(${escapeHtml(name)})` : '(...................................)';
   return `
     <div class="print-doc ap-memo-doc rc-cert-doc">
       ${companyLetterhead()}
@@ -1150,15 +1152,15 @@ function buildReceiptCertDoc(data) {
       </table>
       <p class="print-body-text" style="text-indent:0;">รับรองว่า รายจ่ายข้างต้นนี้ ไม่อาจเรียกเก็บใบเสร็จจากผู้รับเงินได้ และข้าพเจ้าได้จ่ายไปในงานของบริษัท จริง</p>
       <div class="print-sigs print-sigs-2">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้ตั้งเบิก</div><div class="print-sig-name">${escapeHtml(data.requester || '')}</div><div class="print-sig-position">แผนก ${escapeHtml(data.dept || '-')}</div><div class="print-sig-date">(........./......../........)</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-label">ผู้เบิกจ่ายเงิน</div><div class="print-sig-name">${escapeHtml(data.payer || '')}</div><div class="print-sig-date">(........./......../........)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${sigName(data.requester)}</div><div class="print-sig-label">ผู้ตั้งเบิก</div><div class="print-sig-position">แผนก ${escapeHtml(data.dept || '')}...............</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${sigName(data.payer)}</div><div class="print-sig-label">ผู้เบิกจ่ายเงิน</div><div class="print-sig-date">(........./......../........)</div></div>
       </div>
       <div class="print-sigs print-sigs-2">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${escapeHtml(data.gm || '')}</div><div class="print-sig-label">ผู้จัดการทั่วไป</div><div class="print-sig-date">(........./......../........)</div></div>
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${escapeHtml(data.vp || '')}</div><div class="print-sig-label">รองกรรมการ<br>ผู้อนุมัติ</div><div class="print-sig-date">(........./......../........)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${sigName(data.gm)}</div><div class="print-sig-label">ผู้จัดการทั่วไป</div><div class="print-sig-date">(........./......../........)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${sigName(data.vp)}</div><div class="print-sig-label">รองประธาน<br>ผู้อนุมัติ</div><div class="print-sig-date">(........./......../........)</div></div>
       </div>
       <div class="print-sigs print-sigs-2" style="grid-template-columns:1fr;max-width:30%;">
-        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${escapeHtml(data.director || '')}</div><div class="print-sig-label">กรรมการ<br>ผู้อนุมัติ</div><div class="print-sig-date">(........./......../........)</div></div>
+        <div class="print-sig"><div class="print-sig-line"></div><div class="print-sig-name">${sigName(data.director)}</div><div class="print-sig-label">ประธาน<br>ผู้อนุมัติ</div><div class="print-sig-date">(........./......../........)</div></div>
       </div>
     </div>
   `;
