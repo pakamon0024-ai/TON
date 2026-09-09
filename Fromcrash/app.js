@@ -1135,7 +1135,7 @@ function buildReceiptCertDoc(data) {
   // แถวบน 2 ช่อง (ผู้ตั้งเบิก/ผู้เบิกจ่ายเงิน) แถวกลาง 2 ช่อง (ผจก./รองประธาน) แถวล่างช่องเดียวกึ่งกลาง (ประธาน)
   const sigName = name => name ? `(${escapeHtml(name)})` : '(...................................)';
   return `
-    <div class="print-doc ap-memo-doc rc-cert-doc">
+    <div class="print-doc rc-cert-doc">
       ${companyLetterhead()}
       <div class="rc-docno">เลขที่ ${escapeHtml(data.docno)}</div>
       <h1>ใบรับรองแทนใบเสร็จรับเงิน</h1>
