@@ -672,13 +672,17 @@ function renderHistory() {
 
   const tbody = document.getElementById('historyBody');
   if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-state">ไม่พบรายการ</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ไม่พบรายการ</td></tr>';
   } else {
-    tbody.innerHTML = filtered.map(r => `
+    tbody.innerHTML = filtered.map(r => {
+      // แต่ละรายการอาจมีหลายบรรทัดย่อย คนละหมวดหมู่ — รวมหมวดหมู่ที่ไม่ซ้ำกันของทุกบรรทัดย่อยมาแสดง
+      const cats = [...new Set((r.items || []).map(it => it.cat).filter(Boolean))];
+      return `
       <tr>
         <td style="font-family:monospace;font-size:0.82rem">${escapeHtml(r.docno)}</td>
         <td>${r.type === 'petty' ? '<span class="badge badge-blue">💵 เงินสดย่อย</span>' : '<span class="badge badge-purple">📝 สำรองจ่าย</span>'}</td>
         <td>${escapeHtml(r.type === 'petty' ? (r.purpose || '-') : (r.subject || '-'))}</td>
+        <td>${escapeHtml(cats.join(', ') || '-')}</td>
         <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
         <td>
           <select class="status-select" onchange="changeStatus(${r.id}, this.value)" style="background:transparent;border:none;color:inherit;font-family:inherit;font-size:0.82rem;cursor:pointer">
@@ -696,7 +700,8 @@ function renderHistory() {
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 }
 
@@ -854,7 +859,7 @@ function buildApprovalDoc(data) {
     </tr>
   `).join('');
   return `
-    <div class="print-doc">
+    <div class="print-doc ap-memo-doc">
       ${companyLetterhead()}
       <h1>บันทึกข้อความ</h1>
       <p class="print-subtitle" style="font-weight:700;font-size:15px">เรื่อง: ${escapeHtml(data.subject || 'ขออนุมัติสำรองจ่ายเงิน')}</p>

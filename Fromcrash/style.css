@@ -915,6 +915,11 @@ body {
 .print-doc.tk-memo-doc .print-sig-label { font-size: 16px; }
 .print-doc.tk-memo-doc .print-sig-name { font-size: 16px; margin-top: 5px; }
 
+/* หนังสือขออนุมัติสำรองจ่าย — ใช้ขนาดตัวหนังสือ/เลย์เอาต์ปกติแบบเอกสารจริงที่เคยพิมพ์ใช้งาน (ไม่ขยายใหญ่แบบ tk-memo-doc)
+   ปรับแค่ระยะห่างเหนือเส้นลายเซ็นให้เพิ่มขึ้นอีกประมาณ 3 บรรทัดตามที่ขอ */
+.print-doc.ap-memo-doc .print-sig-line { margin: 88px 16px 6px; }
+.print-doc.ap-memo-doc .print-sig-date { font-size: 13px; }
+
 /* ===== Action Buttons in Table ===== */
 .action-btn {
   padding: 5px 10px; border-radius: 6px; border: none;
