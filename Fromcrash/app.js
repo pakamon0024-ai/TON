@@ -822,7 +822,7 @@ function buildPettyCashDoc(data) {
     </tr>
   `).join('');
   return `
-    <div class="print-doc">
+    <div class="print-doc pc-voucher-doc">
       ${companyLetterhead()}
       <h1>ใบสำคัญจ่ายเงินสดย่อย</h1>
       <p class="print-subtitle">Petty Cash Voucher</p>

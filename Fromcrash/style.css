@@ -920,6 +920,9 @@ body {
 .print-doc.ap-memo-doc .print-sig-line { margin: 88px 16px 6px; }
 .print-doc.ap-memo-doc .print-sig-date { font-size: 13px; }
 
+/* ใบสำคัญจ่ายเงินสดย่อย — เว้นช่องว่างเหนือเส้นลายเซ็นเพิ่มขึ้นอีกประมาณ 3 บรรทัดเช่นเดียวกับหนังสือขออนุมัติสำรองจ่าย */
+.print-doc.pc-voucher-doc .print-sig-line { margin: 88px 16px 6px; }
+
 /* ===== Action Buttons in Table ===== */
 .action-btn {
   padding: 5px 10px; border-radius: 6px; border: none;
