@@ -2886,6 +2886,9 @@
             <button class="subtab" id="gc-tab-replist" onclick="gcSwitchTab('replist')">🔧 รายการแจ้งซ่อม</button>
             <button class="subtab" id="gc-tab-repadd" onclick="gcSwitchTab('repadd')">➕ เพิ่มแจ้งซ่อม</button>
             <button class="subtab" id="gc-tab-live" onclick="gcSwitchTab('live')">📍 ตำแหน่งรถ (Live)</button>
+            <button class="subtab" id="gc-tab-camdb" onclick="gcSwitchTab('camdb')">🎥 ฐานข้อมูลกล้อง</button>
+            <button class="subtab" id="gc-tab-gpsdb" onclick="gcSwitchTab('gpsdb')">📡 ฐานข้อมูล GPS</button>
+            <button class="subtab" id="gc-tab-bzdb" onclick="gcSwitchTab('bzdb')">🍃 ฐานข้อมูลเครื่องเป่าแอลกอฮอล์</button>
           </div>
 
           <!-- LIST: ติดตั้ง/ถอด -->
@@ -3114,6 +3117,172 @@
                   <tr>
                     <td colspan="6" class="empty-state">ยังไม่มีข้อมูล — กด "รีเฟรชตำแหน่งสด" เพื่อดึงตำแหน่งล่าสุด</td>
                   </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- DEVICE DATABASE: กล้อง / GPS / เครื่องเป่าแอลกอฮอล์ (โครงสร้างเดียวกันทั้ง 3 หัวข้อ) -->
+          <div class="subpage" id="gc-subpage-camdb">
+            <div class="form-card">
+              <div class="fieldset-title">เพิ่ม/แก้ไข ฐานข้อมูลกล้อง</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="ddb-cam-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="ddbLookupVehicle('cam')" /></div>
+                <div class="form-group"><label>ชื่อเจ้าของ</label><input type="text" id="ddb-cam-owner" placeholder="ชื่อเจ้าของรถ" /></div>
+                <div class="form-group"><label>เลขซิม</label><input type="text" id="ddb-cam-simno" placeholder="เลขซิม" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-cam-install-date" /></div>
+                <div class="form-group"><label>วันที่หมดสัญญา</label><input type="date" id="ddb-cam-contract-end" /></div>
+                <div class="form-group"><label>วันที่ถอด</label><input type="date" id="ddb-cam-remove-date" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>สถานะ</label>
+                  <select id="ddb-cam-status">
+                    <option value="รอย้าย">รอย้าย</option>
+                    <option value="ติดตั้งใหม่">ติดตั้งใหม่</option>
+                    <option value="ย้ายแล้ว">ย้ายแล้ว</option>
+                  </select>
+                </div>
+                <div class="form-group full" style="grid-column:2/-1;"><label>หมายเหตุ</label>
+                  <input type="text" id="ddb-cam-note" placeholder="หมายเหตุเพิ่มเติม..." /></div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" id="ddb-cam-cancel-btn" style="display:none;" onclick="ddbCancelEdit('cam')">✕ ยกเลิกการแก้ไข</button>
+                <button class="btn-primary" id="ddb-cam-save-btn" onclick="ddbSaveRecord('cam')">💾 บันทึก</button>
+              </div>
+            </div>
+
+            <div class="filter-bar" style="margin-top:16px;">
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="ddb-cam-search"
+                  placeholder="ทะเบียนรถ..." oninput="debouncedRender('ddbRenderList_cam')" /></div>
+              <button class="btn-secondary" onclick="ddbDownloadTemplate('cam')">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="ddbImportExcel('cam', event)"></label>
+              <button class="btn-secondary" onclick="ddbExportExcel('cam')">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="ddbDeleteAll('cam')">🗑️ ลบทั้งหมด</button>
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ลำดับ</th><th>ทะเบียนรถ</th><th>ชื่อเจ้าของ</th><th>เลขซิม</th>
+                    <th>วันที่ติดตั้ง</th><th>วันที่หมดสัญญา</th><th>วันที่ถอด</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="ddb-cam-body">
+                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subpage" id="gc-subpage-gpsdb">
+            <div class="form-card">
+              <div class="fieldset-title">เพิ่ม/แก้ไข ฐานข้อมูล GPS</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="ddb-gps-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="ddbLookupVehicle('gps')" /></div>
+                <div class="form-group"><label>ชื่อเจ้าของ</label><input type="text" id="ddb-gps-owner" placeholder="ชื่อเจ้าของรถ" /></div>
+                <div class="form-group"><label>เลขซิม</label><input type="text" id="ddb-gps-simno" placeholder="เลขซิม" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-gps-install-date" /></div>
+                <div class="form-group"><label>วันที่หมดสัญญา</label><input type="date" id="ddb-gps-contract-end" /></div>
+                <div class="form-group"><label>วันที่ถอด</label><input type="date" id="ddb-gps-remove-date" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>สถานะ</label>
+                  <select id="ddb-gps-status">
+                    <option value="รอย้าย">รอย้าย</option>
+                    <option value="ติดตั้งใหม่">ติดตั้งใหม่</option>
+                    <option value="ย้ายแล้ว">ย้ายแล้ว</option>
+                  </select>
+                </div>
+                <div class="form-group full" style="grid-column:2/-1;"><label>หมายเหตุ</label>
+                  <input type="text" id="ddb-gps-note" placeholder="หมายเหตุเพิ่มเติม..." /></div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" id="ddb-gps-cancel-btn" style="display:none;" onclick="ddbCancelEdit('gps')">✕ ยกเลิกการแก้ไข</button>
+                <button class="btn-primary" id="ddb-gps-save-btn" onclick="ddbSaveRecord('gps')">💾 บันทึก</button>
+              </div>
+            </div>
+
+            <div class="filter-bar" style="margin-top:16px;">
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="ddb-gps-search"
+                  placeholder="ทะเบียนรถ..." oninput="debouncedRender('ddbRenderList_gps')" /></div>
+              <button class="btn-secondary" onclick="ddbDownloadTemplate('gps')">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="ddbImportExcel('gps', event)"></label>
+              <button class="btn-secondary" onclick="ddbExportExcel('gps')">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="ddbDeleteAll('gps')">🗑️ ลบทั้งหมด</button>
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ลำดับ</th><th>ทะเบียนรถ</th><th>ชื่อเจ้าของ</th><th>เลขซิม</th>
+                    <th>วันที่ติดตั้ง</th><th>วันที่หมดสัญญา</th><th>วันที่ถอด</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="ddb-gps-body">
+                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="subpage" id="gc-subpage-bzdb">
+            <div class="form-card">
+              <div class="fieldset-title">เพิ่ม/แก้ไข ฐานข้อมูลเครื่องเป่าแอลกอฮอล์</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
+                  <input type="text" id="ddb-bz-plate" list="plateNoList" placeholder="พิมพ์ทะเบียนรถ..." oninput="ddbLookupVehicle('bz')" /></div>
+                <div class="form-group"><label>ชื่อเจ้าของ</label><input type="text" id="ddb-bz-owner" placeholder="ชื่อเจ้าของรถ" /></div>
+                <div class="form-group"><label>เลขซิม</label><input type="text" id="ddb-bz-simno" placeholder="เลขซิม" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-bz-install-date" /></div>
+                <div class="form-group"><label>วันที่หมดสัญญา</label><input type="date" id="ddb-bz-contract-end" /></div>
+                <div class="form-group"><label>วันที่ถอด</label><input type="date" id="ddb-bz-remove-date" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>สถานะ</label>
+                  <select id="ddb-bz-status">
+                    <option value="รอย้าย">รอย้าย</option>
+                    <option value="ติดตั้งใหม่">ติดตั้งใหม่</option>
+                    <option value="ย้ายแล้ว">ย้ายแล้ว</option>
+                  </select>
+                </div>
+                <div class="form-group full" style="grid-column:2/-1;"><label>หมายเหตุ</label>
+                  <input type="text" id="ddb-bz-note" placeholder="หมายเหตุเพิ่มเติม..." /></div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" id="ddb-bz-cancel-btn" style="display:none;" onclick="ddbCancelEdit('bz')">✕ ยกเลิกการแก้ไข</button>
+                <button class="btn-primary" id="ddb-bz-save-btn" onclick="ddbSaveRecord('bz')">💾 บันทึก</button>
+              </div>
+            </div>
+
+            <div class="filter-bar" style="margin-top:16px;">
+              <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="ddb-bz-search"
+                  placeholder="ทะเบียนรถ..." oninput="debouncedRender('ddbRenderList_bz')" /></div>
+              <button class="btn-secondary" onclick="ddbDownloadTemplate('bz')">📄 Template Excel</button>
+              <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
+                  style="display:none" onchange="ddbImportExcel('bz', event)"></label>
+              <button class="btn-secondary" onclick="ddbExportExcel('bz')">📊 Export Excel</button>
+              <button class="btn-danger admin-only-btn" style="display:none;" onclick="ddbDeleteAll('bz')">🗑️ ลบทั้งหมด</button>
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ลำดับ</th><th>ทะเบียนรถ</th><th>ชื่อเจ้าของ</th><th>เลขซิม</th>
+                    <th>วันที่ติดตั้ง</th><th>วันที่หมดสัญญา</th><th>วันที่ถอด</th><th>สถานะ</th><th>หมายเหตุ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="ddb-bz-body">
+                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
                 </tbody>
               </table>
             </div>

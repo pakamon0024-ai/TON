@@ -18,7 +18,7 @@ function grSave() { localStorage.setItem('finflow_gpscctv_repairs', JSON.stringi
 
 // ===== Sub-tabs (4 แท็บ ใช้ตัวสลับร่วมกัน) =====
 function gcSwitchTab(tab) {
-  ['list', 'add', 'replist', 'repadd', 'live'].forEach(t => {
+  ['list', 'add', 'replist', 'repadd', 'live', 'camdb', 'gpsdb', 'bzdb'].forEach(t => {
     document.getElementById(`gc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gc-subpage-${t}`).classList.toggle('active', t === tab);
   });
@@ -27,9 +27,15 @@ function gcSwitchTab(tab) {
   if (tab === 'replist') grRenderList();
   if (tab === 'repadd' && !grEditingId) grClearForm();
   if (tab === 'live') gcRenderLiveTable();
+  if (tab === 'camdb') ddbRenderList('cam');
+  if (tab === 'gpsdb') ddbRenderList('gps');
+  if (tab === 'bzdb') ddbRenderList('bz');
 }
 
-function gcOnPageShown() { gcRenderList(); grRenderList(); }
+function gcOnPageShown() {
+  gcRenderList(); grRenderList();
+  ddbRenderList('cam'); ddbRenderList('gps'); ddbRenderList('bz');
+}
 
 // ===== ทะเบียนรถ: ช่องพิมพ์ค้นหา + เลือกจากฐานข้อมูลหลัก (mdVehicles) เท่านั้น =====
 // รวมทะเบียนที่เคยบันทึกไว้ในรายการเดิมด้วย เผื่อรถถูกลบออกจากฐานข้อมูลหลักไปแล้วจะได้ไม่หายจากตัวเลือกตอนแก้ไข
@@ -587,6 +593,8 @@ document.addEventListener('DOMContentLoaded', () => {
   gcRenderList();
   grRenderList();
   gcInit();
+  ddbRenderList('cam'); ddbRenderList('gps'); ddbRenderList('bz');
+  ddbInit();
 });
 
 // ===== EUP GPS Live Tracking (ดึงตำแหน่ง/สถานะรถสดจาก API ของผู้ให้บริการ GPS) =====
@@ -676,4 +684,258 @@ function gcRenderLiveTable() {
       <td>${escapeHtml(c.logDTime || '-')}</td>
     </tr>
   `).join('');
+}
+
+// ===== ฐานข้อมูลอุปกรณ์ (กล้อง / GPS / เครื่องเป่าแอลกอฮอล์) =====
+// ทั้ง 3 หัวข้อมีโครงสร้างข้อมูลเหมือนกันทุกช่อง เลยใช้ฟังก์ชันร่วมกันตัวเดียว รับ type ('cam'/'gps'/'bz')
+// เก็บ local ที่ localStorage แยกคนละ key ต่อ type และ sync กับ Firebase คนละ path (/deviceCamDB, /deviceGpsDB, /deviceBzDB)
+const DDB_TYPES = ['cam', 'gps', 'bz'];
+const DDB_LABELS = { cam: 'กล้อง', gps: 'GPS', bz: 'เครื่องเป่าแอลกอฮอล์' };
+const DDB_FB_PATH = { cam: '/deviceCamDB', gps: '/deviceGpsDB', bz: '/deviceBzDB' };
+const DDB_STATUS_OPTIONS = ['รอย้าย', 'ติดตั้งใหม่', 'ย้ายแล้ว'];
+
+let ddbRecords = {};
+let ddbEditingId = {};
+let ddbRef = {};
+let ddbReady = {};
+DDB_TYPES.forEach(t => {
+  ddbRecords[t] = JSON.parse(localStorage.getItem(`finflow_devicedb_${t}`) || '[]');
+  ddbEditingId[t] = null;
+  ddbRef[t] = null;
+  ddbReady[t] = false;
+});
+
+function ddbSave(type) { localStorage.setItem(`finflow_devicedb_${type}`, JSON.stringify(ddbRecords[type])); }
+function ddbNextRunningNo(type) {
+  const list = ddbRecords[type];
+  return list.length ? Math.max(...list.map(r => r.runningNo || 0)) + 1 : 1;
+}
+
+function ddbLookupVehicle(type) {
+  const plate = document.getElementById(`ddb-${type}-plate`).value.trim();
+  const veh = (mdVehicles || []).find(v => v.plate === plate);
+  if (veh?.owner) document.getElementById(`ddb-${type}-owner`).value = veh.owner;
+}
+
+function ddbFilteredList(type) {
+  const search = (document.getElementById(`ddb-${type}-search`)?.value || '').trim().toLowerCase();
+  const list = search ? ddbRecords[type].filter(r => (r.plate || '').toLowerCase().includes(search)) : ddbRecords[type];
+  return list;
+}
+
+function ddbRenderList(type) {
+  const tbody = document.getElementById(`ddb-${type}-body`);
+  if (!tbody) return;
+  const list = ddbFilteredList(type);
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-state">${ddbRecords[type].length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = list.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
+      <td>${escapeHtml(r.owner || '-')}</td>
+      <td>${escapeHtml(r.simNo || '-')}</td>
+      <td>${r.installDate ? formatDate(r.installDate) : '-'}</td>
+      <td>${r.contractEndDate ? formatDate(r.contractEndDate) : '-'}</td>
+      <td>${r.removeDate ? formatDate(r.removeDate) : '-'}</td>
+      <td>${escapeHtml(r.status || '-')}</td>
+      <td>${escapeHtml(r.note || '-')}</td>
+      <td>
+        <button class="action-btn action-view" onclick="ddbEditRecord('${type}', '${r.id}')">แก้ไข</button>
+        <button class="action-btn action-delete" onclick="ddbDeleteRecord('${type}', '${r.id}')">ลบ</button>
+      </td>
+    </tr>
+  `).join('');
+}
+function ddbRenderList_cam() { ddbRenderList('cam'); }
+function ddbRenderList_gps() { ddbRenderList('gps'); }
+function ddbRenderList_bz() { ddbRenderList('bz'); }
+
+function ddbClearForm(type) {
+  ddbEditingId[type] = null;
+  ['plate', 'owner', 'simno', 'install-date', 'contract-end', 'remove-date', 'note'].forEach(f => {
+    const el = document.getElementById(`ddb-${type}-${f}`);
+    if (el) el.value = '';
+  });
+  document.getElementById(`ddb-${type}-status`).value = DDB_STATUS_OPTIONS[0];
+  const saveBtn = document.getElementById(`ddb-${type}-save-btn`);
+  if (saveBtn) saveBtn.textContent = '💾 บันทึก';
+  const cancelBtn = document.getElementById(`ddb-${type}-cancel-btn`);
+  if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
+function ddbSaveRecord(type) {
+  const plate = document.getElementById(`ddb-${type}-plate`).value.trim();
+  if (!plate) { showToast('กรุณากรอกทะเบียนรถ', 'error'); return; }
+  const data = {
+    plate,
+    owner: document.getElementById(`ddb-${type}-owner`).value.trim(),
+    simNo: document.getElementById(`ddb-${type}-simno`).value.trim(),
+    installDate: document.getElementById(`ddb-${type}-install-date`).value,
+    contractEndDate: document.getElementById(`ddb-${type}-contract-end`).value,
+    removeDate: document.getElementById(`ddb-${type}-remove-date`).value,
+    status: document.getElementById(`ddb-${type}-status`).value,
+    note: document.getElementById(`ddb-${type}-note`).value.trim(),
+  };
+
+  let savedRecord;
+  if (ddbEditingId[type]) {
+    const idx = ddbRecords[type].findIndex(r => r.id === ddbEditingId[type]);
+    if (idx >= 0) {
+      ddbRecords[type][idx] = { ...ddbRecords[type][idx], ...data, updatedAt: new Date().toISOString() };
+      savedRecord = ddbRecords[type][idx];
+    }
+    ddbClearForm(type);
+    showToast(`แก้ไขฐานข้อมูล${DDB_LABELS[type]}แล้ว`, 'success');
+  } else {
+    savedRecord = { id: `DDB_${type}_${Date.now()}`, runningNo: ddbNextRunningNo(type), ...data, createdAt: new Date().toISOString() };
+    ddbRecords[type].push(savedRecord);
+    showToast(`เพิ่มฐานข้อมูล${DDB_LABELS[type]}แล้ว`, 'success');
+  }
+  ddbSave(type);
+  ddbRenderList(type);
+  if (ddbReady[type]) ddbWriteOne(type, savedRecord);
+}
+
+function ddbEditRecord(type, id) {
+  const rec = ddbRecords[type].find(r => r.id === id);
+  if (!rec) return;
+  ddbEditingId[type] = id;
+  document.getElementById(`ddb-${type}-plate`).value = rec.plate || '';
+  document.getElementById(`ddb-${type}-owner`).value = rec.owner || '';
+  document.getElementById(`ddb-${type}-simno`).value = rec.simNo || '';
+  document.getElementById(`ddb-${type}-install-date`).value = rec.installDate || '';
+  document.getElementById(`ddb-${type}-contract-end`).value = rec.contractEndDate || '';
+  document.getElementById(`ddb-${type}-remove-date`).value = rec.removeDate || '';
+  document.getElementById(`ddb-${type}-status`).value = rec.status || DDB_STATUS_OPTIONS[0];
+  document.getElementById(`ddb-${type}-note`).value = rec.note || '';
+  const saveBtn = document.getElementById(`ddb-${type}-save-btn`);
+  if (saveBtn) saveBtn.textContent = '💾 บันทึกการแก้ไข';
+  const cancelBtn = document.getElementById(`ddb-${type}-cancel-btn`);
+  if (cancelBtn) cancelBtn.style.display = '';
+  document.getElementById(`ddb-${type}-plate`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function ddbCancelEdit(type) { ddbClearForm(type); }
+
+function ddbDeleteRecord(type, id) {
+  if (!confirmDeleteWithPin(`ยืนยันการลบรายการนี้ออกจากฐานข้อมูล${DDB_LABELS[type]}?`)) return;
+  ddbRecords[type] = ddbRecords[type].filter(r => r.id !== id);
+  if (ddbEditingId[type] === id) ddbClearForm(type);
+  ddbSave(type);
+  ddbRenderList(type);
+  if (ddbReady[type]) ddbRemoveOne(type, id);
+  showToast('ลบแล้ว', 'warning');
+}
+
+function ddbDeleteAll(type) {
+  if (!mdConfirmDeleteAll(`ฐานข้อมูล${DDB_LABELS[type]}`)) return;
+  ddbRecords[type] = [];
+  ddbSave(type);
+  ddbRenderList(type);
+  if (ddbReady[type]) ddbWriteFB(type);
+  showToast(`ลบฐานข้อมูล${DDB_LABELS[type]}ทั้งหมดแล้ว`, 'warning');
+}
+
+// ===== Excel =====
+function ddbDownloadTemplate(type) {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['ทะเบียนรถ', 'ชื่อเจ้าของ', 'เลขซิม', 'วันที่ติดตั้ง (dd/mm/yyyy)', 'วันที่หมดสัญญา (dd/mm/yyyy)', 'วันที่ถอด (dd/mm/yyyy)', 'สถานะ (รอย้าย/ติดตั้งใหม่/ย้ายแล้ว)', 'หมายเหตุ'],
+    ['70-1234', 'นายสมชาย ใจดี', '0812345678', '15/01/2026', '15/01/2027', '', 'ติดตั้งใหม่', ''],
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, DDB_LABELS[type]);
+  XLSX.writeFile(wb, `template_ฐานข้อมูล${DDB_LABELS[type]}.xlsx`);
+}
+
+function ddbExportExcel(type) {
+  const list = ddbFilteredList(type);
+  if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
+  const rows = [
+    ['ลำดับ', 'ทะเบียนรถ', 'ชื่อเจ้าของ', 'เลขซิม', 'วันที่ติดตั้ง', 'วันที่หมดสัญญา', 'วันที่ถอด', 'สถานะ', 'หมายเหตุ'],
+    ...list.map((r, i) => [i + 1, r.plate, r.owner || '', r.simNo || '', formatDMY(r.installDate), formatDMY(r.contractEndDate), formatDMY(r.removeDate), r.status || '', r.note || '']),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, DDB_LABELS[type]);
+  XLSX.writeFile(wb, `ฐานข้อมูล${DDB_LABELS[type]}_${new Date().toISOString().substring(0, 10)}.xlsx`);
+}
+
+function ddbImportExcel(type, event) {
+  const file = event.target.files[0]; if (!file) return;
+  readExcelRows(file, (err, rows) => {
+    if (err) { showToast('ไฟล์ไม่ถูกต้อง: ' + err.message, 'error'); event.target.value = ''; return; }
+    let added = 0, updated = 0;
+    const touched = [];
+    rows.forEach((row, i) => {
+      const plate = String(row[0] || '').trim();
+      if (!plate) return;
+      const status = DDB_STATUS_OPTIONS.includes(String(row[6] || '').trim()) ? String(row[6]).trim() : DDB_STATUS_OPTIONS[0];
+      const record = {
+        plate, owner: String(row[1] || '').trim(), simNo: String(row[2] || '').trim(),
+        installDate: normalizeImportDate(row[3]), contractEndDate: normalizeImportDate(row[4]), removeDate: normalizeImportDate(row[5]),
+        status, note: String(row[7] || '').trim(),
+      };
+      const idx = ddbRecords[type].findIndex(r => r.plate === plate);
+      if (idx >= 0) { ddbRecords[type][idx] = { ...ddbRecords[type][idx], ...record, updatedAt: new Date().toISOString() }; updated++; touched.push(ddbRecords[type][idx]); }
+      else {
+        const rec = { id: `DDB_${type}_${Date.now()}_${i}`, runningNo: ddbNextRunningNo(type), ...record, createdAt: new Date().toISOString() };
+        ddbRecords[type].push(rec); added++; touched.push(rec);
+      }
+    });
+    ddbSave(type);
+    ddbRenderList(type);
+    if (ddbReady[type]) touched.forEach(r => ddbWriteOne(type, r));
+    showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
+    event.target.value = '';
+  });
+}
+
+// ===== Firebase Sync =====
+function ddbRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
+function ddbObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
+function ddbApplyServer(type, serverRecords) { ddbRecords[type] = serverRecords; ddbSave(type); ddbRenderList(type); }
+
+async function ddbWriteFB(type) {
+  if (!ddbRef[type]) return;
+  try {
+    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ddbRef[type], ddbRecordsToObj(ddbRecords[type]));
+  } catch (e) { console.warn('ddbWriteFB error', type, e); notifySyncWriteError(); }
+}
+
+async function ddbWriteOne(type, record) {
+  if (!ddbRef[type] || !record?.id) return;
+  try {
+    const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await set(ref(fbDb, `${DDB_FB_PATH[type]}/${record.id}`), record);
+  } catch (e) { console.warn('ddbWriteOne error', type, e); notifySyncWriteError(); }
+}
+
+async function ddbRemoveOne(type, id) {
+  if (!ddbRef[type]) return;
+  try {
+    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ref(fbDb, `${DDB_FB_PATH[type]}/${id}`));
+  } catch (e) { console.warn('ddbRemoveOne error', type, e); notifySyncWriteError(); }
+}
+
+async function ddbInit() {
+  await gcWaitForFirebase();
+  try {
+    const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    for (const type of DDB_TYPES) {
+      ddbRef[type] = ref(fbDb, DDB_FB_PATH[type]);
+      const snap = await get(ddbRef[type]);
+      if (snap.exists()) ddbApplyServer(type, ddbObjToRecords(snap.val()));
+      ddbReady[type] = true;
+      if (!snap.exists() && ddbRecords[type].length > 0) await ddbWriteFB(type);
+      onValue(ddbRef[type], s => { if (s.exists()) ddbApplyServer(type, ddbObjToRecords(s.val())); });
+    }
+  } catch (e) {
+    console.warn('ddbInit error', e);
+    notifySyncLoadError();
+  }
 }
