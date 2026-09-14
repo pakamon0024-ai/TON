@@ -717,14 +717,19 @@ function ddbLookupVehicle(type) {
   if (veh?.owner) document.getElementById(`ddb-${type}-owner`).value = veh.owner;
 }
 
+// คำนวณวันที่หมดสัญญา (วันที่ติดตั้ง + 3 ปี) ใช้ทั้งตอนกรอกฟอร์มและตอนแสดงตาราง
+function ddbComputeContractEnd(installDate) {
+  if (!installDate) return '';
+  const d = new Date(installDate);
+  if (isNaN(d)) return '';
+  d.setFullYear(d.getFullYear() + 3);
+  return d.toISOString().substring(0, 10);
+}
+
 // พอกรอกวันที่ติดตั้ง คำนวณ "วันที่หมดสัญญา" ให้อัตโนมัติเป็นวันที่ติดตั้ง + 3 ปี (แก้ไขเองภายหลังได้ตามปกติ)
 function ddbAutoFillContractEnd(type) {
-  const installVal = document.getElementById(`ddb-${type}-install-date`).value;
-  if (!installVal) return;
-  const d = new Date(installVal);
-  if (isNaN(d)) return;
-  d.setFullYear(d.getFullYear() + 3);
-  document.getElementById(`ddb-${type}-contract-end`).value = d.toISOString().substring(0, 10);
+  const contractEnd = ddbComputeContractEnd(document.getElementById(`ddb-${type}-install-date`).value);
+  if (contractEnd) document.getElementById(`ddb-${type}-contract-end`).value = contractEnd;
 }
 
 function ddbFilteredList(type) {
@@ -748,7 +753,7 @@ function ddbRenderList(type) {
       <td>${escapeHtml(r.owner || (mdVehicles || []).find(v => v.plate === r.plate)?.owner || '-')}</td>
       <td>${escapeHtml(r.simNo || '-')}</td>
       <td>${r.installDate ? formatDate(r.installDate) : '-'}</td>
-      <td>${r.contractEndDate ? formatDate(r.contractEndDate) : '-'}</td>
+      <td>${formatDate(r.contractEndDate || ddbComputeContractEnd(r.installDate))}</td>
       <td>${r.removeDate ? formatDate(r.removeDate) : '-'}</td>
       <td>${escapeHtml(r.status || '-')}</td>
       <td>${escapeHtml(r.note || '-')}</td>
