@@ -3133,13 +3133,14 @@
                 <div class="form-group"><label>เลขซิม</label><input type="text" id="ddb-cam-simno" placeholder="เลขซิม" /></div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-cam-install-date" /></div>
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-cam-install-date" oninput="ddbAutoFillContractEnd('cam')" /></div>
                 <div class="form-group"><label>วันที่หมดสัญญา</label><input type="date" id="ddb-cam-contract-end" /></div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="ddb-cam-remove-date" /></div>
               </div>
               <div class="form-row-3">
                 <div class="form-group"><label>สถานะ</label>
                   <select id="ddb-cam-status">
+                    <option value="ปกติ">ปกติ</option>
                     <option value="รอย้าย">รอย้าย</option>
                     <option value="ติดตั้งใหม่">ติดตั้งใหม่</option>
                     <option value="ย้ายแล้ว">ย้ายแล้ว</option>
@@ -3188,13 +3189,14 @@
                 <div class="form-group"><label>เลขซิม</label><input type="text" id="ddb-gps-simno" placeholder="เลขซิม" /></div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-gps-install-date" /></div>
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-gps-install-date" oninput="ddbAutoFillContractEnd('gps')" /></div>
                 <div class="form-group"><label>วันที่หมดสัญญา</label><input type="date" id="ddb-gps-contract-end" /></div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="ddb-gps-remove-date" /></div>
               </div>
               <div class="form-row-3">
                 <div class="form-group"><label>สถานะ</label>
                   <select id="ddb-gps-status">
+                    <option value="ปกติ">ปกติ</option>
                     <option value="รอย้าย">รอย้าย</option>
                     <option value="ติดตั้งใหม่">ติดตั้งใหม่</option>
                     <option value="ย้ายแล้ว">ย้ายแล้ว</option>
@@ -3243,13 +3245,14 @@
                 <div class="form-group"><label>เลขซิม</label><input type="text" id="ddb-bz-simno" placeholder="เลขซิม" /></div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-bz-install-date" /></div>
+                <div class="form-group"><label>วันที่ติดตั้ง</label><input type="date" id="ddb-bz-install-date" oninput="ddbAutoFillContractEnd('bz')" /></div>
                 <div class="form-group"><label>วันที่หมดสัญญา</label><input type="date" id="ddb-bz-contract-end" /></div>
                 <div class="form-group"><label>วันที่ถอด</label><input type="date" id="ddb-bz-remove-date" /></div>
               </div>
               <div class="form-row-3">
                 <div class="form-group"><label>สถานะ</label>
                   <select id="ddb-bz-status">
+                    <option value="ปกติ">ปกติ</option>
                     <option value="รอย้าย">รอย้าย</option>
                     <option value="ติดตั้งใหม่">ติดตั้งใหม่</option>
                     <option value="ย้ายแล้ว">ย้ายแล้ว</option>

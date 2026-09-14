@@ -692,7 +692,7 @@ function gcRenderLiveTable() {
 const DDB_TYPES = ['cam', 'gps', 'bz'];
 const DDB_LABELS = { cam: 'กล้อง', gps: 'GPS', bz: 'เครื่องเป่าแอลกอฮอล์' };
 const DDB_FB_PATH = { cam: '/deviceCamDB', gps: '/deviceGpsDB', bz: '/deviceBzDB' };
-const DDB_STATUS_OPTIONS = ['รอย้าย', 'ติดตั้งใหม่', 'ย้ายแล้ว'];
+const DDB_STATUS_OPTIONS = ['ปกติ', 'รอย้าย', 'ติดตั้งใหม่', 'ย้ายแล้ว'];
 
 let ddbRecords = {};
 let ddbEditingId = {};
@@ -715,6 +715,16 @@ function ddbLookupVehicle(type) {
   const plate = document.getElementById(`ddb-${type}-plate`).value.trim();
   const veh = (mdVehicles || []).find(v => v.plate === plate);
   if (veh?.owner) document.getElementById(`ddb-${type}-owner`).value = veh.owner;
+}
+
+// พอกรอกวันที่ติดตั้ง คำนวณ "วันที่หมดสัญญา" ให้อัตโนมัติเป็นวันที่ติดตั้ง + 3 ปี (แก้ไขเองภายหลังได้ตามปกติ)
+function ddbAutoFillContractEnd(type) {
+  const installVal = document.getElementById(`ddb-${type}-install-date`).value;
+  if (!installVal) return;
+  const d = new Date(installVal);
+  if (isNaN(d)) return;
+  d.setFullYear(d.getFullYear() + 3);
+  document.getElementById(`ddb-${type}-contract-end`).value = d.toISOString().substring(0, 10);
 }
 
 function ddbFilteredList(type) {
