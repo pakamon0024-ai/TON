@@ -745,7 +745,7 @@ function ddbRenderList(type) {
     <tr>
       <td>${i + 1}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
-      <td>${escapeHtml(r.owner || '-')}</td>
+      <td>${escapeHtml(r.owner || (mdVehicles || []).find(v => v.plate === r.plate)?.owner || '-')}</td>
       <td>${escapeHtml(r.simNo || '-')}</td>
       <td>${r.installDate ? formatDate(r.installDate) : '-'}</td>
       <td>${r.contractEndDate ? formatDate(r.contractEndDate) : '-'}</td>
@@ -883,8 +883,9 @@ function ddbImportExcel(type, event) {
       const plate = String(row[0] || '').trim();
       if (!plate) return;
       const status = DDB_STATUS_OPTIONS.includes(String(row[6] || '').trim()) ? String(row[6]).trim() : DDB_STATUS_OPTIONS[0];
+      const veh = (mdVehicles || []).find(v => v.plate === plate);
       const record = {
-        plate, owner: String(row[1] || '').trim(), simNo: String(row[2] || '').trim(),
+        plate, owner: String(row[1] || '').trim() || veh?.owner || '', simNo: String(row[2] || '').trim(),
         installDate: normalizeImportDate(row[3]), contractEndDate: normalizeImportDate(row[4]), removeDate: normalizeImportDate(row[5]),
         status, note: String(row[7] || '').trim(),
       };
