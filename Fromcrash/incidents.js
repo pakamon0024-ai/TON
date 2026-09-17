@@ -100,11 +100,12 @@ function incCalcRepairDays() {
   el.value = diff >= 0 ? diff + ' วัน' : '-';
 }
 
-// "มูลค่าความเสียหายรวม" = ยอดที่แจ้งประกัน + เรียกเก็บจากพนักงาน เท่านั้น (ไม่ใช่ผลรวมของทุกช่องการเงินอีกต่อไป)
+// "มูลค่าความเสียหายรวม" = บริษัทจ่ายจริง + เรียกเก็บจากพนักงาน + ประกันจ่าย เท่านั้น (ไม่ใช่ผลรวมของทุกช่องการเงินอีกต่อไป)
 function incCalcTotal() {
-  const insuranceReported = parseFloat(document.getElementById('inc-insurance-reported').value) || 0;
+  const companyPaid = parseFloat(document.getElementById('inc-company-paid').value) || 0;
   const chargedEmployee = parseFloat(document.getElementById('inc-charged-employee').value) || 0;
-  const total = insuranceReported + chargedEmployee;
+  const insurancePaid = parseFloat(document.getElementById('inc-insurance-paid').value) || 0;
+  const total = companyPaid + chargedEmployee + insurancePaid;
   document.getElementById('inc-total-display').textContent = formatMoney(total);
   return total;
 }
@@ -374,7 +375,7 @@ function incRenderList() {
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.faultStatus || '-')}</td>
-      <td>${formatMoney((i.insuranceReportedAmount || 0) + (i.chargedToEmployee || 0))}</td>
+      <td>${formatMoney((i.companyPaid || 0) + (i.chargedToEmployee || 0) + (i.insurancePaid || 0))}</td>
       <td>
         <div style="display:flex;gap:6px">
           <button class="action-btn action-view" onclick="incEditCase('${i.id}')">แก้ไข</button>
@@ -417,9 +418,9 @@ function incDestroyChart(id) {
 
 function incRenderDashboard() {
   const data = incFilteredForDashboard();
-  // รวมจาก "ยอดที่แจ้งประกัน" + "เรียกเก็บจากพนักงาน" ของแต่ละเคสสดๆ ตรงนี้ (ไม่พึ่งค่า i.total ที่บันทึกไว้)
+  // รวมจาก "บริษัทจ่ายจริง" + "เรียกเก็บจากพนักงาน" + "ประกันจ่าย" ของแต่ละเคสสดๆ ตรงนี้ (ไม่พึ่งค่า i.total ที่บันทึกไว้)
   // เพื่อให้เคสเก่าที่บันทึกไว้ก่อนเปลี่ยนสูตรคำนวณ ก็ยังรวมยอดถูกต้องในแดชบอร์ดโดยไม่ต้องแก้ไขทีละเคส
-  const totalCost = data.reduce((s, i) => s + (i.insuranceReportedAmount || 0) + (i.chargedToEmployee || 0), 0);
+  const totalCost = data.reduce((s, i) => s + (i.companyPaid || 0) + (i.chargedToEmployee || 0) + (i.insurancePaid || 0), 0);
   document.getElementById('inc-kpi-total').textContent = formatMoney(totalCost);
   document.getElementById('inc-kpi-count').textContent = data.length;
 
