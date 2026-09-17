@@ -411,18 +411,6 @@ function alcSummaryMonthValue() {
   return document.getElementById('alc-summary-month')?.value || new Date().toISOString().substring(0, 7);
 }
 
-// จำนวนรอบที่เป่าจริงของวันนั้น (0-2) — นับจากผลตรวจที่ไม่ใช่ "ยังไม่เป่า" ของขาไป+ขากลับรวมกัน
-// 1 = เป่าแค่ขาเดียว, 2 = เป่าครบทั้ง 2 ขา
-// นับเฉพาะรอบที่ "เป่าจริง" (ผ่าน/ไม่ผ่าน) เท่านั้น — "ต่อเนื่อง" ไม่ใช่การเป่าจริงในวันนั้น (แค่ผลเดิมพ่วงมา)
-// จึงไม่นับเป็นรอบที่ตรวจ แม้สถานะจะไม่ใช่ "ยังไม่เป่า" ก็ตาม เช่น ขาไป=ต่อเนื่อง/ขากลับ=ผ่าน ต้องนับแค่ 1 ไม่ใช่ 2
-function alcTestedCount(rec) {
-  if (!rec) return 0;
-  let count = 0;
-  if (rec.resultOut === 'ผ่าน' || rec.resultOut === 'ไม่ผ่าน') count++;
-  if (rec.resultReturn === 'ผ่าน' || rec.resultReturn === 'ไม่ผ่าน') count++;
-  return count;
-}
-
 // รวมข้อมูลของพนักงานแต่ละคนสำหรับเดือนที่เลือก: ผลรายวัน (byDay) + ค่าสูงสุดที่วัดได้ (maxLevel)
 function alcSummaryDataForMonth(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
@@ -502,7 +490,13 @@ function alcRenderSummary() {
   `;
 }
 
-// ค่าที่ลงในช่อง "จำนวนตรวจ" ของ 1 วัน — ถ้าทั้งขาไป/ขากลับผลตรงกันและไม่ใช่ "ผ่าน" (เช่น ขาด/ลา, ต่อเนื่อง, ไม่ผ่าน)
+// รอบหนึ่งขา "ถือว่าเรียบร้อยแล้ว" ถ้าเป่าจริง (ผ่าน/ไม่ผ่าน) หรือเข้าเงื่อนไขยกเว้น (ต่อเนื่อง — วิ่งต่อเนื่อง
+// ไม่ต้องเป่ารอบนี้) เหมือนสูตร % ของรายงานประจำวันที่ตัด "ต่อเนื่อง" ออกจากฐานคำนวนไปเลย ไม่ถือเป็นการขาดเป่า
+function alcLegCompliant(result) {
+  return result === 'ผ่าน' || result === 'ไม่ผ่าน' || result === 'ต่อเนื่อง';
+}
+
+// ค่าที่ลงในช่อง "จำนวนตรวจ" ของ 1 วัน — ถ้าทั้งขาไป/ขากลับผลตรงกันและไม่ใช่ "ผ่าน" (เช่น ขาด/ลา, ไม่ผ่าน)
 // ให้ export เป็นคำสถานะตรงๆ (ตรงกับที่ผู้ใช้เคยพิมพ์ทับเองในไฟล์จริง) ไม่งั้นบอกตรงๆ ว่าเป่าครบหรือไม่เป่าขาไหน
 // (เดิมใช้ตัวเลข 2/1 แต่ดูไม่ชัดว่า 1 คือไม่ได้เป่าขาไปหรือขากลับ จึงเปลี่ยนเป็นข้อความระบุขาที่ไม่ได้เป่า)
 function alcSummaryCountCell(rec) {
@@ -510,13 +504,12 @@ function alcSummaryCountCell(rec) {
   const out = rec.resultOut || rec.result || ALC_RESULT_OPTIONS[0];
   const ret = rec.resultReturn || ALC_RESULT_OPTIONS[0];
   if (out === ret && out !== 'ผ่าน' && out !== ALC_RESULT_OPTIONS[0]) return out;
-  const count = alcTestedCount(rec);
-  if (count === 2) return 'เป่าครบ';
-  if (count === 1) {
-    const outTested = out === 'ผ่าน' || out === 'ไม่ผ่าน';
-    return outTested ? 'ไม่เป่าขากลับ' : 'ไม่เป่าขาไป';
-  }
-  return count; // 0 = ไม่มีรอบไหนเป่าจริงเลย
+  const outOk = alcLegCompliant(out);
+  const retOk = alcLegCompliant(ret);
+  if (outOk && retOk) return 'เป่าครบ';
+  if (!outOk && retOk) return 'ไม่เป่าขาไป';
+  if (outOk && !retOk) return 'ไม่เป่าขากลับ';
+  return 0; // ทั้งคู่ยังไม่เป่าและไม่เข้าเงื่อนไขยกเว้นเลย
 }
 
 // % ของวันที่เป่าครบ (ทั้งขาไป+ขากลับ) จากวันที่มีการตรวจจริงในเดือนนั้น
@@ -527,7 +520,7 @@ function alcSummaryCompletePercent(byDay, days) {
     const rec = byDay[d];
     if (!rec) return;
     const cell = alcSummaryCountCell(rec);
-    if (cell === 'ขาด/ลา' || cell === 'ลาออก') return;
+    if (cell === 'ขาด/ลา' || cell === 'ลาออก' || cell === 'ต่อเนื่อง') return; // ยกเว้น ไม่ใช่วันที่ต้องเป่า
     total++;
     if (cell === 'เป่าครบ') complete++;
   });
