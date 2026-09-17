@@ -110,16 +110,19 @@ function alcRenderRoster() {
     // "0 มก." เป็นค่าเริ่มต้นเก่าของหมายเหตุที่ระบบเคยใส่ให้อัตโนมัติ (ไม่ใช่สิ่งที่คนพิมพ์เอง)
     // ถือว่าว่างเปล่าเสมอ เพื่อไม่ให้ข้อความหลอกๆ นี้ค้างอยู่ในฟอร์ม
     const note = (existing?.note && existing.note !== '0 มก.') ? existing.note : '';
-    const optsHtml = (selected) => ALC_RESULT_OPTIONS.map(o =>
-      `<option value="${escapeHtml(o)}" ${o === selected ? 'selected' : ''}>${escapeHtml(o)}</option>`
-    ).join('');
+    // ค่าที่เก็บจริงยังเป็น "ผ่าน"/"ไม่ผ่าน" เหมือนเดิม (ไม่กระทบสูตร/ข้อมูลเก่า) แค่เปลี่ยนข้อความ
+    // ที่แสดงในดรอปดาวน์ให้ต่อท้ายด้วยขาไป/ขากลับ เพื่อให้เห็นชัดว่ากำลังเลือกรอบไหนอยู่
+    const optsHtml = (selected, legLabel) => ALC_RESULT_OPTIONS.map(o => {
+      const display = (o === 'ผ่าน' || o === 'ไม่ผ่าน') ? `${o}${legLabel}` : o;
+      return `<option value="${escapeHtml(o)}" ${o === selected ? 'selected' : ''}>${escapeHtml(display)}</option>`;
+    }).join('');
     return `
       <tr data-name="${escapeHtml(name)}">
         <td>${i + 1}</td>
         <td>${escapeHtml(name)}</td>
         <td>${escapeHtml(emp.businessUnit || '-')}</td>
-        <td><select class="alc-roster-result-out">${optsHtml(resultOut)}</select></td>
-        <td><select class="alc-roster-result-return">${optsHtml(resultReturn)}</select></td>
+        <td><select class="alc-roster-result-out">${optsHtml(resultOut, 'ขาไป')}</select></td>
+        <td><select class="alc-roster-result-return">${optsHtml(resultReturn, 'ขากลับ')}</select></td>
         <td><input type="number" step="0.01" min="0" class="alc-roster-level" value="${level}" /></td>
         <td><input type="text" class="alc-roster-note" value="${escapeHtml(note)}" placeholder="หมายเหตุ..." /></td>
       </tr>
