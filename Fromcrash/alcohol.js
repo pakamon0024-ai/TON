@@ -311,10 +311,10 @@ function alcDownloadTemplate() {
   if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
   const monthVal = alcSummaryMonthValue();
   const { days } = alcSummaryDataForMonth(monthVal);
-  const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', ...days.map(String)]];
+  const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', '% เป่าครบ', ...days.map(String)]];
   mdAbcStaff.forEach((emp, i) => {
-    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', ALC_SUMMARY_ROW_LABELS[0], '-', ...days.map(() => '')]);
-    sheetRows.push(['', '', '', ALC_SUMMARY_ROW_LABELS[1], '', ...days.map(() => '')]);
+    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', ALC_SUMMARY_ROW_LABELS[0], '-', '-', ...days.map(() => '')]);
+    sheetRows.push(['', '', '', ALC_SUMMARY_ROW_LABELS[1], '', '', ...days.map(() => '')]);
   });
   const ws = XLSX.utils.aoa_to_sheet(sheetRows);
   const wb = XLSX.utils.book_new();
@@ -334,6 +334,9 @@ function alcParseCountCell(v) {
   const s = String(v || '').trim();
   if (!s) return null;
   if (ALC_RESULT_OPTIONS.includes(s)) return s;
+  // ข้อความใหม่จากตารางสรุป ("เป่าครบ"/"ไม่เป่าขาไป"/"ไม่เป่าขากลับ") ยังไม่รองรับการเซ็ตผลแยกราย
+  // ขาตอน import (ระบบเดิม 1 ค่าใช้กับทั้ง 2 ขาเหมือนกัน) จึงถือว่าเป่าแล้วแบบเดียวกับตัวเลขเก่า
+  if (s === 'เป่าครบ' || s === 'ไม่เป่าขาไป' || s === 'ไม่เป่าขากลับ') return 'ผ่าน';
   const n = parseFloat(s);
   if (isNaN(n) || n <= 0) return null;
   return 'ผ่าน'; // เป่าแล้ว (1 หรือ 2 ครั้ง) แต่ไม่ได้ระบุผลไว้ ถือว่าผ่าน
@@ -458,9 +461,9 @@ function alcRenderSummary() {
       const rec = byDay[d];
       if (!rec) return '<td class="alc-sum-cell"></td>';
       const cell = alcSummaryCountCell(rec);
-      const isText = typeof cell === 'string';
-      const c = isText ? 0 : cell;
-      return `<td class="alc-sum-cell${isText || c < 2 ? ' alc-sum-flag' : ''}">${isText ? escapeHtml(cell) : (c || '')}</td>`;
+      const complete = cell === 'เป่าครบ';
+      const display = typeof cell === 'number' ? (cell || '') : escapeHtml(cell);
+      return `<td class="alc-sum-cell${complete ? '' : ' alc-sum-flag'}">${display}</td>`;
     }).join('');
     const levelCells = days.map(d => {
       const rec = byDay[d];
@@ -468,6 +471,7 @@ function alcRenderSummary() {
       const lv = rec.level ?? 0;
       return `<td class="alc-sum-cell${lv > 0 ? ' alc-sum-flag' : ''}">${lv}</td>`;
     }).join('');
+    const pct = alcSummaryCompletePercent(byDay, days);
     return `
       <tr>
         <td rowspan="2">${i + 1}</td>
@@ -475,6 +479,7 @@ function alcRenderSummary() {
         <td rowspan="2">${escapeHtml(emp.businessUnit || '-')}</td>
         <td class="alc-sum-label">จำนวนตรวจ</td>
         <td rowspan="2" class="alc-sum-max${maxLevel > 0 ? ' alc-sum-flag' : ''}">${maxLevel === null ? '-' : maxLevel}</td>
+        <td rowspan="2" class="alc-sum-max${pct !== null && pct < 100 ? ' alc-sum-flag' : ''}">${pct === null ? '-' : pct + '%'}</td>
         ${countCells}
       </tr>
       <tr>
@@ -488,7 +493,7 @@ function alcRenderSummary() {
     <table class="data-table alc-summary-table">
       <thead>
         <tr>
-          <th>No.</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th>รายการ</th><th>MAX</th>
+          <th>No.</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th>รายการ</th><th>MAX</th><th>% เป่าครบ</th>
           ${dayHeaders}
         </tr>
       </thead>
@@ -498,13 +503,35 @@ function alcRenderSummary() {
 }
 
 // ค่าที่ลงในช่อง "จำนวนตรวจ" ของ 1 วัน — ถ้าทั้งขาไป/ขากลับผลตรงกันและไม่ใช่ "ผ่าน" (เช่น ขาด/ลา, ต่อเนื่อง, ไม่ผ่าน)
-// ให้ export เป็นคำสถานะตรงๆ (ตรงกับที่ผู้ใช้เคยพิมพ์ทับเองในไฟล์จริง) ไม่งั้นใช้ตัวเลขจำนวนรอบตามเดิม
+// ให้ export เป็นคำสถานะตรงๆ (ตรงกับที่ผู้ใช้เคยพิมพ์ทับเองในไฟล์จริง) ไม่งั้นบอกตรงๆ ว่าเป่าครบหรือไม่เป่าขาไหน
+// (เดิมใช้ตัวเลข 2/1 แต่ดูไม่ชัดว่า 1 คือไม่ได้เป่าขาไปหรือขากลับ จึงเปลี่ยนเป็นข้อความระบุขาที่ไม่ได้เป่า)
 function alcSummaryCountCell(rec) {
   if (!rec) return '';
   const out = rec.resultOut || rec.result || ALC_RESULT_OPTIONS[0];
   const ret = rec.resultReturn || ALC_RESULT_OPTIONS[0];
   if (out === ret && out !== 'ผ่าน' && out !== ALC_RESULT_OPTIONS[0]) return out;
-  return alcTestedCount(rec);
+  const count = alcTestedCount(rec);
+  if (count === 2) return 'เป่าครบ';
+  if (count === 1) {
+    const outTested = out === 'ผ่าน' || out === 'ไม่ผ่าน';
+    return outTested ? 'ไม่เป่าขากลับ' : 'ไม่เป่าขาไป';
+  }
+  return count; // 0 = ไม่มีรอบไหนเป่าจริงเลย
+}
+
+// % ของวันที่เป่าครบ (ทั้งขาไป+ขากลับ) จากวันที่มีการตรวจจริงในเดือนนั้น
+// ไม่นับวันที่ "ขาด/ลา" หรือ "ลาออก" เป็นฐาน เพราะไม่ใช่วันที่ต้องเป่า
+function alcSummaryCompletePercent(byDay, days) {
+  let complete = 0, total = 0;
+  days.forEach(d => {
+    const rec = byDay[d];
+    if (!rec) return;
+    const cell = alcSummaryCountCell(rec);
+    if (cell === 'ขาด/ลา' || cell === 'ลาออก') return;
+    total++;
+    if (cell === 'เป่าครบ') complete++;
+  });
+  return total === 0 ? null : Math.round((complete / total) * 100);
 }
 
 function alcExportSummaryExcel() {
@@ -512,10 +539,11 @@ function alcExportSummaryExcel() {
   const { days, rows } = alcSummaryDataForMonth(monthVal);
   if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
 
-  const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', ...days.map(String)]];
+  const sheetRows = [['No.', 'ชื่อพนักงาน', 'หน่วยงาน', 'รายการ', 'MAX', '% เป่าครบ', ...days.map(String)]];
   rows.forEach(({ emp, byDay, maxLevel }, i) => {
-    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', ALC_SUMMARY_ROW_LABELS[0], maxLevel === null ? '-' : maxLevel, ...days.map(d => byDay[d] ? alcSummaryCountCell(byDay[d]) : '')]);
-    sheetRows.push(['', '', '', ALC_SUMMARY_ROW_LABELS[1], '', ...days.map(d => byDay[d] ? (byDay[d].level ?? 0) : '')]);
+    const pct = alcSummaryCompletePercent(byDay, days);
+    sheetRows.push([i + 1, emp.name, emp.businessUnit || '-', ALC_SUMMARY_ROW_LABELS[0], maxLevel === null ? '-' : maxLevel, pct === null ? '-' : `${pct}%`, ...days.map(d => byDay[d] ? alcSummaryCountCell(byDay[d]) : '')]);
+    sheetRows.push(['', '', '', ALC_SUMMARY_ROW_LABELS[1], '', '', ...days.map(d => byDay[d] ? (byDay[d].level ?? 0) : '')]);
   });
 
   const ws = XLSX.utils.aoa_to_sheet(sheetRows);
