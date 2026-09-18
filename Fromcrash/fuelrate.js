@@ -265,13 +265,17 @@ function frRenderList() {
   const list = frFilteredList();
   const tbody = document.getElementById('fr-list-body');
   const countEl = document.getElementById('fr-list-count');
+  const pagerEl = document.getElementById('fr-list-pager');
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('fr-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('fr-list', page, totalPages, total, 'frRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td>${formatDate(r.date)}</td>

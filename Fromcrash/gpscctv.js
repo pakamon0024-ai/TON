@@ -229,13 +229,17 @@ function gcRenderList() {
   const list = gcFilteredList();
   const tbody = document.getElementById('gc-list-body');
   const countEl = document.getElementById('gc-list-count');
+  const pagerEl = document.getElementById('gc-list-pager');
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('gc-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('gc-list', page, totalPages, total, 'gcRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
@@ -367,13 +371,17 @@ function grRenderList() {
   const list = grFilteredList();
   const tbody = document.getElementById('gr-list-body');
   const countEl = document.getElementById('gr-list-count');
+  const pagerEl = document.getElementById('gr-list-pager');
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('gr-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('gr-list', page, totalPages, total, 'grRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
@@ -652,15 +660,19 @@ function ddbFilteredList(type) {
 
 function ddbRenderList(type) {
   const tbody = document.getElementById(`ddb-${type}-body`);
+  const pagerEl = document.getElementById(`ddb-${type}-pager`);
   if (!tbody) return;
   const list = ddbFilteredList(type);
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="10" class="empty-state">${ddbRecords[type].length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map((r, i) => `
+  const { pageItems, page, totalPages, total, start } = paginateSlice(`ddb-${type}`, list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml(`ddb-${type}`, page, totalPages, total, `ddbRenderList_${type}`);
+  tbody.innerHTML = pageItems.map((r, i) => `
     <tr>
-      <td>${i + 1}</td>
+      <td>${start + i + 1}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.owner || (mdVehicles || []).find(v => v.plate === r.plate)?.owner || '-')}</td>
       <td>${escapeHtml(r.simNo || '-')}</td>

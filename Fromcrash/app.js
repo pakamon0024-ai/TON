@@ -879,10 +879,14 @@ function renderHistory() {
   });
 
   const tbody = document.getElementById('historyBody');
+  const pagerEl = document.getElementById('history-pager');
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ไม่พบรายการ</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
   } else {
-    tbody.innerHTML = filtered.map(r => {
+    const { pageItems, page, totalPages, total } = paginateSlice('history', filtered);
+    if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('history', page, totalPages, total, 'renderHistory');
+    tbody.innerHTML = pageItems.map(r => {
       // แต่ละรายการอาจมีหลายบรรทัดย่อย คนละหมวดหมู่ — รวมหมวดหมู่ที่ไม่ซ้ำกันของทุกบรรทัดย่อยมาแสดง
       const cats = [...new Set((r.items || []).map(it => it.cat).filter(Boolean))];
       return `
@@ -1416,5 +1420,55 @@ function safeLocalStorageSet(key, value) {
     console.warn('localStorage quota error', key, e);
     showToast(`⚠️ พื้นที่เก็บข้อมูลในเครื่อง (localStorage) เต็ม ไม่สามารถแคช "${key}" ไว้ในเครื่องได้ (ข้อมูลจะยังพยายามส่งขึ้น Firebase ตามปกติ — ลองล้างแคชเบราว์เซอร์)`, 'error');
   }
+}
+
+// ===== Pagination กลาง ใช้ร่วมกันทุกตารางรายการในแอป (หน้าละ 20 รายการ) =====
+// เก็บหน้าปัจจุบันแยกต่อ id ของแต่ละตาราง (เช่น 'alc', 'tk', 'inc') ใน object เดียวกัน
+const PAGE_SIZE = 20;
+let paginationState = {};
+
+// list = อาเรย์ที่กรอง/เรียงแล้วเรียบร้อย (ก่อนตัดหน้า) — คืนเฉพาะช่วงของหน้าปัจจุบัน พร้อมข้อมูลหน้า
+// ถ้าหน้าปัจจุบันเกินจำนวนหน้าที่มีจริง (เช่น กรองแล้วเหลือน้อยลง) จะดึงกลับมาที่หน้าสุดท้ายให้อัตโนมัติ
+function paginateSlice(id, list) {
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  let page = paginationState[id] || 1;
+  if (page > totalPages) page = totalPages;
+  if (page < 1) page = 1;
+  paginationState[id] = page;
+  const start = (page - 1) * PAGE_SIZE;
+  return { pageItems: list.slice(start, start + PAGE_SIZE), page, totalPages, total, start };
+}
+
+// เรียกจากปุ่มเปลี่ยนหน้า — rerenderFn คือชื่อฟังก์ชัน render ของตารางนั้น (string เพราะเรียกผ่าน onclick)
+function paginateGoTo(id, page, rerenderFn) {
+  paginationState[id] = page;
+  if (typeof window[rerenderFn] === 'function') window[rerenderFn]();
+}
+
+// สร้าง HTML แถบเปลี่ยนหน้า (ก่อนหน้า / เลขหน้า / ถัดไป) — คืนค่าว่างถ้ามีหน้าเดียวพอ ไม่ต้องโชว์แถบให้รก
+function paginatePagerHtml(id, page, totalPages, total, rerenderFn) {
+  if (totalPages <= 1) return '';
+  const go = p => `paginateGoTo('${id}', ${p}, '${rerenderFn}')`;
+  // โชว์เลขหน้าแบบย่อ: หน้าแรก, หน้าสุดท้าย, และหน้าใกล้ๆ หน้าปัจจุบัน ที่เหลือย่อเป็น "…"
+  const pages = [];
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) pages.push(p);
+    else if (pages[pages.length - 1] !== '…') pages.push('…');
+  }
+  const numHtml = pages.map(p => p === '…'
+    ? `<span class="page-ellipsis">…</span>`
+    : `<button class="page-btn${p === page ? ' active' : ''}" ${p === page ? 'disabled' : ''} onclick="${go(p)}">${p}</button>`
+  ).join('');
+  return `
+    <div class="pagination">
+      <span class="pagination-info">ทั้งหมด ${total} รายการ — หน้า ${page}/${totalPages}</span>
+      <div class="pagination-buttons">
+        <button class="page-btn" ${page <= 1 ? 'disabled' : ''} onclick="${go(page - 1)}">‹ ก่อนหน้า</button>
+        ${numHtml}
+        <button class="page-btn" ${page >= totalPages ? 'disabled' : ''} onclick="${go(page + 1)}">ถัดไป ›</button>
+      </div>
+    </div>
+  `;
 }
 

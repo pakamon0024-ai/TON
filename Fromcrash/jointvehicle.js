@@ -224,13 +224,17 @@ function jvRenderList() {
   const list = jvFilteredList();
   const tbody = document.getElementById('jv-list-body');
   const countEl = document.getElementById('jv-list-count');
+  const pagerEl = document.getElementById('jv-list-pager');
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('jv-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('jv-list', page, totalPages, total, 'jvRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td>${jvTypeBadge(r)}</td>
@@ -595,14 +599,18 @@ function jvdbRenderList() {
   const list = jvdbFilteredList();
   const tbody = document.getElementById('jvdb-list-body');
   const countEl = document.getElementById('jvdb-list-count');
+  const pagerEl = document.getElementById('jvdb-list-pager');
   if (!tbody) return;
   const warnCount = list.filter(r => JVDB_EXPIRY_FIELDS.some(([key]) => jvdbIsNearExpiry(r[key]))).length;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ` + (warnCount ? ` — ใกล้หมดอายุ ${warnCount} คัน` : '');
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('jvdb-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('jvdb-list', page, totalPages, total, 'jvdbRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>

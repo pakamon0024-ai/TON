@@ -293,14 +293,18 @@ function pbRenderList() {
   const list = pbFilteredList();
   const tbody = document.getElementById('pb-list-body');
   const countEl = document.getElementById('pb-list-count');
+  const pagerEl = document.getElementById('pb-list-pager');
   if (!tbody) return;
   pbUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('pb-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('pb-list', page, totalPages, total, 'pbRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td>${formatDate(r.date)}</td>

@@ -142,14 +142,18 @@ function deleteAllDriversDB() {
 
 function renderDriversTable() {
   const tbody = document.getElementById('md-driver-body');
+  const pagerEl = document.getElementById('md-driver-pager');
   if (!tbody) return;
   const search = (document.getElementById('md-driver-search')?.value || '').trim().toLowerCase();
   const list = search ? mdDrivers.filter(d => (d.name || '').toLowerCase().includes(search)) : mdDrivers;
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="empty-state">${mdDrivers.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(d => `
+  const { pageItems, page, totalPages, total } = paginateSlice('md-driver', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-driver', page, totalPages, total, 'renderDriversTable');
+  tbody.innerHTML = pageItems.map(d => `
     <tr>
       <td>${escapeHtml(d.name)}</td>
       <td>${formatDate(d.birthDate)}</td>
@@ -303,14 +307,18 @@ function deleteAllVehiclesDB() {
 
 function renderVehiclesTable() {
   const tbody = document.getElementById('md-vehicle-body');
+  const pagerEl = document.getElementById('md-vehicle-pager');
   if (!tbody) return;
   const search = (document.getElementById('md-vehicle-search')?.value || '').trim().toLowerCase();
   const list = search ? mdVehicles.filter(v => (v.plate || '').toLowerCase().includes(search) || (v.owner || '').toLowerCase().includes(search)) : mdVehicles;
   if (list.length === 0) {
     tbody.innerHTML = `<tr><td colspan="5" class="empty-state">${mdVehicles.length === 0 ? 'ยังไม่มีข้อมูล' : 'ไม่พบรายการที่ค้นหา'}</td></tr>`;
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(v => `
+  const { pageItems, page, totalPages, total } = paginateSlice('md-vehicle', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-vehicle', page, totalPages, total, 'renderVehiclesTable');
+  tbody.innerHTML = pageItems.map(v => `
     <tr>
       <td style="font-family:monospace">${escapeHtml(v.plate)}</td>
       <td>${escapeHtml(v.owner || '-')}</td>
@@ -417,12 +425,16 @@ function deleteAllCustomersDB() {
 
 function renderCustomersTable() {
   const tbody = document.getElementById('md-customer-body');
+  const pagerEl = document.getElementById('md-customer-pager');
   if (!tbody) return;
   if (mdCustomers.length === 0) {
     tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = mdCustomers.map(c => `
+  const { pageItems, page, totalPages, total } = paginateSlice('md-customer', mdCustomers);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-customer', page, totalPages, total, 'renderCustomersTable');
+  tbody.innerHTML = pageItems.map(c => `
     <tr>
       <td>${escapeHtml(c.name)}</td>
       <td><button class="action-btn action-delete" onclick="deleteCustomerDB(${c.id})">ลบ</button></td>
@@ -505,12 +517,16 @@ function deleteAllRequestersDB() {
 
 function renderRequestersTable() {
   const tbody = document.getElementById('md-requester-body');
+  const pagerEl = document.getElementById('md-requester-pager');
   if (!tbody) return;
   if (mdRequesters.length === 0) {
     tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = mdRequesters.map(name => `
+  const { pageItems, page, totalPages, total } = paginateSlice('md-requester', mdRequesters);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-requester', page, totalPages, total, 'renderRequestersTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr>
       <td>${escapeHtml(name)}</td>
       <td><button class="action-btn action-delete" onclick="deleteRequesterDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td>
@@ -582,9 +598,12 @@ function deleteAllBusinessUnitsDB() {
 
 function renderBusinessUnitsTable() {
   const tbody = document.getElementById('md-bu-body');
+  const pagerEl = document.getElementById('md-bu-pager');
   if (!tbody) return;
-  if (mdBusinessUnits.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdBusinessUnits.map(name => `
+  if (mdBusinessUnits.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-bu', mdBusinessUnits);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-bu', page, totalPages, total, 'renderBusinessUnitsTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteBusinessUnitDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
   `).join('');
 }
@@ -623,9 +642,12 @@ function deleteAllInsurersDB() {
 
 function renderInsurersTable() {
   const tbody = document.getElementById('md-insurer-body');
+  const pagerEl = document.getElementById('md-insurer-pager');
   if (!tbody) return;
-  if (mdInsurers.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdInsurers.map(name => `
+  if (mdInsurers.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-insurer', mdInsurers);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-insurer', page, totalPages, total, 'renderInsurersTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteInsurerDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
   `).join('');
 }
@@ -664,9 +686,12 @@ function deleteAllYardsDB() {
 
 function renderYardsTable() {
   const tbody = document.getElementById('md-yard-body');
+  const pagerEl = document.getElementById('md-yard-pager');
   if (!tbody) return;
-  if (mdYards.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdYards.map(name => `
+  if (mdYards.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-yard', mdYards);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-yard', page, totalPages, total, 'renderYardsTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteYardDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
   `).join('');
 }
@@ -705,9 +730,12 @@ function deleteAllIncidentPatternsDB() {
 
 function renderIncidentPatternsTable() {
   const tbody = document.getElementById('md-pattern-body');
+  const pagerEl = document.getElementById('md-pattern-pager');
   if (!tbody) return;
-  if (mdIncidentPatterns.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdIncidentPatterns.map(name => `
+  if (mdIncidentPatterns.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-pattern', mdIncidentPatterns);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-pattern', page, totalPages, total, 'renderIncidentPatternsTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteIncidentPatternDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
   `).join('');
 }
@@ -750,9 +778,12 @@ function deleteAllIssueTopicsDB() {
 
 function renderIssueTopicsTable() {
   const tbody = document.getElementById('md-topic-body');
+  const pagerEl = document.getElementById('md-topic-pager');
   if (!tbody) return;
-  if (mdIssueTopics.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdIssueTopics.map(name => `
+  if (mdIssueTopics.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-topic', mdIssueTopics);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-topic', page, totalPages, total, 'renderIssueTopicsTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteIssueTopicDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
   `).join('');
 }
@@ -798,9 +829,12 @@ function deleteAllChargeTypesDB() {
 
 function renderChargeTypesTable() {
   const tbody = document.getElementById('md-charge-body');
+  const pagerEl = document.getElementById('md-charge-pager');
   if (!tbody) return;
-  if (mdChargeTypes.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdChargeTypes.map(name => `
+  if (mdChargeTypes.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-charge', mdChargeTypes);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-charge', page, totalPages, total, 'renderChargeTypesTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteChargeTypeDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
   `).join('');
 }
@@ -864,10 +898,13 @@ function deleteAllAbcStaffDB() {
 
 function renderAbcStaffTable() {
   const tbody = document.getElementById('md-abcstaff-body');
+  const pagerEl = document.getElementById('md-abcstaff-pager');
   if (!tbody) return;
   const activeStaff = mdAbcStaffActive();
-  if (activeStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = activeStaff.map(s => `
+  if (activeStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-abcstaff', activeStaff);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-abcstaff', page, totalPages, total, 'renderAbcStaffTable');
+  tbody.innerHTML = pageItems.map(s => `
     <tr>
       <td>${escapeHtml(s.name)}</td>
       <td>${escapeHtml(s.businessUnit || '-')}</td>
@@ -963,9 +1000,12 @@ function deleteAllBreathalyzersDB() {
 
 function renderBreathalyzersTable() {
   const tbody = document.getElementById('md-bz-body');
+  const pagerEl = document.getElementById('md-bz-pager');
   if (!tbody) return;
-  if (mdBreathalyzers.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; return; }
-  tbody.innerHTML = mdBreathalyzers.map(b => `
+  if (mdBreathalyzers.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-bz', mdBreathalyzers);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-bz', page, totalPages, total, 'renderBreathalyzersTable');
+  tbody.innerHTML = pageItems.map(b => `
     <tr>
       <td>${escapeHtml(b.deviceNo)}</td>
       <td style="font-family:monospace">${escapeHtml(b.plate || '-')}</td>
@@ -1070,13 +1110,17 @@ function deleteAllCategoriesDB() {
 
 function renderCategoriesTable() {
   const tbody = document.getElementById('md-category-body');
+  const pagerEl = document.getElementById('md-category-pager');
   if (!tbody) return;
   const cats = loadCategoriesDB();
   if (cats.length === 0) {
     tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีหมวดหมู่ — เพิ่มที่นี่เพื่อใช้ในฟอร์มเงินสดย่อย/ขออนุมัติ</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = cats.map(name => `
+  const { pageItems, page, totalPages, total } = paginateSlice('md-category', cats);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-category', page, totalPages, total, 'renderCategoriesTable');
+  tbody.innerHTML = pageItems.map(name => `
     <tr>
       <td>${escapeHtml(name)}</td>
       <td><button class="action-btn action-delete" onclick="deleteCategoryDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td>

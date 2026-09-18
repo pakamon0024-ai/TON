@@ -289,13 +289,17 @@ function gvRenderList() {
   const list = gvFilteredList();
   const tbody = document.getElementById('gv-list-body');
   const countEl = document.getElementById('gv-list-count');
+  const pagerEl = document.getElementById('gv-list-pager');
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('gv-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('gv-list', page, totalPages, total, 'gvRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td>${formatDate(r.date)}</td>

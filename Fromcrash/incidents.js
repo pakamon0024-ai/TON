@@ -358,14 +358,18 @@ function incClearListFilters() {
 
 function incRenderList() {
   const tbody = document.getElementById('inc-list-body');
+  const pagerEl = document.getElementById('inc-list-pager');
   if (!tbody) return;
   const filtered = incFilteredList();
   document.getElementById('inc-list-count').textContent = `แสดง ${filtered.length} จาก ${incidents.length} รายการ`;
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = filtered.map(i => `
+  const { pageItems, page, totalPages, total } = paginateSlice('inc-list', filtered);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('inc-list', page, totalPages, total, 'incRenderList');
+  tbody.innerHTML = pageItems.map(i => `
     <tr>
       <td>${i.runningNo}</td>
       <td>${formatDate(i.incidentDate)}</td>
@@ -1169,14 +1173,18 @@ function ghRenderList() {
   const list = ghFilteredList();
   const tbody = document.getElementById('gh-list-body');
   const countEl = document.getElementById('gh-list-count');
+  const pagerEl = document.getElementById('gh-list-pager');
   if (!tbody) return;
   ghUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(r => `
+  const { pageItems, page, totalPages, total } = paginateSlice('gh-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('gh-list', page, totalPages, total, 'ghRenderList');
+  tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>

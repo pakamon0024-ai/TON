@@ -399,6 +399,24 @@ body {
   color: var(--text-muted); font-size: 0.9rem;
 }
 
+/* ===== Pagination กลาง (ใช้ร่วมกันทุกตารางรายการในแอป) ===== */
+.pagination {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border);
+}
+.pagination-info { color: var(--text-muted); font-size: 0.82rem; }
+.pagination-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.page-btn {
+  min-width: 32px; height: 32px; padding: 0 8px;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg-input); color: var(--text-primary);
+  font-size: 0.82rem; cursor: pointer;
+}
+.page-btn:hover:not(:disabled) { background: var(--bg-hover); }
+.page-btn.active { background: var(--accent-primary); color: #fff; border-color: var(--accent-primary); cursor: default; }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-ellipsis { color: var(--text-muted); padding: 0 4px; font-size: 0.82rem; }
+
 /* ===== Incident Trouble Report Tracking Table ===== */
 .inc-trouble-capture { background: #fff; padding: 16px; border-radius: 8px; }
 .inc-trouble-title { text-align: center; color: #1a2540; font-size: 1.1rem; margin: 0 0 12px; }

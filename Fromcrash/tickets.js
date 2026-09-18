@@ -322,15 +322,19 @@ function tkRenderList() {
   const list = tkFilteredList();
   const tbody = document.getElementById('tk-list-body');
   const countEl = document.getElementById('tk-list-count');
+  const pagerEl = document.getElementById('tk-list-pager');
   if (!tbody) return;
   tkUpdateSortIndicators();
-  const total = list.reduce((s, t) => s + (t.fineAmount || 0), 0);
-  if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ · รวมค่าปรับ ${formatMoney(total)}`;
+  const fineTotal = list.reduce((s, t) => s + (t.fineAmount || 0), 0);
+  if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ · รวมค่าปรับ ${formatMoney(fineTotal)}`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="15" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(t => `
+  const { pageItems, page, totalPages, total } = paginateSlice('tk-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('tk-list', page, totalPages, total, 'tkRenderList');
+  tbody.innerHTML = pageItems.map(t => `
     <tr>
       <td>${t.runningNo}</td>
       <td>${formatDate(t.date)}</td>

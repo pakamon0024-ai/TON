@@ -277,13 +277,17 @@ function alcRenderList() {
   const list = alcFilteredList();
   const tbody = document.getElementById('alc-list-body');
   const countEl = document.getElementById('alc-list-count');
+  const pagerEl = document.getElementById('alc-list-pager');
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
-  tbody.innerHTML = list.map(t => `
+  const { pageItems, page, totalPages, total } = paginateSlice('alc-list', list);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('alc-list', page, totalPages, total, 'alcRenderList');
+  tbody.innerHTML = pageItems.map(t => `
     <tr>
       <td>${t.runningNo}</td>
       <td>${formatDate(t.date)}</td>
