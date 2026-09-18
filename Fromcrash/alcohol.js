@@ -647,6 +647,12 @@ function alcDailyReportTotals(rows) {
   return { total, avg, n };
 }
 
+// 100% พอดีให้โชว์ "100%" เฉยๆ ไม่ต้องมีทศนิยม ส่วนกรณีอื่นที่ไม่ครบ 100% ให้โชว์ทศนิยม 2 ตำแหน่งเสมอ
+// (เช่น 99.5 -> "99.50%") ให้เห็นตัวเลขจริงชัดเจนว่าไม่ครบ ไม่ใช่แค่ปัดเศษบอกกลมๆ
+function alcFmtSummaryPct(pct) {
+  return pct === 100 ? '100' : pct.toFixed(2);
+}
+
 function alcRenderDailyReport() {
   const wrap = document.getElementById('alc-daily-table-wrap');
   if (!wrap) return;
@@ -682,7 +688,7 @@ function alcRenderDailyReport() {
         <td class="alc-daily-col-ret">${r.ret.checked}</td>
         <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${r.ret.pct}%</span></td>
         <td class="alc-daily-col-ret">${r.ret.failed}</td>
-        <td class="alc-daily-col-summary">${r.summaryPct}%</td>
+        <td class="alc-daily-col-summary">${alcFmtSummaryPct(r.summaryPct)}%</td>
       </tr>
     `;
   }).join('');
@@ -702,7 +708,7 @@ function alcRenderDailyReport() {
       <td class="alc-daily-col-ret">${total.ret.checked}</td>
       <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${total.ret.pct}%</span></td>
       <td class="alc-daily-col-ret">${total.ret.failed}</td>
-      <td class="alc-daily-col-summary">${total.summaryPct}%</td>
+      <td class="alc-daily-col-summary">${alcFmtSummaryPct(total.summaryPct)}%</td>
     </tr>
     <tr class="alc-daily-avg-row">
       <td>เฉลี่ย</td>
@@ -717,7 +723,7 @@ function alcRenderDailyReport() {
       <td class="alc-daily-col-ret">${avg.ret.checked.toFixed(2)}</td>
       <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${avg.ret.pct}%</span></td>
       <td class="alc-daily-col-ret">${avg.ret.failed.toFixed(2)}</td>
-      <td class="alc-daily-col-summary">${avg.summaryPct}%</td>
+      <td class="alc-daily-col-summary">${alcFmtSummaryPct(avg.summaryPct)}%</td>
     </tr>
   `;
 
@@ -763,7 +769,7 @@ function alcExportDailyReportExcel() {
   const header1 = ['วันที่', 'พนักงาน', '', '', '', 'ขาไป (ก่อนปฏิบัติงาน)', '', '', 'ขากลับ (หลังปฏิบัติงาน)', '', '', '', '% สรุปการตรวจ (เฉลี่ยทั้งไปและกลับ)'];
   const header2 = ['', 'ทั้งหมด (คน)', 'มาทำงาน (คน)', 'ต่อเนื่อง (คน)', 'ขาด/ลา (คน)', 'ตรวจ (คน)', '%', 'ไม่ผ่าน (คน)', 'ต่อเนื่อง (คน)', 'ตรวจ (คน)', '%', 'ไม่ผ่าน (คน)', ''];
   const toRow = r => r.hasData
-    ? [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, r.totalStaff, r.atWork, r.continuous, r.leaveAbsent, r.out.checked, `${r.out.pct}%`, r.out.failed, r.continuousReturn, r.ret.checked, `${r.ret.pct}%`, r.ret.failed, `${r.summaryPct}%`]
+    ? [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, r.totalStaff, r.atWork, r.continuous, r.leaveAbsent, r.out.checked, `${r.out.pct}%`, r.out.failed, r.continuousReturn, r.ret.checked, `${r.ret.pct}%`, r.ret.failed, `${alcFmtSummaryPct(r.summaryPct)}%`]
     : [`${r.day}-${ALC_MONTH_SHORT_TH[m - 1]}`, '', '', '', '', '', '', '', '', '', '', '', ''];
 
   const { total, avg } = alcDailyReportTotals(rows);
@@ -771,8 +777,8 @@ function alcExportDailyReportExcel() {
     [`รายงานการตรวจสอบแอลกอฮอล์ ประจำวันที่ ${ALC_MONTH_FULL_TH[m - 1]} ${y}`],
     header1, header2,
     ...rows.map(toRow),
-    ['รวม', total.totalStaff, total.atWork, total.continuous, total.leaveAbsent, total.out.checked, `${total.out.pct}%`, total.out.failed, total.continuousReturn, total.ret.checked, `${total.ret.pct}%`, total.ret.failed, `${total.summaryPct}%`],
-    ['เฉลี่ย', avg.totalStaff.toFixed(2), avg.atWork.toFixed(2), avg.continuous.toFixed(2), avg.leaveAbsent.toFixed(2), avg.out.checked.toFixed(2), `${avg.out.pct}%`, avg.out.failed.toFixed(2), avg.continuousReturn.toFixed(2), avg.ret.checked.toFixed(2), `${avg.ret.pct}%`, avg.ret.failed.toFixed(2), `${avg.summaryPct}%`],
+    ['รวม', total.totalStaff, total.atWork, total.continuous, total.leaveAbsent, total.out.checked, `${total.out.pct}%`, total.out.failed, total.continuousReturn, total.ret.checked, `${total.ret.pct}%`, total.ret.failed, `${alcFmtSummaryPct(total.summaryPct)}%`],
+    ['เฉลี่ย', avg.totalStaff.toFixed(2), avg.atWork.toFixed(2), avg.continuous.toFixed(2), avg.leaveAbsent.toFixed(2), avg.out.checked.toFixed(2), `${avg.out.pct}%`, avg.out.failed.toFixed(2), avg.continuousReturn.toFixed(2), avg.ret.checked.toFixed(2), `${avg.ret.pct}%`, avg.ret.failed.toFixed(2), `${alcFmtSummaryPct(avg.summaryPct)}%`],
   ];
 
   const ws = XLSX.utils.aoa_to_sheet(sheetRows);
