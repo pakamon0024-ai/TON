@@ -840,7 +840,7 @@ async function alcInit() {
     onValue(alcRef, s => { if (s.exists()) alcApplyServer(alcObjToRecords(s.val())); });
   } catch (e) {
     console.warn('alcInit error', e);
-    notifySyncLoadError();
+    notifySyncLoadError(e.message);
   }
 }
 

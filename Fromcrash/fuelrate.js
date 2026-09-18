@@ -426,7 +426,7 @@ async function frInit() {
     frReady = true;
     if (!snap.exists() && frRecords.length > 0) await frWriteFB();
     onValue(frRef, s => { if (s.exists()) frApplyServer(frObjToRecords(s.val())); });
-  } catch (e) { console.warn('frInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('frInit error', e); notifySyncLoadError(e.message); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

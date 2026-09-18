@@ -585,7 +585,7 @@ async function gcInit() {
     onValue(grRef, s => { if (s.exists()) grApplyServer(gcObjToRecords(s.val())); });
   } catch (e) {
     console.warn('gcInit error', e);
-    notifySyncLoadError();
+    notifySyncLoadError(e.message);
   }
 }
 
@@ -955,6 +955,6 @@ async function ddbInit() {
     }
   } catch (e) {
     console.warn('ddbInit error', e);
-    notifySyncLoadError();
+    notifySyncLoadError(e.message);
   }
 }

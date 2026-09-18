@@ -424,7 +424,7 @@ async function wiInit() {
     wiReady = true;
     if (!snap.exists() && workIssues.length > 0) await wiWriteFB();
     onValue(wiRef, s => { if (s.exists()) wiApplyServer(wiObjToRecords(s.val())); });
-  } catch (e) { console.warn('wiInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('wiInit error', e); notifySyncLoadError(e.message); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

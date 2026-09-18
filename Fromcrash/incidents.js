@@ -857,7 +857,7 @@ async function incInit() {
     onValue(incRef, s => { if (s.exists()) incApplyServer(incObjToRecords(s.val())); });
   } catch (e) {
     console.warn('incInit error', e);
-    notifySyncLoadError();
+    notifySyncLoadError(e.message);
   }
 }
 
@@ -1327,5 +1327,5 @@ async function ghInit() {
     ghReady = true;
     if (!snap.exists() && ghRecords.length > 0) await ghWriteFB();
     onValue(ghRef, s => { if (s.exists()) ghApplyServer(ghObjToRecords(s.val())); });
-  } catch (e) { console.warn('ghInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('ghInit error', e); notifySyncLoadError(e.message); }
 }

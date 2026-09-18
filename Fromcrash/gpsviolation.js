@@ -454,7 +454,7 @@ async function gvInit() {
     gvReady = true;
     if (!snap.exists() && gvRecords.length > 0) await gvWriteFB();
     onValue(gvRef, s => { if (s.exists()) gvApplyServer(gvObjToRecords(s.val())); });
-  } catch (e) { console.warn('gvInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('gvInit error', e); notifySyncLoadError(e.message); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

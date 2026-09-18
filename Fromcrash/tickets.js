@@ -568,7 +568,7 @@ async function tkInit() {
     tkReady = true;
     if (!snap.exists() && tickets.length > 0) await tkWriteFB();
     onValue(tkRef, s => { if (s.exists()) tkApplyServer(tkObjToRecords(s.val())); });
-  } catch (e) { console.warn('tkInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('tkInit error', e); notifySyncLoadError(e.message); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

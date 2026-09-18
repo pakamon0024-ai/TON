@@ -1399,7 +1399,8 @@ function notifySyncWriteError(detail) {
 function notifySyncWriteSuccess() {
   showToast('🟢 ซิงค์ขึ้น Firebase สำเร็จ', 'success');
 }
-function notifySyncLoadError() {
-  showToast('⚠️ โหลดข้อมูลจาก Firebase ไม่สำเร็จ ข้อมูลที่เห็นอยู่อาจไม่ใช่ข้อมูลล่าสุด (เช็คอินเทอร์เน็ตแล้วรีเฟรช)', 'error');
+function notifySyncLoadError(detail) {
+  const suffix = detail ? ` (${detail})` : ' (เช็คอินเทอร์เน็ตแล้วรีเฟรช)';
+  showToast(`⚠️ โหลดข้อมูลจาก Firebase ไม่สำเร็จ ข้อมูลที่เห็นอยู่อาจไม่ใช่ข้อมูลล่าสุด${suffix}`, 'error');
 }
 

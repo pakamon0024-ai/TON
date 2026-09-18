@@ -566,7 +566,7 @@ async function pbInit() {
     pbReady = true;
     if (!snap.exists() && probationRecords.length > 0) await pbWriteFB();
     onValue(pbRef, s => { if (s.exists()) pbApplyServer(pbObjToRecords(s.val())); });
-  } catch (e) { console.warn('pbInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('pbInit error', e); notifySyncLoadError(e.message); }
 }
 
 document.addEventListener('DOMContentLoaded', () => {

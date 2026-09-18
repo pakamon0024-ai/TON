@@ -192,7 +192,7 @@ async function mdInit() {
     onValue(mdBzRef, snap => { if (snap.exists()) mdApplyServerBreathalyzers(mdObjToRecords(snap.val())); });
   } catch (e) {
     console.warn('mdInit error', e);
-    notifySyncLoadError();
+    notifySyncLoadError(e.message);
   }
 }
 

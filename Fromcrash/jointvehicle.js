@@ -405,7 +405,7 @@ async function jvInit() {
     onValue(jvRef, s => { if (s.exists()) jvApplyServer(jvObjToRecords(s.val())); });
   } catch (e) {
     console.warn('jvInit error', e);
-    notifySyncLoadError();
+    notifySyncLoadError(e.message);
   }
 }
 
@@ -755,5 +755,5 @@ async function jvdbInit() {
     jvdbReady = true;
     if (!snap.exists() && jvdbRecords.length > 0) await jvdbWriteFB();
     onValue(jvdbRef, s => { if (s.exists()) jvdbApplyServer(jvdbObjToRecords(s.val())); });
-  } catch (e) { console.warn('jvdbInit error', e); notifySyncLoadError(); }
+  } catch (e) { console.warn('jvdbInit error', e); notifySyncLoadError(e.message); }
 }
