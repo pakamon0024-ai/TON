@@ -523,7 +523,7 @@ async function pbWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(pbRef, pbRecordsToObj(probationRecords));
-  } catch (e) { console.warn('pbWriteFB error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('pbWriteFB error', e); notifySyncWriteError(e.message); }
 }
 function pbPushIfReady() { if (pbReady) pbWriteFB(); }
 
@@ -533,7 +533,7 @@ async function pbWriteOne(record) {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/probationRecords/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.warn('pbWriteOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('pbWriteOne error', e); notifySyncWriteError(e.message); }
 }
 function pbPushOneIfReady(record) { if (pbReady) pbWriteOne(record); }
 
@@ -542,7 +542,7 @@ async function pbRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/probationRecords/${id}`));
-  } catch (e) { console.warn('pbRemoveOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('pbRemoveOne error', e); notifySyncWriteError(e.message); }
 }
 function pbRemoveOneIfReady(id) { if (pbReady) pbRemoveOne(id); }
 

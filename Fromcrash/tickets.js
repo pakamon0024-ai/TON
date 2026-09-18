@@ -525,7 +525,7 @@ async function tkWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(tkRef, tkRecordsToObj(tickets));
-  } catch (e) { console.warn('tkWriteFB error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('tkWriteFB error', e); notifySyncWriteError(e.message); }
 }
 function tkPushIfReady() { if (tkReady) tkWriteFB(); }
 
@@ -535,7 +535,7 @@ async function tkWriteOne(record) {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/tickets/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.warn('tkWriteOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('tkWriteOne error', e); notifySyncWriteError(e.message); }
 }
 function tkPushOneIfReady(record) { if (tkReady) tkWriteOne(record); }
 
@@ -544,7 +544,7 @@ async function tkRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/tickets/${id}`));
-  } catch (e) { console.warn('tkRemoveOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('tkRemoveOne error', e); notifySyncWriteError(e.message); }
 }
 function tkRemoveOneIfReady(id) { if (tkReady) tkRemoveOne(id); }
 

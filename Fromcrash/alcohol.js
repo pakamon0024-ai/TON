@@ -789,7 +789,7 @@ async function alcWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(alcRef, alcRecordsToObj(alcTests));
-  } catch (e) { console.warn('alcWriteFB error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('alcWriteFB error', e); notifySyncWriteError(e.message); }
 }
 function alcPushIfReady() { if (alcReady) alcWriteFB(); }
 
@@ -805,7 +805,7 @@ async function alcWriteMany(records) {
     records.forEach(r => { if (r && r.id) updates[`/alcoholTests/${r.id}`] = r; });
     await update(ref(fbDb), updates);
     notifySyncWriteSuccess();
-  } catch (e) { console.warn('alcWriteMany error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('alcWriteMany error', e); notifySyncWriteError(e.message); }
 }
 function alcPushManyIfReady(records) { if (alcReady) alcWriteMany(records); }
 
@@ -814,7 +814,7 @@ async function alcRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/alcoholTests/${id}`));
-  } catch (e) { console.warn('alcRemoveOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('alcRemoveOne error', e); notifySyncWriteError(e.message); }
 }
 function alcRemoveOneIfReady(id) { if (alcReady) alcRemoveOne(id); }
 

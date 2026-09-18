@@ -360,7 +360,7 @@ async function jvWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(jvRef, jvRecordsToObj(jvRecords));
-  } catch (e) { console.warn('jvWriteFB error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('jvWriteFB error', e); notifySyncWriteError(e.message); }
 }
 function jvPushIfReady() { if (jvReady) jvWriteFB(); }
 
@@ -370,7 +370,7 @@ async function jvWriteOne(record) {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/jointVehicles/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.warn('jvWriteOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('jvWriteOne error', e); notifySyncWriteError(e.message); }
 }
 function jvPushOneIfReady(record) { if (jvReady) jvWriteOne(record); }
 
@@ -379,7 +379,7 @@ async function jvRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/jointVehicles/${id}`));
-  } catch (e) { console.warn('jvRemoveOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('jvRemoveOne error', e); notifySyncWriteError(e.message); }
 }
 function jvRemoveOneIfReady(id) { if (jvReady) jvRemoveOne(id); }
 
@@ -722,7 +722,7 @@ async function jvdbWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(jvdbRef, jvdbRecordsToObj(jvdbRecords));
-  } catch (e) { console.warn('jvdbWriteFB error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('jvdbWriteFB error', e); notifySyncWriteError(e.message); }
 }
 function jvdbPushIfReady() { if (jvdbReady) jvdbWriteFB(); }
 
@@ -732,7 +732,7 @@ async function jvdbWriteOne(record) {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/jointVehicleDB/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.warn('jvdbWriteOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('jvdbWriteOne error', e); notifySyncWriteError(e.message); }
 }
 function jvdbPushOneIfReady(record) { if (jvdbReady) jvdbWriteOne(record); }
 
@@ -741,7 +741,7 @@ async function jvdbRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/jointVehicleDB/${id}`));
-  } catch (e) { console.warn('jvdbRemoveOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('jvdbRemoveOne error', e); notifySyncWriteError(e.message); }
 }
 function jvdbRemoveOneIfReady(id) { if (jvdbReady) jvdbRemoveOne(id); }
 

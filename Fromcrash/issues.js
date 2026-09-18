@@ -381,7 +381,7 @@ async function wiWriteFB() {
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(wiRef, wiRecordsToObj(workIssues));
-  } catch (e) { console.warn('wiWriteFB error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('wiWriteFB error', e); notifySyncWriteError(e.message); }
 }
 function wiPushIfReady() { if (wiReady) wiWriteFB(); }
 
@@ -391,7 +391,7 @@ async function wiWriteOne(record) {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/workIssues/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.warn('wiWriteOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('wiWriteOne error', e); notifySyncWriteError(e.message); }
 }
 function wiPushOneIfReady(record) { if (wiReady) wiWriteOne(record); }
 
@@ -400,7 +400,7 @@ async function wiRemoveOne(id) {
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/workIssues/${id}`));
-  } catch (e) { console.warn('wiRemoveOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.warn('wiRemoveOne error', e); notifySyncWriteError(e.message); }
 }
 function wiRemoveOneIfReady(id) { if (wiReady) wiRemoveOne(id); }
 

@@ -52,7 +52,7 @@ async function rsWriteOne(record) {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/finflow_records/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.error('rsWriteOne error', e); notifySyncWriteError(); }
+  } catch (e) { console.error('rsWriteOne error', e); notifySyncWriteError(e.message); }
 }
 function rsPushOneIfReady(record) { if (rsReady) rsWriteOne(record); }
 
