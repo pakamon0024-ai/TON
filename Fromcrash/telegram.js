@@ -12,7 +12,7 @@ function getTelegramConfig() {
 }
 
 function saveTelegramConfigRaw(cfg) {
-  localStorage.setItem('finflow_telegram_config', JSON.stringify(cfg));
+  safeLocalStorageSet('finflow_telegram_config', JSON.stringify(cfg));
 }
 
 async function sendTelegramNotification(message) {

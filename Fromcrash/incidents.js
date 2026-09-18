@@ -27,7 +27,7 @@ const MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.
 const INC_LAST_YEAR_MONTHLY = [15, 10, 17, 5, 12, 21, 23, 10, 13, 20, 10, 10];
 const DOW_LABELS_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
 
-function incSave() { localStorage.setItem('finflow_incidents', JSON.stringify(incidents)); }
+function incSave() { safeLocalStorageSet('finflow_incidents', JSON.stringify(incidents)); }
 
 // ทำให้ "พื้นที่เกิดเหตุ" เป็นรูปแบบเดียวกันเสมอ — ข้อมูลเก่าบางรายการเคยถูกบันทึกด้วยตัวพิมพ์เล็ก/ใหญ่
 // ไม่ตรงกัน (เช่น "In plant" vs "In Plant") ทำให้กราฟนับแยกเป็นคนละแท่งทั้งที่ควรเป็นอันเดียวกัน
@@ -888,7 +888,7 @@ const GH_XLSX_COLWIDTHS = [8, 14, 12, 16, 20, 18, 18, 30, 14];
 const GH_NUMERIC_FIELDS = ['runningNo', 'cost'];
 const GH_DATE_FIELDS = ['inDate', 'outDate'];
 
-function ghSave() { localStorage.setItem('finflow_garage_history', JSON.stringify(ghRecords)); }
+function ghSave() { safeLocalStorageSet('finflow_garage_history', JSON.stringify(ghRecords)); }
 
 function ghNextRunningNo() {
   return ghRecords.length ? Math.max(...ghRecords.map(r => r.runningNo || 0)) + 1 : 1;

@@ -13,8 +13,8 @@ let grEditingId = null;
 let grRef = null;
 let grReady = false;
 
-function gcSave() { localStorage.setItem('finflow_gpscctv_installs', JSON.stringify(gcRecords)); }
-function grSave() { localStorage.setItem('finflow_gpscctv_repairs', JSON.stringify(grRecords)); }
+function gcSave() { safeLocalStorageSet('finflow_gpscctv_installs', JSON.stringify(gcRecords)); }
+function grSave() { safeLocalStorageSet('finflow_gpscctv_repairs', JSON.stringify(grRecords)); }
 
 // ===== Sub-tabs (4 แท็บ ใช้ตัวสลับร่วมกัน) =====
 function gcSwitchTab(tab) {
@@ -707,7 +707,7 @@ DDB_TYPES.forEach(t => {
   ddbReady[t] = false;
 });
 
-function ddbSave(type) { localStorage.setItem(`finflow_devicedb_${type}`, JSON.stringify(ddbRecords[type])); }
+function ddbSave(type) { safeLocalStorageSet(`finflow_devicedb_${type}`, JSON.stringify(ddbRecords[type])); }
 function ddbNextRunningNo(type) {
   const list = ddbRecords[type];
   return list.length ? Math.max(...list.map(r => r.runningNo || 0)) + 1 : 1;

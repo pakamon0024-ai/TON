@@ -11,7 +11,7 @@ let gvCharts = {};
 const GV_TYPE_PRESETS = ['ความเร็วเกิน', 'จอดรถติดเครื่องนาน'];
 const GV_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'เวลา', 'ประเภทความผิด', 'ทะเบียนรถ', 'ชื่อพนักงานขับรถ', 'หน่วยงาน', 'ลานจอด', 'รายละเอียด', 'หมายเหตุ'];
 
-function gvSave() { localStorage.setItem('finflow_gps_violations', JSON.stringify(gvRecords)); }
+function gvSave() { safeLocalStorageSet('finflow_gps_violations', JSON.stringify(gvRecords)); }
 
 function gvNextRunningNo() {
   return gvRecords.length ? Math.max(...gvRecords.map(r => r.runningNo || 0)) + 1 : 1;

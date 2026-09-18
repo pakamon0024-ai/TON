@@ -15,7 +15,7 @@ const PB_DATE_FIELDS = ['date'];
 const PB_XLSX_HEADERS = ['ลำดับที่','วันที่','ชื่อ','ตำแหน่ง','ลานจอด','หน่วยงาน','ข้อหา','รายละเอียด'];
 const PB_XLSX_COLWIDTHS = [8, 14, 20, 16, 12, 16, 20, 40];
 
-function pbSave() { localStorage.setItem('finflow_probation', JSON.stringify(probationRecords)); }
+function pbSave() { safeLocalStorageSet('finflow_probation', JSON.stringify(probationRecords)); }
 
 // ===== Sub-tabs =====
 function pbSwitchTab(tab) {

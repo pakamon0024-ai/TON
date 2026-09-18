@@ -4,10 +4,10 @@ let mdVehicles = JSON.parse(localStorage.getItem('finflow_vehicles_db') || '[]')
 let mdCustomers = JSON.parse(localStorage.getItem('finflow_customers_db') || '[]');
 let mdRequesters = JSON.parse(localStorage.getItem('finflow_requesters') || '[]');
 
-function saveDriversDB() { localStorage.setItem('finflow_drivers_db', JSON.stringify(mdDrivers)); }
-function saveVehiclesDB() { localStorage.setItem('finflow_vehicles_db', JSON.stringify(mdVehicles)); }
-function saveCustomersDB() { localStorage.setItem('finflow_customers_db', JSON.stringify(mdCustomers)); }
-function saveRequestersDB() { localStorage.setItem('finflow_requesters', JSON.stringify(mdRequesters)); }
+function saveDriversDB() { safeLocalStorageSet('finflow_drivers_db', JSON.stringify(mdDrivers)); }
+function saveVehiclesDB() { safeLocalStorageSet('finflow_vehicles_db', JSON.stringify(mdVehicles)); }
+function saveCustomersDB() { safeLocalStorageSet('finflow_customers_db', JSON.stringify(mdCustomers)); }
+function saveRequestersDB() { safeLocalStorageSet('finflow_requesters', JSON.stringify(mdRequesters)); }
 
 // คำนวณอายุ/อายุงานแบบปี-เดือน-วัน จากวันที่ระบุถึงวันนี้
 function formatDuration(fromDateStr) {
@@ -543,10 +543,10 @@ let mdInsurers = JSON.parse(localStorage.getItem('finflow_insurers_db') || '[]')
 let mdYards = JSON.parse(localStorage.getItem('finflow_yards_db') || '[]');
 let mdIncidentPatterns = JSON.parse(localStorage.getItem('finflow_patterns_db') || '[]');
 
-function saveBusinessUnitsDB() { localStorage.setItem('finflow_business_units_db', JSON.stringify(mdBusinessUnits)); }
-function saveInsurersDB() { localStorage.setItem('finflow_insurers_db', JSON.stringify(mdInsurers)); }
-function saveYardsDB() { localStorage.setItem('finflow_yards_db', JSON.stringify(mdYards)); }
-function savePatternsDB() { localStorage.setItem('finflow_patterns_db', JSON.stringify(mdIncidentPatterns)); }
+function saveBusinessUnitsDB() { safeLocalStorageSet('finflow_business_units_db', JSON.stringify(mdBusinessUnits)); }
+function saveInsurersDB() { safeLocalStorageSet('finflow_insurers_db', JSON.stringify(mdInsurers)); }
+function saveYardsDB() { safeLocalStorageSet('finflow_yards_db', JSON.stringify(mdYards)); }
+function savePatternsDB() { safeLocalStorageSet('finflow_patterns_db', JSON.stringify(mdIncidentPatterns)); }
 
 function addBusinessUnitDB() {
   const input = document.getElementById('md-bu-name');
@@ -714,7 +714,7 @@ function renderIncidentPatternsTable() {
 
 // ===== หัวข้อปัญหา (สำหรับ "บันทึกปัญหาการทำงาน" - issues.js) =====
 let mdIssueTopics = JSON.parse(localStorage.getItem('finflow_issue_topics_db') || '[]');
-function saveIssueTopicsDB() { localStorage.setItem('finflow_issue_topics_db', JSON.stringify(mdIssueTopics)); }
+function saveIssueTopicsDB() { safeLocalStorageSet('finflow_issue_topics_db', JSON.stringify(mdIssueTopics)); }
 
 function addIssueTopicDB() {
   const input = document.getElementById('md-topic-name');
@@ -759,7 +759,7 @@ function renderIssueTopicsTable() {
 
 // ===== ข้อหา (สำหรับ "บันทึกใบสั่ง" - tickets.js) =====
 let mdChargeTypes = JSON.parse(localStorage.getItem('finflow_charge_types_db') || '[]');
-function saveChargeTypesDB() { localStorage.setItem('finflow_charge_types_db', JSON.stringify(mdChargeTypes)); }
+function saveChargeTypesDB() { safeLocalStorageSet('finflow_charge_types_db', JSON.stringify(mdChargeTypes)); }
 
 function addChargeTypeDB() {
   const input = document.getElementById('md-charge-name');
@@ -812,7 +812,7 @@ function renderChargeTypesTable() {
 // (แปลงข้อมูลเก่าที่เคยเก็บเป็น array ของชื่อ string เฉยๆ ให้เป็น record อัตโนมัติ)
 let mdAbcStaff = JSON.parse(localStorage.getItem('finflow_abc_staff_db') || '[]')
   .map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
-function saveAbcStaffDB() { localStorage.setItem('finflow_abc_staff_db', JSON.stringify(mdAbcStaff)); }
+function saveAbcStaffDB() { safeLocalStorageSet('finflow_abc_staff_db', JSON.stringify(mdAbcStaff)); }
 
 function addAbcStaffDB() {
   const nameInput = document.getElementById('md-abcstaff-name');
@@ -911,7 +911,7 @@ function importAbcStaffExcel(event) {
 
 // ===== เครื่องเป่าแอลกอฮอล์ (inventory ตัวเครื่อง — คนละส่วนกับผลตรวจ "เป่าวัดแอลกอฮอล์" ใน alcohol.js) =====
 let mdBreathalyzers = JSON.parse(localStorage.getItem('finflow_breathalyzers_db') || '[]');
-function saveBreathalyzersDB() { localStorage.setItem('finflow_breathalyzers_db', JSON.stringify(mdBreathalyzers)); }
+function saveBreathalyzersDB() { safeLocalStorageSet('finflow_breathalyzers_db', JSON.stringify(mdBreathalyzers)); }
 
 function bzLookupVehicle() {
   const plate = document.getElementById('md-bz-plate').value.trim();
@@ -1037,7 +1037,7 @@ function loadCategoriesDB() {
   return JSON.parse(localStorage.getItem('finflow_categories_db') || '[]');
 }
 function saveCategoriesDB(cats) {
-  localStorage.setItem('finflow_categories_db', JSON.stringify(cats));
+  safeLocalStorageSet('finflow_categories_db', JSON.stringify(cats));
 }
 
 function addCategoryDB() {

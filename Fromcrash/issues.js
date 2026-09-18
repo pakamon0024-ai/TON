@@ -9,7 +9,7 @@ let wiCharts = {};
 
 const WI_XLSX_HEADERS = ['เลขที่','วันที่','หัวข้อปัญหา','ชื่อพนักงาน','ทะเบียน','หน่วยงาน','ลานจอด','รายละเอียด'];
 
-function wiSave() { localStorage.setItem('finflow_work_issues', JSON.stringify(workIssues)); }
+function wiSave() { safeLocalStorageSet('finflow_work_issues', JSON.stringify(workIssues)); }
 
 // ===== Sub-tabs =====
 function wiSwitchTab(tab) {

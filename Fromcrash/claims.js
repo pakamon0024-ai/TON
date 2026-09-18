@@ -45,7 +45,7 @@ function icLoad() {
   try { const r = localStorage.getItem(SK); claims = r ? JSON.parse(r) : []; } catch { claims = []; }
 }
 function icSave() {
-  localStorage.setItem(SK, JSON.stringify(claims));
+  safeLocalStorageSet(SK, JSON.stringify(claims));
 }
 function icNextSeq() {
   return claims.length ? Math.max(...claims.map(c => c.seq || 0)) + 1 : 1;
@@ -705,7 +705,7 @@ async function icSaveFbConfig() {
   if (!cfg.databaseURL.startsWith('https://')) {
     icToast('Database URL ต้องขึ้นต้นด้วย https://', 'err'); return;
   }
-  localStorage.setItem(FK, JSON.stringify(cfg));
+  safeLocalStorageSet(FK, JSON.stringify(cfg));
   icAddLog('💾 บันทึก Config แล้ว');
   await icConnectFB(cfg);
 }

@@ -10,7 +10,7 @@ let frCharts = {};
 
 const FR_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'ชื่อพนักงาน', 'ทะเบียนรถ', 'หน่วยงาน', 'ลานจอด', 'เรทเชื้อเพลิง (บาท)'];
 
-function frSave() { localStorage.setItem('finflow_fuel_rate', JSON.stringify(frRecords)); }
+function frSave() { safeLocalStorageSet('finflow_fuel_rate', JSON.stringify(frRecords)); }
 
 function frNextRunningNo() {
   return frRecords.length ? Math.max(...frRecords.map(r => r.runningNo || 0)) + 1 : 1;

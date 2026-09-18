@@ -18,7 +18,7 @@ let alcTests = JSON.parse(localStorage.getItem('finflow_alcohol_tests') || '[]')
 let alcRef = null;
 let alcReady = false;
 
-function alcSave() { localStorage.setItem('finflow_alcohol_tests', JSON.stringify(alcTests)); }
+function alcSave() { safeLocalStorageSet('finflow_alcohol_tests', JSON.stringify(alcTests)); }
 
 // ===== Sub-tabs =====
 function alcSwitchTab(tab) {

@@ -15,7 +15,7 @@ const TK_DATE_FIELDS = ['date', 'receivedDate', 'dueDate'];
 const TK_XLSX_HEADERS = ['ลำดับที่','วันที่กระทำผิด','เวลา','ทะเบียน','พนักงานขับรถ','หน่วยงาน','ลานจอด','เลขที่ใบสั่ง','ข้อหา','สถานที่เกิดเหตุ','วันที่รับใบสั่ง','วันครบกำหนดชำระ','จำนวนค่าปรับ','หมายเหตุ'];
 const TK_XLSX_COLWIDTHS = [8, 14, 10, 14, 18, 16, 12, 14, 20, 20, 14, 16, 12, 30];
 
-function tkSave() { localStorage.setItem('finflow_tickets', JSON.stringify(tickets)); }
+function tkSave() { safeLocalStorageSet('finflow_tickets', JSON.stringify(tickets)); }
 
 // ===== Sub-tabs =====
 function tkSwitchTab(tab) {

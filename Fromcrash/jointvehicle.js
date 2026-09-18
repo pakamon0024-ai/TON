@@ -27,7 +27,7 @@ const JV_LEAVE_CHECK_FIELDS = [
   ['jv-leave-sticker', 'leaveSticker'],
 ];
 
-function jvSave() { localStorage.setItem('finflow_joint_vehicles', JSON.stringify(jvRecords)); }
+function jvSave() { safeLocalStorageSet('finflow_joint_vehicles', JSON.stringify(jvRecords)); }
 
 function jvParseBool(v) {
   if (typeof v === 'boolean') return v;
@@ -443,7 +443,7 @@ const JVDB_XLSX_HEADERS = [
 ];
 const JVDB_XLSX_COLWIDTHS = [8, 14, 14, 20, 16, 12, 18, 18, 18, 18, 18];
 
-function jvdbSave() { localStorage.setItem('finflow_jointvehicle_db', JSON.stringify(jvdbRecords)); }
+function jvdbSave() { safeLocalStorageSet('finflow_jointvehicle_db', JSON.stringify(jvdbRecords)); }
 
 function jvdbNextRunningNo() {
   return jvdbRecords.length ? Math.max(...jvdbRecords.map(r => r.runningNo || 0)) + 1 : 1;

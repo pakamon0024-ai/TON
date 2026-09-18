@@ -32,7 +32,7 @@ function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   const next = current === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('finflow_theme', next);
+  safeLocalStorageSet('finflow_theme', next);
   updateThemeToggleIcon();
   // สีกราฟ Chart.js ฝังไว้ตรงๆ ไม่ได้อ่านจาก CSS variable ต้องสั่ง redraw เอง
   if (typeof icRenderDash === 'function' && document.getElementById('page-claims')?.classList.contains('active')) icRenderDash();
@@ -1376,7 +1376,7 @@ function statusBadge(status) {
 }
 
 function saveRecords() {
-  localStorage.setItem('finflow_records', JSON.stringify(records));
+  safeLocalStorageSet('finflow_records', JSON.stringify(records));
 }
 
 let toastTimer;
@@ -1402,5 +1402,19 @@ function notifySyncWriteSuccess() {
 function notifySyncLoadError(detail) {
   const suffix = detail ? ` (${detail})` : ' (เช็คอินเทอร์เน็ตแล้วรีเฟรช)';
   showToast(`⚠️ โหลดข้อมูลจาก Firebase ไม่สำเร็จ ข้อมูลที่เห็นอยู่อาจไม่ใช่ข้อมูลล่าสุด${suffix}`, 'error');
+}
+
+// localStorage มีโควตาจำกัด (มักประมาณ 5-10MB ต่อเว็บ) — ถ้าเขียนแล้วเกินโควตา localStorage.setItem()
+// จะ throw error ตรงๆ ทันที ถ้าเรียกแบบไม่มี try/catch ฟังก์ชันที่เรียกมันจะหยุดทำงานกลางคันเงียบๆ
+// (โค้ดถัดจากนั้น เช่นโค้ด push ขึ้น Firebase จะไม่ถูกรันเลย) ทำให้ข้อมูลดูเหมือน "หายไป" ทั้งที่จริงๆ
+// สาเหตุคือแคชในเครื่องเต็ม ไม่ใช่ปัญหา Firebase — ใช้ตัวนี้แทน localStorage.setItem() ตรงๆ ทุกที่
+// เพื่อไม่ให้ error นี้ไปขวางไม่ให้โค้ดส่วนอื่น (โดยเฉพาะการ sync ขึ้น Firebase) ทำงานต่อ
+function safeLocalStorageSet(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.warn('localStorage quota error', key, e);
+    showToast(`⚠️ พื้นที่เก็บข้อมูลในเครื่อง (localStorage) เต็ม ไม่สามารถแคช "${key}" ไว้ในเครื่องได้ (ข้อมูลจะยังพยายามส่งขึ้น Firebase ตามปกติ — ลองล้างแคชเบราว์เซอร์)`, 'error');
+  }
 }
 

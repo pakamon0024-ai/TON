@@ -82,14 +82,14 @@ async function bkExportAll() {
       const writable = await handle.createWritable();
       await writable.write(arrayBuf);
       await writable.close();
-      localStorage.setItem(BK_LAST_KEY, new Date().toISOString());
+      safeLocalStorageSet(BK_LAST_KEY, new Date().toISOString());
       bkUpdateStatus();
       showToast('✅ บันทึกไฟล์สำรองข้อมูลแล้ว', 'success');
     } catch (e) {
       if (e.name === 'AbortError') return; // ผู้ใช้กดยกเลิกกล่องเลือกโฟลเดอร์
       console.warn('showSaveFilePicker failed, falling back to normal download', e);
       XLSX.writeFile(wb, filename);
-      localStorage.setItem(BK_LAST_KEY, new Date().toISOString());
+      safeLocalStorageSet(BK_LAST_KEY, new Date().toISOString());
       bkUpdateStatus();
       showToast('✅ ดาวน์โหลดไฟล์สำรองข้อมูลแล้ว', 'success');
     }
@@ -98,7 +98,7 @@ async function bkExportAll() {
 
   // เบราว์เซอร์ไม่รองรับ File System Access API (เช่น Firefox) -> ดาวน์โหลดแบบปกติลงโฟลเดอร์ดาวน์โหลด
   XLSX.writeFile(wb, filename);
-  localStorage.setItem(BK_LAST_KEY, new Date().toISOString());
+  safeLocalStorageSet(BK_LAST_KEY, new Date().toISOString());
   bkUpdateStatus();
   showToast('✅ ดาวน์โหลดไฟล์สำรองข้อมูลแล้ว (เบราว์เซอร์นี้เลือกโฟลเดอร์เองไม่ได้ ไฟล์ไปอยู่ที่โฟลเดอร์ดาวน์โหลดแทน)', 'success');
 }
