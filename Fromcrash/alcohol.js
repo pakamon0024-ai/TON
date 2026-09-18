@@ -608,7 +608,10 @@ function alcDailyReportData(monthVal) {
 
     const out = roundStats(dayRecords, r => r.resultOut || r.result, atWork, continuous);
     const ret = roundStats(dayRecords, r => r.resultReturn, atWork, continuousReturn);
-    const summaryPct = Math.round((out.pct + ret.pct) / 2);
+    // เฉลี่ยจาก out.pct/ret.pct ที่ปัดเป็นจำนวนเต็มแล้วทั้งคู่ (100% + 99%) / 2 = 99.5 ซึ่ง Math.round()
+    // จะปัดขึ้นเป็น 100 เสมอ (ปัดครึ่งขึ้น) ทำให้ผลตรวจที่ไม่ครบ 100% จริงกลับโชว์เป็น 100% ผิดๆ
+    // เก็บทศนิยม 2 ตำแหน่งไว้แทน ไม่ปัดเป็นจำนวนเต็ม ให้เห็นตัวเลขจริงตรงๆ เช่น 99.5%
+    const summaryPct = Math.round((out.pct + ret.pct) / 2 * 100) / 100;
 
     return {
       day, dow, dateStr, hasData: dayRecords.length > 0,
@@ -631,7 +634,8 @@ function alcDailyReportTotals(rows) {
   const outBase = atWork - continuous, retBase = atWork - continuousReturn;
   const outPct = outBase > 0 ? Math.round(outChecked / outBase * 100) : 0;
   const retPct = retBase > 0 ? Math.round(retChecked / retBase * 100) : 0;
-  const summaryPct = Math.round((outPct + retPct) / 2);
+  // เก็บทศนิยม 2 ตำแหน่งเหมือนกับ summaryPct ต่อวัน ไม่ปัดเป็นจำนวนเต็ม (ดูเหตุผลที่ alcDailyReportData)
+  const summaryPct = Math.round((outPct + retPct) / 2 * 100) / 100;
 
   const total = { totalStaff, atWork, continuous, continuousReturn, leaveAbsent, out: { checked: outChecked, failed: outFailed, pct: outPct }, ret: { checked: retChecked, failed: retFailed, pct: retPct }, summaryPct };
   const avg = n > 0 ? {
