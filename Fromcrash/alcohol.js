@@ -18,7 +18,21 @@ let alcTests = JSON.parse(localStorage.getItem('finflow_alcohol_tests') || '[]')
 let alcRef = null;
 let alcReady = false;
 
-function alcSave() { safeLocalStorageSet('finflow_alcohol_tests', JSON.stringify(alcTests)); }
+// บันทึกทุกวัน x ~88 คน สะสมมานานพอจะทำให้ไฟล์แคชในเครื่องใหญ่เกินโควตา localStorage (เคยเจอ error
+// "exceeded the quota" มาแล้ว) ข้อมูลเต็มทุกปีอยู่ครบใน Firebase อยู่แล้วเสมอ (ดึงมาครบทุกครั้งที่เปิดเว็บ
+// ผ่าน alcInit) แคชในเครื่องนี้มีไว้แค่ให้เปิดเว็บเห็นข้อมูลเร็ว/สำรองไว้ใช้ตอนออฟไลน์ชั่วคราวเท่านั้น
+// จึงจำกัดให้แคชแค่ N เดือนล่าสุด กันไม่ให้แคชโตไม่มีที่สิ้นสุดจนล้นอีก
+const ALC_CACHE_MONTHS = 3;
+function alcCacheCutoff() {
+  const d = new Date();
+  d.setMonth(d.getMonth() - ALC_CACHE_MONTHS);
+  return d.toISOString().substring(0, 7); // YYYY-MM
+}
+function alcSave() {
+  const cutoff = alcCacheCutoff();
+  const forCache = alcTests.filter(t => !t.date || t.date.slice(0, 7) >= cutoff);
+  safeLocalStorageSet('finflow_alcohol_tests', JSON.stringify(forCache));
+}
 
 // ===== Sub-tabs =====
 function alcSwitchTab(tab) {
