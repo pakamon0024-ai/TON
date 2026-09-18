@@ -20,6 +20,9 @@ const INC_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif"
 const INC_CHART_TICK = { color: '#3d4f6d', font: INC_CHART_FONT };
 const INC_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
 const INC_DL_OPTS = { display: true, anchor: 'end', align: 'end', color: '#1a2540', font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' }, formatter: v => v > 0 ? v : '' };
+// เลข label เหนือแท่งที่สูงสุดเคยถูกตัดขอบบนของ canvas (anchor:'end' วางชิดขอบบนของพื้นที่กราฟพอดี
+// ไม่เหลือที่ให้ตัวเลขเอง) ต้องเผื่อ padding บนไว้ให้ label เต็มเสมอ ไม่ใช่แค่เผื่อด้วย grace ของแกน y
+const INC_CHART_LAYOUT = { padding: { top: 24 } };
 
 const MONTH_LABELS_TH = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
 // จำนวนอุบัติเหตุรายเดือนของปี 2025 (ปีที่แล้ว) — ใช้เทียบกับปีปัจจุบันในกราฟแดชบอร์ด ไม่มีข้อมูลดิบในระบบ
@@ -453,7 +456,7 @@ function incRenderDashboard() {
         { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
       ],
     },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: INC_CHART_FONT, boxWidth: 14 } }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, layout: INC_CHART_LAYOUT, plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: INC_CHART_FONT, boxWidth: 14 } }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
   setChartTotal('inc-chart-month', monthCount); // นับเฉพาะแท่งปีปัจจุบัน ไม่รวมเส้นปีที่แล้ว
 
@@ -463,7 +466,7 @@ function incRenderDashboard() {
   incCharts.yard = new Chart(document.getElementById('inc-chart-yard'), {
     type: 'bar',
     data: { labels: yardSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: yardSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.yard.bg, borderColor: INC_CHART_COLORS.yard.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, layout: INC_CHART_LAYOUT, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
   setChartTotal('inc-chart-yard', yardSorted.map(e => e[1]));
 
@@ -473,7 +476,7 @@ function incRenderDashboard() {
   incCharts.pattern = new Chart(document.getElementById('inc-chart-pattern'), {
     type: 'bar',
     data: { labels: patternSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: patternSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.pattern.bg, borderColor: INC_CHART_COLORS.pattern.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: { ...INC_CHART_TICK, maxRotation: 30 } } } }
+    options: { responsive: true, maintainAspectRatio: false, layout: INC_CHART_LAYOUT, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: { ...INC_CHART_TICK, maxRotation: 30 } } } }
   });
   setChartTotal('inc-chart-pattern', patternSorted.map(e => e[1]));
 
@@ -483,7 +486,7 @@ function incRenderDashboard() {
   incCharts.bu = new Chart(document.getElementById('inc-chart-bu'), {
     type: 'bar',
     data: { labels: buSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: buSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.bu.bg, borderColor: INC_CHART_COLORS.bu.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, layout: INC_CHART_LAYOUT, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
   setChartTotal('inc-chart-bu', buSorted.map(e => e[1]));
 
@@ -493,7 +496,7 @@ function incRenderDashboard() {
   incCharts.area = new Chart(document.getElementById('inc-chart-area'), {
     type: 'bar',
     data: { labels: areaSorted.map(e=>e[0]), datasets: [{ label: 'จำนวนเหตุ', data: areaSorted.map(e=>e[1]), backgroundColor: INC_CHART_COLORS.area.bg, borderColor: INC_CHART_COLORS.area.border, borderWidth: 0, borderRadius: 5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
+    options: { responsive: true, maintainAspectRatio: false, layout: INC_CHART_LAYOUT, plugins: { legend: { display: false }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
   });
   setChartTotal('inc-chart-area', areaSorted.map(e => e[1]));
 }
