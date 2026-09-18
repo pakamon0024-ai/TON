@@ -369,6 +369,7 @@ async function jvWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/jointVehicles/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('jvWriteOne error', e); notifySyncWriteError(); }
 }
 function jvPushOneIfReady(record) { if (jvReady) jvWriteOne(record); }
@@ -730,6 +731,7 @@ async function jvdbWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/jointVehicleDB/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('jvdbWriteOne error', e); notifySyncWriteError(); }
 }
 function jvdbPushOneIfReady(record) { if (jvdbReady) jvdbWriteOne(record); }

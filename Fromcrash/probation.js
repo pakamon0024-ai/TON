@@ -532,6 +532,7 @@ async function pbWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/probationRecords/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('pbWriteOne error', e); notifySyncWriteError(); }
 }
 function pbPushOneIfReady(record) { if (pbReady) pbWriteOne(record); }

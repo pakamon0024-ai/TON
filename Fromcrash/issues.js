@@ -390,6 +390,7 @@ async function wiWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/workIssues/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('wiWriteOne error', e); notifySyncWriteError(); }
 }
 function wiPushOneIfReady(record) { if (wiReady) wiWriteOne(record); }

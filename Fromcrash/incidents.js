@@ -821,6 +821,7 @@ async function incWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/incidents/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('incWriteOne error', e); notifySyncWriteError(); }
 }
 function incPushOneIfReady(record) { if (incReady) incWriteOne(record); }
@@ -1302,6 +1303,7 @@ async function ghWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/garageHistory/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('ghWriteOne error', e); notifySyncWriteError(); }
 }
 function ghPushOneIfReady(record) { if (ghReady) ghWriteOne(record); }

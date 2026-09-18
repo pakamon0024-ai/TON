@@ -1393,6 +1393,11 @@ function showToast(msg, type = 'success') {
 function notifySyncWriteError() {
   showToast('⚠️ บันทึกขึ้น Firebase ไม่สำเร็จ เพื่อนร่วมงานอาจยังไม่เห็นข้อมูลนี้ (เช็คอินเทอร์เน็ตแล้วลองใหม่)', 'error');
 }
+// เรียกทันทีที่เขียนขึ้น Firebase สำเร็จจริง (ต่อจาก toast "บันทึกแล้ว" ที่ขึ้นตอนบันทึกลงเครื่อง)
+// เพื่อยืนยันแยกกันว่าเพื่อนร่วมงานเห็นข้อมูลนี้แล้วจริงๆ ไม่ใช่แค่บันทึกลงเครื่องตัวเองสำเร็จ
+function notifySyncWriteSuccess() {
+  showToast('🟢 ซิงค์ขึ้น Firebase สำเร็จ', 'success');
+}
 function notifySyncLoadError() {
   showToast('⚠️ โหลดข้อมูลจาก Firebase ไม่สำเร็จ ข้อมูลที่เห็นอยู่อาจไม่ใช่ข้อมูลล่าสุด (เช็คอินเทอร์เน็ตแล้วรีเฟรช)', 'error');
 }

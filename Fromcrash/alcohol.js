@@ -770,13 +770,19 @@ function alcObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนที่เพิ่งเปิดเว็บและยังเชื่อมต่อ Firebase ไม่ทัน
+// ทำให้ push ไม่สำเร็จตั้งแต่ตอนนั้น) ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ
+// แล้ว sync ส่วนที่ตกหล่นนี้กลับขึ้น server ทันทีที่เรียกครั้งนี้ (ทั้งตอนโหลดครั้งแรกและตอนมี snapshot ใหม่จาก onValue)
 function alcApplyServer(serverTests) {
-  alcTests = serverTests;
+  const serverIds = new Set(serverTests.map(r => r.id));
+  const localOnly = (alcTests || []).filter(t => t && t.id && !serverIds.has(t.id));
+  alcTests = serverTests.concat(localOnly);
   alcSave();
   alcRenderList();
   alcRenderRoster();
   alcRenderSummary();
   alcRenderDailyReport();
+  if (localOnly.length > 0) alcWriteMany(localOnly);
 }
 async function alcWriteFB() {
   if (!alcRef) return;
@@ -798,6 +804,7 @@ async function alcWriteMany(records) {
     const updates = {};
     records.forEach(r => { if (r && r.id) updates[`/alcoholTests/${r.id}`] = r; });
     await update(ref(fbDb), updates);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('alcWriteMany error', e); notifySyncWriteError(); }
 }
 function alcPushManyIfReady(records) { if (alcReady) alcWriteMany(records); }

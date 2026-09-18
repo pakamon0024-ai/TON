@@ -392,6 +392,7 @@ async function frWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/fuelRate/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('frWriteOne error', e); notifySyncWriteError(); }
 }
 function frPushOneIfReady(record) { if (frReady) frWriteOne(record); }

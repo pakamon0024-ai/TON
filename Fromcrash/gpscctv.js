@@ -515,6 +515,7 @@ async function gcWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/gpsCctvInstalls/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('gcWriteOne error', e); notifySyncWriteError(); }
 }
 function gcPushOneIfReady(record) { if (gcReady) gcWriteOne(record); }
@@ -543,6 +544,7 @@ async function grWriteOne(record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/gpsCctvRepairs/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('grWriteOne error', e); notifySyncWriteError(); }
 }
 function grPushOneIfReady(record) { if (grReady) grWriteOne(record); }
@@ -927,6 +929,7 @@ async function ddbWriteOne(type, record) {
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `${DDB_FB_PATH[type]}/${record.id}`), record);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('ddbWriteOne error', type, e); notifySyncWriteError(); }
 }
 
