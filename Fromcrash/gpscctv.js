@@ -362,16 +362,42 @@ function grDeleteCase(id) {
   showToast('ลบแล้ว', 'warning');
 }
 
+// เรียงตามสถานะการซ่อม (คลิกหัวตาราง "สถานะ" สลับ ▲/▼) — null = เรียงตามลำดับบันทึกปกติ (ใหม่สุดก่อน)
+let grSortField = null;
+let grSortDir = 1;
+function grCompareValues(a, b, field) {
+  if (field === 'status') {
+    // เรียงตามลำดับสถานะที่กำหนดไว้ (รอซ่อมมาก่อนซ่อมเสร็จแล้ว) ไม่ใช่เรียงตามตัวอักษร
+    const ai = GR_STATUS_OPTIONS.findIndex(o => o.value === grStatusOf(a));
+    const bi = GR_STATUS_OPTIONS.findIndex(o => o.value === grStatusOf(b));
+    return ai - bi;
+  }
+  return String(a[field] || '').localeCompare(String(b[field] || ''), 'th');
+}
+function grSortBy(field) {
+  if (grSortField === field) grSortDir *= -1;
+  else { grSortField = field; grSortDir = 1; }
+  grRenderList();
+}
+function grUpdateSortIndicators() {
+  document.querySelectorAll('.gr-sort-ind').forEach(el => { el.textContent = ''; });
+  if (!grSortField) return;
+  const ind = document.getElementById(`gr-sort-ind-${grSortField}`);
+  if (ind) ind.textContent = grSortDir === 1 ? '▲' : '▼';
+}
+
 function grFilteredList() {
   const plate = (document.getElementById('gr-f-plate')?.value || '').trim().toLowerCase();
   const device = document.getElementById('gr-f-device')?.value || '';
   const status = document.getElementById('gr-f-status')?.value || '';
-  return grRecords.filter(r => {
+  const list = grRecords.filter(r => {
     if (plate && !r.plate.toLowerCase().includes(plate)) return false;
     if (device && r.device !== device) return false;
     if (status && grStatusOf(r) !== status) return false;
     return true;
   });
+  if (!grSortField) return list;
+  return list.sort((a, b) => grCompareValues(a, b, grSortField) * grSortDir);
 }
 
 function grClearListFilters() {
@@ -387,6 +413,7 @@ function grRenderList() {
   const countEl = document.getElementById('gr-list-count');
   const pagerEl = document.getElementById('gr-list-pager');
   if (!tbody) return;
+  grUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
@@ -570,7 +597,7 @@ async function grSaveReportImage() {
   }
 
   window.scrollTo(0, savedScroll);
-  rpt.style.left = '-1300px';
+  rpt.style.left = '-3000px';
 }
 
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
