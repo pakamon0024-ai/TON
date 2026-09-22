@@ -24,7 +24,7 @@ function gvSwitchTab(tab) {
     document.getElementById(`gv-subpage-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'dashboard') { gvRefreshDashFilters(); gvRenderDashboard(); }
-  if (tab === 'list') gvRenderList();
+  if (tab === 'list') { gvFillTypeSelect('gv-f-type'); gvRenderList(); }
   if (tab === 'add' && !gvEditingId) gvClearForm();
   if (tab === 'daily') { gvFillTypeSelect('gv-daily-type'); gvRenderDailyReport(); }
 }
@@ -151,6 +151,7 @@ function gvOnPageShown() {
     gvFillTypeSelect('gv-daily-type');
     gvRenderDailyReport();
   }
+  gvFillTypeSelect('gv-f-type');
   gvRenderList();
 }
 
@@ -528,8 +529,10 @@ function gvObjToRecords(obj) {
 function gvApplyServer(serverRecords) {
   gvRecords = serverRecords;
   gvSave();
+  gvFillTypeSelect('gv-f-type');
   gvRenderList();
-  if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) gvRenderDashboard();
+  if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) { gvFillTypeSelect('gv-dash-type'); gvRenderDashboard(); }
+  if (document.getElementById('gv-subpage-daily')?.classList.contains('active')) { gvFillTypeSelect('gv-daily-type'); gvRenderDailyReport(); }
 }
 async function gvWriteFB() {
   if (!gvRef) return;
@@ -585,6 +588,7 @@ async function gvInit() {
 document.addEventListener('DOMContentLoaded', () => {
   gvRefreshLookupDropdowns();
   gvClearForm();
+  gvFillTypeSelect('gv-f-type');
   gvRenderList();
   const dailyMonthEl = document.getElementById('gv-daily-month');
   if (dailyMonthEl) dailyMonthEl.value = new Date().toISOString().substring(0, 7);
