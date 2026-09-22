@@ -19,13 +19,14 @@ function gvNextRunningNo() {
 
 // ===== Sub-tabs =====
 function gvSwitchTab(tab) {
-  ['dashboard', 'list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add', 'daily'].forEach(t => {
     document.getElementById(`gv-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gv-subpage-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'dashboard') { gvRefreshDashFilters(); gvRenderDashboard(); }
   if (tab === 'list') gvRenderList();
   if (tab === 'add' && !gvEditingId) gvClearForm();
+  if (tab === 'daily') { gvFillTypeSelect('gv-daily-type'); gvRenderDailyReport(); }
 }
 
 // ===== Dashboard (เลือกดูแยกตามประเภทความผิดผ่าน dropdown) =====
@@ -78,18 +79,24 @@ function gvDashFillSelect(id, list) {
 // ช่องประเภทความผิดในฟอร์มเพิ่มบันทึกเป็นข้อความอิสระ (พิมพ์เองได้ ไม่ได้บังคับแค่ 2 ตัวเลือกที่ตั้งไว้)
 // เดิม dropdown แดชบอร์ดมีแค่ 2 ตัวเลือกตายตัว — ถ้าใครพิมพ์ประเภทอื่นที่ไม่ตรงเป๊ะ รายการนั้นจะไม่โผล่ในแดชบอร์ดเลย
 // แก้โดยเพิ่ม "ทั้งหมด" เป็นตัวเลือกแรก และเติมประเภทอื่นๆ ที่มีอยู่จริงในข้อมูล (นอกเหนือจาก 2 ตัวหลัก) ต่อท้ายให้เลือกได้ด้วย
+// ใช้ร่วมกันทั้งตัวกรองแดชบอร์ดและตัวกรองของรายงานรายวัน (gv-daily-type) เลยแยกเป็นฟังก์ชันกลาง
+function gvTypeOptionsHtml() {
+  const extraTypes = [...new Set(gvRecords.map(r => r.type).filter(Boolean))]
+    .filter(t => !GV_TYPE_PRESETS.includes(t));
+  const extraHtml = extraTypes.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+  const baseHtml = '<option value="">ทั้งหมด</option>' +
+    GV_TYPE_PRESETS.map(t => `<option value="${escapeHtml(t)}">${t === 'จอดรถติดเครื่องนาน' ? 'จอดรถไม่ดับเครื่องนานเกิน' : escapeHtml(t)}</option>`).join('');
+  return baseHtml + extraHtml;
+}
+function gvFillTypeSelect(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  el.innerHTML = gvTypeOptionsHtml();
+  if ([...el.options].some(o => o.value === current)) el.value = current;
+}
 function gvRefreshDashFilters() {
-  const typeSelect = document.getElementById('gv-dash-type');
-  if (typeSelect) {
-    const current = typeSelect.value;
-    const extraTypes = [...new Set(gvRecords.map(r => r.type).filter(Boolean))]
-      .filter(t => !GV_TYPE_PRESETS.includes(t));
-    const extraHtml = extraTypes.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
-    const baseHtml = '<option value="">ทั้งหมด</option>' +
-      GV_TYPE_PRESETS.map(t => `<option value="${escapeHtml(t)}">${t === 'จอดรถติดเครื่องนาน' ? 'จอดรถไม่ดับเครื่องนานเกิน' : escapeHtml(t)}</option>`).join('');
-    typeSelect.innerHTML = baseHtml + extraHtml;
-    if ([...typeSelect.options].some(o => o.value === current)) typeSelect.value = current;
-  }
+  gvFillTypeSelect('gv-dash-type');
   gvDashFillSelect('gv-dash-yard', mdYards);
   gvDashFillSelect('gv-dash-bu', mdBusinessUnits);
 }
@@ -140,7 +147,121 @@ function gvOnPageShown() {
     gvRefreshDashFilters();
     gvRenderDashboard();
   }
+  if (document.getElementById('gv-subpage-daily')?.classList.contains('active')) {
+    gvFillTypeSelect('gv-daily-type');
+    gvRenderDailyReport();
+  }
   gvRenderList();
+}
+
+// ===== รายงานรายวัน แยกตามลานจอด (ตารางวันที่ x ลานจอด + รวมท้ายแถว/ท้ายคอลัมน์) =====
+function gvDailyMonthValue() {
+  return document.getElementById('gv-daily-month')?.value || new Date().toISOString().substring(0, 7);
+}
+
+// กรองตามเดือน + ประเภทความผิดที่เลือก แล้วนับจำนวนครั้งแยกวัน x ลานจอด
+// วันที่ไม่มีข้อมูลเลย (ทุกลานจอด) จะไม่โผล่เป็นแถว — ตัดแถวว่างทิ้งให้ตารางกระชับ
+// คอลัมน์ลานจอดเรียงจากยอดรวมมากไปน้อย (เหมือนกราฟ "จำนวนครั้งตามลานจอด" ในแดชบอร์ด)
+function gvDailyReportData(monthVal, type) {
+  const list = gvRecords.filter(r => (r.date || '').startsWith(monthVal) && (!type || r.type === type));
+  const yardTotals = {};
+  const byDate = {};
+  list.forEach(r => {
+    const yard = r.yard || '-';
+    yardTotals[yard] = (yardTotals[yard] || 0) + 1;
+    if (!byDate[r.date]) byDate[r.date] = {};
+    byDate[r.date][yard] = (byDate[r.date][yard] || 0) + 1;
+  });
+  const yards = Object.entries(yardTotals).sort((a, b) => b[1] - a[1]).map(e => e[0]);
+  const dates = Object.keys(byDate).sort();
+  const rows = dates.map(date => {
+    const counts = byDate[date];
+    const total = yards.reduce((s, y) => s + (counts[y] || 0), 0);
+    return { date, counts, total };
+  });
+  const colTotals = {};
+  yards.forEach(y => { colTotals[y] = rows.reduce((s, r) => s + (r.counts[y] || 0), 0); });
+  const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+  return { yards, rows, colTotals, grandTotal };
+}
+
+function gvDailyReportTitle(type) {
+  return type ? `รายงาน${type}แยกแต่ละลานจอด` : 'รายงานความผิด GPS แยกแต่ละลานจอด';
+}
+
+function gvDailyTableHtml(data) {
+  const { yards, rows, colTotals, grandTotal } = data;
+  if (rows.length === 0) return '<p class="empty-state">ไม่มีข้อมูลในเดือนนี้</p>';
+  const headYards = yards.map(y => `<th>${escapeHtml(y)}</th>`).join('');
+  const bodyRows = rows.map(r => `
+    <tr>
+      <td>${formatDate(r.date)}</td>
+      ${yards.map(y => `<td>${r.counts[y] || ''}</td>`).join('')}
+      <td class="gv-daily-total">${r.total}</td>
+    </tr>
+  `).join('');
+  const footCells = yards.map(y => `<td>${colTotals[y]}</td>`).join('');
+  return `
+    <table class="data-table gv-daily-table">
+      <thead><tr><th>วันที่</th>${headYards}<th>ทั้งหมด</th></tr></thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot><tr><td>ทั้งหมด</td>${footCells}<td>${grandTotal}</td></tr></tfoot>
+    </table>
+  `;
+}
+
+function gvRenderDailyReport() {
+  const wrap = document.getElementById('gv-daily-table-wrap');
+  if (!wrap) return;
+  const monthVal = gvDailyMonthValue();
+  const type = document.getElementById('gv-daily-type')?.value || '';
+  const data = gvDailyReportData(monthVal, type);
+  const titleEl = document.getElementById('gv-daily-title');
+  if (titleEl) titleEl.textContent = gvDailyReportTitle(type);
+  wrap.innerHTML = gvDailyTableHtml(data);
+}
+
+// บันทึกภาพรายงาน — ใช้ #gv-daily-report-container ที่วางไว้นอกจอถาวร เหมือนรายงานแจ้งซ่อม GPS/CCTV
+async function gvSaveDailyReportImage() {
+  const rpt = document.getElementById('gv-daily-report-container');
+  const tableWrap = document.getElementById('gv-daily-report-table-wrap');
+  if (!rpt || !tableWrap) return;
+
+  const monthVal = gvDailyMonthValue();
+  const type = document.getElementById('gv-daily-type')?.value || '';
+  const data = gvDailyReportData(monthVal, type);
+  if (data.rows.length === 0) { showToast('ไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+
+  const now = new Date();
+  document.getElementById('gv-daily-rpt-title').textContent = gvDailyReportTitle(type);
+  document.getElementById('gv-daily-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('gv-daily-rpt-total-count').textContent = data.grandTotal;
+  tableWrap.innerHTML = gvDailyTableHtml(data);
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 60));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = 'รายงานความผิดGPS_รายวัน_' + now.toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-3000px';
 }
 
 // ===== Lookup dropdowns =====
@@ -465,5 +586,7 @@ document.addEventListener('DOMContentLoaded', () => {
   gvRefreshLookupDropdowns();
   gvClearForm();
   gvRenderList();
+  const dailyMonthEl = document.getElementById('gv-daily-month');
+  if (dailyMonthEl) dailyMonthEl.value = new Date().toISOString().substring(0, 7);
   gvInit();
 });

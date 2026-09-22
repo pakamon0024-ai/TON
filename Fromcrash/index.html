@@ -3312,6 +3312,7 @@
             <button class="subtab active" id="gv-tab-dashboard" onclick="gvSwitchTab('dashboard')">📊 แดชบอร์ด</button>
             <button class="subtab" id="gv-tab-list" onclick="gvSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="gv-tab-add" onclick="gvSwitchTab('add')">➕ เพิ่มบันทึก</button>
+            <button class="subtab" id="gv-tab-daily" onclick="gvSwitchTab('daily')">📅 รายงานรายวัน</button>
           </div>
 
           <!-- DASHBOARD SUBPAGE -->
@@ -3473,6 +3474,25 @@
                 <button class="btn-primary" onclick="gvSaveRecord()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
+          </div>
+
+          <!-- DAILY REPORT SUBPAGE: ตารางวันที่ x ลานจอด แยกตามประเภทความผิดที่เลือก -->
+          <div class="subpage" id="gv-subpage-daily">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="gv-daily-month" onchange="gvRenderDailyReport()" />
+              </div>
+              <div class="filter-group">
+                <label>ประเภทความผิด</label>
+                <select id="gv-daily-type" onchange="gvRenderDailyReport()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <button class="btn-secondary" onclick="gvSaveDailyReportImage()">📸 บันทึกภาพรายงาน</button>
+            </div>
+            <div class="fieldset-title" id="gv-daily-title">รายงานความผิด GPS แยกแต่ละลานจอด</div>
+            <div class="recent-table-wrap" id="gv-daily-table-wrap"></div>
           </div>
         </div>
       </div>
@@ -4160,6 +4180,26 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบจัดการ GPS/CCTV · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · GPS/CCTV REPAIR REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container ตารางความผิด GPS รายวันแยกลานจอด (off-screen, captured by html2canvas) -->
+  <div id="gv-daily-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title" id="gv-daily-rpt-title">รายงานความผิด GPS แยกแต่ละลานจอด</div>
+        <div class="rpt-date-text" id="gv-daily-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนครั้งรวม</div>
+        <div class="rpt-count-val" id="gv-daily-rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body" id="gv-daily-report-table-wrap"></div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบรายงานความผิด GPS · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · GPS VIOLATION REPORT</div>
     </div>
   </div>
 
