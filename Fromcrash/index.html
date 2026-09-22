@@ -3037,6 +3037,7 @@
               <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
                   style="display:none" onchange="grImportExcel(event)"></label>
               <button class="btn-secondary" onclick="grExportExcel()">📊 Export Excel</button>
+              <button class="btn-secondary" onclick="grSaveReportImage()">📸 บันทึกภาพรายงาน</button>
             </div>
             <p class="readonly-hint">นำเข้าซ้ำโดยใช้ "ทะเบียนรถ + ประเภทอุปกรณ์ + วันที่แจ้ง" เป็นตัวจับคู่ —
               ถ้าตรงกับรายการเดิมจะแก้ไขข้อมูลแทนการเพิ่มซ้ำ</p>
@@ -3048,11 +3049,11 @@
                   <tr>
                     <th>เลขที่</th>
                     <th>ทะเบียนรถ</th>
-                    <th>เจ้าของรถ</th>
+                    <th>ลานจอด</th>
                     <th>อุปกรณ์</th>
                     <th>อาการ</th>
                     <th>วันที่แจ้ง</th>
-                    <th>วันที่ช่างมาซ่อม</th>
+                    <th>วันที่นัดซ่อม</th>
                     <th>สถานะ</th>
                     <th>หมายเหตุ</th>
                     <th>จัดการ</th>
@@ -3084,7 +3085,9 @@
                     onblur="gcCommitPlateInput('gr')" />
                   <div class="combo-list" id="gr-plate-list"></div>
                 </div>
-                <div class="form-group"><label>เจ้าของรถ (auto)</label><input type="text" id="gr-owner" readonly />
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="gr-yard" list="gr-yard-list" placeholder="เลือก/พิมพ์ลานจอด..." />
+                  <datalist id="gr-yard-list"></datalist>
                 </div>
                 <div class="form-group"><label>ประเภทอุปกรณ์ <span class="req">*</span></label>
                   <select id="gr-device">
@@ -3100,7 +3103,13 @@
               </div>
               <div class="form-row-3">
                 <div class="form-group"><label>วันที่แจ้ง</label><input type="date" id="gr-appointment-date" /></div>
-                <div class="form-group"><label>วันที่ช่างมาซ่อม</label><input type="date" id="gr-repair-date" /></div>
+                <div class="form-group"><label>วันที่นัดซ่อม</label><input type="date" id="gr-repair-date" /></div>
+                <div class="form-group"><label>สถานะการซ่อม</label>
+                  <select id="gr-status">
+                    <option value="pending">รอซ่อม</option>
+                    <option value="done">ซ่อมเสร็จแล้ว</option>
+                  </select>
+                </div>
               </div>
               <div class="form-row-3">
                 <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
@@ -4121,6 +4130,36 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบบันทึกอุบัติเหตุ FormCrash · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">FORMCRASH · SAFETY REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container ตารางแจ้งซ่อม GPS/CCTV (off-screen, captured by html2canvas) -->
+  <div id="gr-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title">รายงานแจ้งซ่อม GPS/CCTV</div>
+        <div class="rpt-date-text" id="gr-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนรายการ</div>
+        <div class="rpt-count-val" id="gr-rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <table class="data-table gr-report-table">
+        <thead>
+          <tr>
+            <th>เลขที่</th><th>ทะเบียนรถ</th><th>ลานจอด</th><th>อุปกรณ์</th><th>อาการ</th>
+            <th>วันที่แจ้ง</th><th>วันที่นัดซ่อม</th><th>สถานะ</th><th>หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="gr-report-body"></tbody>
+      </table>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบจัดการ GPS/CCTV · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · GPS/CCTV REPAIR REPORT</div>
     </div>
   </div>
 

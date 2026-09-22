@@ -1362,6 +1362,17 @@ body {
   width: 1080px; height: auto; overflow: hidden;
   background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
 }
+
+#gr-report-container {
+  position: fixed; left: -1300px; top: 0; z-index: 9998;
+  width: 1200px; height: auto; overflow: hidden;
+  background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
+}
+.gr-report-table { width: 100%; background: #fff; border-collapse: collapse; font-size: 0.85rem; }
+.gr-report-table th, .gr-report-table td {
+  padding: 9px 12px; text-align: center; white-space: nowrap; border: 1px solid #dde1ee;
+}
+.gr-report-table td:nth-child(5), .gr-report-table td:nth-child(9) { white-space: normal; text-align: left; max-width: 240px; }
 .rpt-header {
   background: linear-gradient(135deg, #0a1f38 0%, #163a63 100%);
   color: #fff; padding: 24px 36px;

@@ -34,6 +34,15 @@ function gcSwitchTab(tab) {
 function gcOnPageShown() {
   gcRenderList(); grRenderList();
   ddbRenderList('cam'); ddbRenderList('gps'); ddbRenderList('bz');
+  grFillYardList();
+}
+
+// ลานจอดของแจ้งซ่อมเป็นช่องพิมพ์/เลือกอิสระ (ไม่ได้ผูกกับฐานข้อมูลหลักเหมือนเจ้าของรถ เพราะรถคันเดียวกัน
+// อาจย้ายลานจอดไปมาได้ ไม่ใช่ค่าคงที่ต่อทะเบียนแบบเจ้าของรถ) — เติมตัวเลือกจากฐานข้อมูลหลัก mdYards
+function grFillYardList() {
+  const el = document.getElementById('gr-yard-list');
+  if (!el) return;
+  el.innerHTML = (mdYards || []).map(name => `<option value="${escapeHtml(name)}">`).join('');
 }
 
 // ===== ทะเบียนรถ: ช่องพิมพ์ค้นหา + เลือกจากฐานข้อมูลหลัก (mdVehicles) เท่านั้น =====
@@ -61,7 +70,7 @@ function gcRenderPlateOptions(prefix) {
 function gcPickPlate(prefix, plate) {
   document.getElementById(`${prefix}-plate`).value = plate;
   document.getElementById(`${prefix}-plate-list`).classList.remove('show');
-  if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallDate(); } else { grLookupVehicle(); }
+  if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallDate(); }
 }
 
 // ตอนออกจากช่อง (blur) ถ้าพิมพ์มาไม่ตรงกับทะเบียนที่มีจริงในฐานข้อมูลหลัก ให้ล้างค่าทิ้ง
@@ -74,11 +83,12 @@ function gcCommitPlateInput(prefix) {
     const val = input.value.trim();
     if (val && !gcAllKnownPlates().includes(val)) {
       input.value = '';
-      document.getElementById(`${prefix}-owner`).value = '';
+      const ownerEl = document.getElementById(`${prefix}-owner`);
+      if (ownerEl) ownerEl.value = '';
       showToast('กรุณาเลือกทะเบียนรถจากรายการเท่านั้น', 'warning');
     } else if (val) {
-      // พิมพ์ทะเบียนที่มีจริงมาครบแล้วออกจากช่องเลย (ไม่ได้กดเลือกจากลิสต์) ก็ให้เติมเจ้าของรถให้เหมือนกัน
-      if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallDate(); } else { grLookupVehicle(); }
+      // พิมพ์ทะเบียนที่มีจริงมาครบแล้วออกจากช่องเลย (ไม่ได้กดเลือกจากลิสต์) ก็ให้เติมเจ้าของรถให้เหมือนกัน (เฉพาะ gc)
+      if (prefix === 'gc') { gcLookupVehicle(); gcAutoFillInstallDate(); }
     }
   }, 150);
 }
@@ -98,11 +108,6 @@ function gcLookupVehicle() {
   const plate = document.getElementById('gc-plate').value.trim();
   const veh = mdVehicles.find(v => v.plate === plate);
   document.getElementById('gc-owner').value = veh?.owner || '';
-}
-function grLookupVehicle() {
-  const plate = document.getElementById('gr-plate').value.trim();
-  const veh = mdVehicles.find(v => v.plate === plate);
-  document.getElementById('gr-owner').value = veh?.owner || '';
 }
 
 // ===== ติดตั้ง/ถอด: Running number =====
@@ -259,26 +264,33 @@ function gcRenderList() {
 
 // ===== แจ้งซ่อม: Running number / สถานะ =====
 function grNextRunningNo() { return grRecords.length ? Math.max(...grRecords.map(r => r.runningNo || 0)) + 1 : 1; }
-function grStatusOf(rec) { return rec.repairDate ? 'done' : 'pending'; }
+const GR_STATUS_OPTIONS = [
+  { value: 'pending', label: 'รอซ่อม', badge: 'badge-orange' },
+  { value: 'done', label: 'ซ่อมเสร็จแล้ว', badge: 'badge-green' },
+];
+// เดิมสถานะคำนวนจาก "มีวันที่ช่างมาซ่อมหรือไม่" ตอนนี้ให้เลือกสถานะเองตรงๆ ในฟอร์มแทน
+// รายการเก่าที่ยังไม่มีช่อง status (บันทึกไว้ก่อนเพิ่มฟีเจอร์นี้) ให้เดาจาก repairDate ไปพลางก่อน
+// ไม่ต้องรันสคริปต์ย้อนหลัง — พอแก้ไขแล้วบันทึกใหม่ก็จะมี status ตรงๆ ทันที
+function grStatusOf(rec) { return rec.status || (rec.repairDate ? 'done' : 'pending'); }
 function grStatusBadge(rec) {
-  return grStatusOf(rec) === 'done'
-    ? `<span class="badge badge-green">ซ่อมเสร็จแล้ว</span>`
-    : `<span class="badge badge-orange">รอซ่อม</span>`;
+  const opt = GR_STATUS_OPTIONS.find(o => o.value === grStatusOf(rec)) || GR_STATUS_OPTIONS[0];
+  return `<span class="badge ${opt.badge}">${opt.label}</span>`;
 }
 
 function grSaveCase() {
   const plate = document.getElementById('gr-plate').value.trim();
-  const owner = document.getElementById('gr-owner').value.trim();
+  const yard = document.getElementById('gr-yard').value.trim();
   const device = document.getElementById('gr-device').value;
   const symptom = document.getElementById('gr-symptom').value.trim();
   const appointmentDate = document.getElementById('gr-appointment-date').value;
   const repairDate = document.getElementById('gr-repair-date').value;
+  const status = document.getElementById('gr-status').value;
   const note = document.getElementById('gr-note').value.trim();
 
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
   if (!symptom) { showToast('กรุณาระบุอาการ', 'warning'); return; }
 
-  const record = { plate, owner, device, symptom, appointmentDate, repairDate, note };
+  const record = { plate, yard, device, symptom, appointmentDate, repairDate, status, note };
 
   let savedRecord;
   if (grEditingId) {
@@ -312,11 +324,12 @@ function grClearForm() {
   grEditingId = null;
   document.getElementById('gr-edit-banner').style.display = 'none';
   document.getElementById('gr-plate').value = '';
-  document.getElementById('gr-owner').value = '';
+  document.getElementById('gr-yard').value = '';
   document.getElementById('gr-device').value = 'GPS';
   document.getElementById('gr-symptom').value = '';
   document.getElementById('gr-appointment-date').value = '';
   document.getElementById('gr-repair-date').value = '';
+  document.getElementById('gr-status').value = 'pending';
   document.getElementById('gr-note').value = '';
 }
 
@@ -327,11 +340,12 @@ function grEditCase(id) {
   document.getElementById('gr-edit-banner').style.display = 'flex';
   document.getElementById('gr-edit-no').textContent = rec.runningNo;
   document.getElementById('gr-plate').value = rec.plate || '';
-  document.getElementById('gr-owner').value = rec.owner || '';
+  document.getElementById('gr-yard').value = rec.yard || '';
   document.getElementById('gr-device').value = rec.device || 'GPS';
   document.getElementById('gr-symptom').value = rec.symptom || '';
   document.getElementById('gr-appointment-date').value = rec.appointmentDate || '';
   document.getElementById('gr-repair-date').value = rec.repairDate || '';
+  document.getElementById('gr-status').value = grStatusOf(rec);
   document.getElementById('gr-note').value = rec.note || '';
   gcSwitchTab('repadd');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -385,7 +399,7 @@ function grRenderList() {
     <tr>
       <td>${r.runningNo}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
-      <td>${escapeHtml(r.owner || '-')}</td>
+      <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.device || '-')}</td>
       <td>${escapeHtml(r.symptom || '-')}</td>
       <td>${r.appointmentDate ? formatDate(r.appointmentDate) : '-'}</td>
@@ -452,11 +466,11 @@ function gcImportExcel(event) {
   });
 }
 
-// ===== Excel: แจ้งซ่อม (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่นัดซ่อม) =====
+// ===== Excel: แจ้งซ่อม (นำเข้าซ้ำ = แก้ไข จับคู่ด้วยทะเบียน+อุปกรณ์+วันที่แจ้ง) =====
 function grDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
-    ['ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'อาการ', 'วันที่นัดซ่อม (dd/mm/yyyy)', 'วันที่ช่างมาซ่อม (dd/mm/yyyy)', 'หมายเหตุ'],
-    ['70-1234', 'นายสมชาย ใจดี', 'GPS', 'สัญญาณขาดหาย', '01/02/2026', '', ''],
+    ['ทะเบียนรถ', 'ลานจอด', 'ประเภทอุปกรณ์ (GPS/CCTV)', 'อาการ', 'วันที่แจ้ง (dd/mm/yyyy)', 'วันที่นัดซ่อม (dd/mm/yyyy)', 'สถานะ (รอซ่อม/ซ่อมเสร็จแล้ว)', 'หมายเหตุ'],
+    ['70-1234', 'ABC', 'GPS', 'สัญญาณขาดหาย', '01/02/2026', '05/02/2026', 'รอซ่อม', ''],
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'แจ้งซ่อม');
@@ -467,8 +481,8 @@ function grExportExcel() {
   const list = grFilteredList();
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้ export', 'warning'); return; }
   const rows = [
-    ['เลขที่', 'ทะเบียนรถ', 'เจ้าของรถ', 'ประเภทอุปกรณ์', 'อาการ', 'วันที่นัดซ่อม', 'วันที่ช่างมาซ่อม', 'สถานะ', 'หมายเหตุ'],
-    ...list.map(r => [r.runningNo, r.plate, r.owner || '', r.device || '', r.symptom || '', formatDMY(r.appointmentDate), formatDMY(r.repairDate), grStatusOf(r) === 'done' ? 'ซ่อมเสร็จแล้ว' : 'รอซ่อม', r.note || '']),
+    ['เลขที่', 'ทะเบียนรถ', 'ลานจอด', 'ประเภทอุปกรณ์', 'อาการ', 'วันที่แจ้ง', 'วันที่นัดซ่อม', 'สถานะ', 'หมายเหตุ'],
+    ...list.map(r => [r.runningNo, r.plate, r.yard || '', r.device || '', r.symptom || '', formatDMY(r.appointmentDate), formatDMY(r.repairDate), GR_STATUS_OPTIONS.find(o => o.value === grStatusOf(r))?.label || 'รอซ่อม', r.note || '']),
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -486,11 +500,12 @@ function grImportExcel(event) {
       if (!plate) return;
       const device = String(row[2] || '').trim().toUpperCase() === 'CCTV' ? 'CCTV' : 'GPS';
       const appointmentDate = normalizeImportDate(row[4]);
-      const veh = mdVehicles.find(v => v.plate === plate);
+      const statusText = String(row[6] || '').trim();
       const record = {
-        plate, owner: String(row[1] || '').trim() || veh?.owner || '', device,
+        plate, yard: String(row[1] || '').trim(), device,
         symptom: String(row[3] || '').trim(), appointmentDate, repairDate: normalizeImportDate(row[5]),
-        note: String(row[6] || '').trim(),
+        status: statusText === 'ซ่อมเสร็จแล้ว' ? 'done' : 'pending',
+        note: String(row[7] || '').trim(),
       };
       const idx = grRecords.findIndex(r => r.plate === plate && r.device === device && r.appointmentDate === appointmentDate);
       if (idx >= 0) { grRecords[idx] = { ...grRecords[idx], ...record, updatedAt: new Date().toISOString() }; updated++; }
@@ -502,6 +517,60 @@ function grImportExcel(event) {
     showToast(`นำเข้าสำเร็จ: เพิ่มใหม่ ${added} รายการ, แก้ไข ${updated} รายการ`, 'success');
     event.target.value = '';
   });
+}
+
+// ===== บันทึกภาพรายงานแจ้งซ่อม (ตารางสวยงาม แคปด้วย html2canvas เหมือนรายงานอุบัติเหตุ) =====
+// ใช้ #gr-report-container ที่วางไว้นอกจอถาวร (left: -1300px) ดึงมาวางที่ left:0 ชั่วคราวตอนแคป
+// แล้วเลื่อนกลับที่เดิม ไม่ต้องสร้าง DOM ใหม่ทุกครั้ง
+async function grSaveReportImage() {
+  const rpt = document.getElementById('gr-report-container');
+  const tbody = document.getElementById('gr-report-body');
+  if (!rpt || !tbody) return;
+
+  const list = grFilteredList();
+  if (list.length === 0) { showToast('ไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+
+  const now = new Date();
+  document.getElementById('gr-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('gr-rpt-total-count').textContent = list.length;
+  tbody.innerHTML = list.map((r, i) => `
+    <tr>
+      <td>${r.runningNo}</td>
+      <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
+      <td>${escapeHtml(r.yard || '-')}</td>
+      <td>${escapeHtml(r.device || '-')}</td>
+      <td>${escapeHtml(r.symptom || '-')}</td>
+      <td>${r.appointmentDate ? formatDate(r.appointmentDate) : '-'}</td>
+      <td>${r.repairDate ? formatDate(r.repairDate) : '-'}</td>
+      <td>${grStatusBadge(r)}</td>
+      <td>${escapeHtml(r.note || '-')}</td>
+    </tr>
+  `).join('');
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 60));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = 'รายงานแจ้งซ่อม_GPS_CCTV_' + now.toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-1300px';
 }
 
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
@@ -601,6 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
   grClearForm();
   gcRenderList();
   grRenderList();
+  grFillYardList();
   gcInit();
   ddbRenderList('cam'); ddbRenderList('gps'); ddbRenderList('bz');
   ddbInit();
