@@ -1397,9 +1397,7 @@ body {
 .gv-daily-table tbody tr:hover td { background: #eef1fb; }
 .gv-daily-table td:first-child { text-align: left; font-weight: 700; color: #163a63; }
 .gv-daily-table td.gv-daily-total {
-  font-weight: 800; font-size: 1.1rem; color: #fff;
-  background: linear-gradient(135deg, #6c63ff 0%, #7c73ff 100%) !important;
-  border-radius: 8px;
+  font-weight: 800; font-size: 1.1rem; color: #6c63ff;
 }
 .gv-daily-table tfoot td {
   font-weight: 800; font-size: 1.1rem; color: #fff;
@@ -1407,7 +1405,7 @@ body {
   border-bottom: none; padding: 14px 20px;
 }
 .gv-daily-table tfoot td:first-child { border-bottom-left-radius: 10px; color: #fff; }
-.gv-daily-table tfoot td.gv-daily-total { background: linear-gradient(135deg, #f0a93b 0%, #f7c873 100%) !important; }
+.gv-daily-table tfoot td.gv-daily-total { color: #f0a93b; }
 .gv-daily-table tfoot td:last-child { border-bottom-right-radius: 10px; }
 
 #gv-daily-report-container {
