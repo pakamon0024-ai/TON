@@ -473,9 +473,11 @@ async function gvSaveListReportImage() {
   document.getElementById('gv-list-rpt-title').textContent = gvListReportTitle();
   document.getElementById('gv-list-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('gv-list-rpt-total-count').textContent = list.length;
-  tbody.innerHTML = list.map(r => `
+  // เลขที่ในภาพรายงานรันใหม่เริ่มจาก 1 เฉพาะรายการที่กรองไว้ ไม่ใช่ runningNo เดิมที่นับรวมทั้งฐานข้อมูล
+  // (runningNo เดิมของแต่ละแถวอาจกระโดดไม่ต่อเนื่องเพราะเป็นเลขที่ถาวรของทั้งระบบ ไม่ใช่ของรายงานนี้)
+  tbody.innerHTML = list.map((r, i) => `
     <tr>
-      <td>${r.runningNo}</td>
+      <td>${i + 1}</td>
       <td>${formatDate(r.date)}</td>
       <td>${escapeHtml(r.type || '-')}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate || '-')}</td>
