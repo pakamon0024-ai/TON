@@ -394,16 +394,20 @@ function gvDeleteAllRecords() {
 function gvFilteredList() {
   const type = document.getElementById('gv-f-type')?.value || '';
   const search = (document.getElementById('gv-f-search')?.value || '').toLowerCase().trim();
+  const dateFrom = document.getElementById('gv-f-date-from')?.value || '';
+  const dateTo = document.getElementById('gv-f-date-to')?.value || '';
   const filtered = gvRecords.filter(r => {
     if (type && r.type !== type) return false;
     if (search && !(`${r.plate} ${r.driverName} ${r.businessUnit} ${r.yard} ${r.detail}`.toLowerCase().includes(search))) return false;
+    if (dateFrom && (!r.date || r.date < dateFrom)) return false;
+    if (dateTo && (!r.date || r.date > dateTo)) return false;
     return true;
   });
   return filtered.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 }
 
 function gvClearListFilters() {
-  ['gv-f-type', 'gv-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['gv-f-type', 'gv-f-search', 'gv-f-date-from', 'gv-f-date-to'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   gvRenderList();
 }
 
@@ -438,6 +442,70 @@ function gvRenderList() {
       </td>
     </tr>
   `).join('');
+}
+
+// ชื่อหัวรายงานปรับตามช่วงวันที่ที่กรองไว้ (ถ้ามี) ให้รู้ทันทีว่าภาพนี้ครอบคลุมช่วงไหน
+function gvListReportTitle() {
+  const dateFrom = document.getElementById('gv-f-date-from')?.value || '';
+  const dateTo = document.getElementById('gv-f-date-to')?.value || '';
+  if (dateFrom && dateTo) return `รายงานความผิด GPS (${formatDate(dateFrom)} - ${formatDate(dateTo)})`;
+  if (dateFrom) return `รายงานความผิด GPS (ตั้งแต่ ${formatDate(dateFrom)})`;
+  if (dateTo) return `รายงานความผิด GPS (ถึง ${formatDate(dateTo)})`;
+  return 'รายงานความผิด GPS';
+}
+
+// บันทึกภาพรายงาน — ใช้ #gv-list-report-container ที่วางไว้นอกจอถาวร เหมือนรายงานอื่นๆ ในแอป
+// ครอบคลุมทุกตัวกรองที่เลือกไว้ (ประเภท/ค้นหา/ช่วงวันที่) ไม่ใช่แค่ช่วงวันที่อย่างเดียว
+async function gvSaveListReportImage() {
+  const rpt = document.getElementById('gv-list-report-container');
+  const tbody = document.getElementById('gv-list-report-body');
+  if (!rpt || !tbody) return;
+
+  const list = gvFilteredList();
+  if (list.length === 0) { showToast('ไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+  // จำกัดจำนวนแถวกันเบราว์เซอร์ค้าง/ภาพใหญ่เกินไปถ้าไม่ได้กรองช่วงวันที่เลย (ข้อมูลสะสมอาจมีหลักพัน/หมื่นรายการ)
+  if (list.length > 300) { showToast(`มีข้อมูลตรงตัวกรอง ${list.length} รายการ เยอะเกินจะทำภาพเดียว — กรุณากรองช่วงวันที่ให้แคบลงก่อน`, 'warning'); return; }
+
+  const now = new Date();
+  document.getElementById('gv-list-rpt-title').textContent = gvListReportTitle();
+  document.getElementById('gv-list-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('gv-list-rpt-total-count').textContent = list.length;
+  tbody.innerHTML = list.map(r => `
+    <tr>
+      <td>${r.runningNo}</td>
+      <td>${formatDate(r.date)}</td>
+      <td>${escapeHtml(r.type || '-')}</td>
+      <td style="font-family:monospace">${escapeHtml(r.plate || '-')}</td>
+      <td>${escapeHtml(r.driverName || '-')}</td>
+      <td>${escapeHtml(r.yard || '-')}</td>
+      <td>${escapeHtml(r.detail || '-')}</td>
+    </tr>
+  `).join('');
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 60));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = 'รายงานความผิดGPS_' + now.toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-3000px';
 }
 
 // ===== Excel Template / Export / Import (นำเข้าซ้ำ = แก้ไข จับคู่ด้วย "ลำดับที่") =====

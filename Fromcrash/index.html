@@ -3378,6 +3378,8 @@
               </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="gv-f-search"
                   placeholder="ทะเบียน / พนักงาน / รายละเอียด..." oninput="debouncedRender('gvRenderList')" /></div>
+              <div class="filter-group"><label>จากวันที่</label><input type="date" id="gv-f-date-from" onchange="gvRenderList()" /></div>
+              <div class="filter-group"><label>ถึงวันที่</label><input type="date" id="gv-f-date-to" onchange="gvRenderList()" /></div>
               <button class="btn-secondary" onclick="gvClearListFilters()">🔄 ล้างตัวกรอง</button>
             </div>
             <div class="filter-bar">
@@ -3385,6 +3387,7 @@
               <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
                   style="display:none" onchange="gvImportExcel(event)"></label>
               <button class="btn-secondary" onclick="gvExportExcel()">📊 Export Excel</button>
+              <button class="btn-secondary" onclick="gvSaveListReportImage()">📸 บันทึกภาพรายงาน</button>
               <button class="btn-danger admin-only-btn" style="display:none;" onclick="gvDeleteAllRecords()">🗑️
                 ลบทั้งหมด</button>
             </div>
@@ -4197,6 +4200,36 @@
       </div>
     </div>
     <div class="rpt-body" id="gv-daily-report-table-wrap"></div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบรายงานความผิด GPS · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · GPS VIOLATION REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container ตารางความผิด GPS รายการทั้งหมด (ตามตัวกรองที่เลือก) (off-screen, captured by html2canvas) -->
+  <div id="gv-list-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title" id="gv-list-rpt-title">รายงานความผิด GPS</div>
+        <div class="rpt-date-text" id="gv-list-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนรายการ</div>
+        <div class="rpt-count-val" id="gv-list-rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <table class="data-table gv-list-report-table">
+        <thead>
+          <tr>
+            <th>เลขที่</th><th>วันที่</th><th>ประเภทความผิด</th><th>ทะเบียนรถ</th>
+            <th>พนักงานขับรถ</th><th>ลานจอด</th><th>รายละเอียด</th>
+          </tr>
+        </thead>
+        <tbody id="gv-list-report-body"></tbody>
+      </table>
+    </div>
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบรายงานความผิด GPS · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · GPS VIOLATION REPORT</div>
