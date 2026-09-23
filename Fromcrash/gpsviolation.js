@@ -444,14 +444,17 @@ function gvRenderList() {
   `).join('');
 }
 
-// ชื่อหัวรายงานปรับตามช่วงวันที่ที่กรองไว้ (ถ้ามี) ให้รู้ทันทีว่าภาพนี้ครอบคลุมช่วงไหน
+// ชื่อหัวรายงานปรับตามประเภทความผิด + ช่วงวันที่ที่กรองไว้ (ถ้ามี) ให้รู้ทันทีว่าภาพนี้ครอบคลุมอะไรบ้าง
+// ไม่งั้นเปิดภาพย้อนหลังทีหลังจะไม่รู้ว่าตอนกดบันทึกไว้กรองประเภท/ช่วงวันที่ไหนไว้
 function gvListReportTitle() {
+  const type = document.getElementById('gv-f-type')?.value || '';
   const dateFrom = document.getElementById('gv-f-date-from')?.value || '';
   const dateTo = document.getElementById('gv-f-date-to')?.value || '';
-  if (dateFrom && dateTo) return `รายงานความผิด GPS (${formatDate(dateFrom)} - ${formatDate(dateTo)})`;
-  if (dateFrom) return `รายงานความผิด GPS (ตั้งแต่ ${formatDate(dateFrom)})`;
-  if (dateTo) return `รายงานความผิด GPS (ถึง ${formatDate(dateTo)})`;
-  return 'รายงานความผิด GPS';
+  let title = type ? `รายงาน${type}` : 'รายงานความผิด GPS';
+  if (dateFrom && dateTo) title += ` (${formatDate(dateFrom)} - ${formatDate(dateTo)})`;
+  else if (dateFrom) title += ` (ตั้งแต่ ${formatDate(dateFrom)})`;
+  else if (dateTo) title += ` (ถึง ${formatDate(dateTo)})`;
+  return title;
 }
 
 // บันทึกภาพรายงาน — ใช้ #gv-list-report-container ที่วางไว้นอกจอถาวร เหมือนรายงานอื่นๆ ในแอป
