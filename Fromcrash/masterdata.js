@@ -895,6 +895,15 @@ function alcTodayLocal() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+function setAbcStaffStartDate(id, dateStr) {
+  const idx = mdAbcStaff.findIndex(s => s.id === id);
+  if (idx < 0) return;
+  mdAbcStaff[idx] = { ...mdAbcStaff[idx], addedDate: dateStr || '' };
+  saveAbcStaffDB();
+  mdPushIfReady();
+  if (typeof alcRenderDailyReport === 'function') alcRenderDailyReport();
+  showToast('บันทึกวันที่เริ่มมีผลแล้ว', 'success');
+}
 function deleteAllAbcStaffDB() {
   if (!mdConfirmDeleteAll('พนักงานลาน ABC')) return;
   mdAbcStaff = [];
@@ -910,13 +919,14 @@ function renderAbcStaffTable() {
   const pagerEl = document.getElementById('md-abcstaff-pager');
   if (!tbody) return;
   const activeStaff = mdAbcStaffActive();
-  if (activeStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="3" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  if (activeStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
   const { pageItems, page, totalPages, total } = paginateSlice('md-abcstaff', activeStaff);
   if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-abcstaff', page, totalPages, total, 'renderAbcStaffTable');
   tbody.innerHTML = pageItems.map(s => `
     <tr>
       <td>${escapeHtml(s.name)}</td>
       <td>${escapeHtml(s.businessUnit || '-')}</td>
+      <td><input type="date" value="${s.addedDate || ''}" onchange="setAbcStaffStartDate(${s.id}, this.value)" /></td>
       <td><button class="action-btn action-delete" onclick="deleteAbcStaffDB(${s.id})">ลบ</button></td>
     </tr>
   `).join('');

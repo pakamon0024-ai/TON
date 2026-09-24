@@ -573,20 +573,6 @@ function alcDailyReportData(monthVal) {
   const daysInMonth = new Date(y, m, 0).getDate();
   // นับพนักงานทั้งหมดตามสถานะ ณ เดือนนั้นๆ (เดือนก่อนถูกลบยังนับ, เดือนที่ลบเป็นต้นไปไม่นับ) — mdAbcStaffActiveForMonth ใน masterdata.js
   const activeStaffForMonth = mdAbcStaffActiveForMonth(monthVal);
-  // พนักงานที่ไม่มี addedDate (เพิ่มก่อนมีฟีเจอร์นี้): อนุมานวันเริ่มจากวันแรกที่มีผลเป่าของคนนั้น
-  // แต่ถ้าเป็นวันแรกสุดของข้อมูลทั้งระบบ ถือว่ามีมาตั้งแต่แรก (นับทุกวันเหมือนเดิม)
-  const firstDateByName = {};
-  let globalFirst = '';
-  alcTests.forEach(t => {
-    if (!t.date) return;
-    if (!globalFirst || t.date < globalFirst) globalFirst = t.date;
-    if (!firstDateByName[t.employee] || t.date < firstDateByName[t.employee]) firstDateByName[t.employee] = t.date;
-  });
-  const startDateOf = s => {
-    if (s.addedDate) return s.addedDate;
-    const f = firstDateByName[s.name];
-    return f && f > globalFirst ? f : '';
-  };
   // record ของพนักงานที่ถูกลบไปแล้วก่อน/ในเดือนนี้ ต้องไม่เอามาคำนวนสถิติของวันด้วย ไม่งั้นจะบวกเกินจำนวนพนักงานทั้งหมดที่นับได้
   const activeNamesForMonth = new Set(activeStaffForMonth.map(s => s.name));
 
@@ -607,7 +593,7 @@ function alcDailyReportData(monthVal) {
     const dow = new Date(y, m - 1, day).getDay();
     const dayRecords = alcTests.filter(t => t.date === dateStr && activeNamesForMonth.has(t.employee));
     // จำนวนพนักงานทั้งหมดนับตามวันนั้น: คนที่เพิ่มเข้าทีหลังไม่ถูกนับย้อนหลังในวันก่อนที่เพิ่ม
-    const fullStaff = activeStaffForMonth.filter(s => !startDateOf(s) || startDateOf(s) <= dateStr).length;
+    const fullStaff = activeStaffForMonth.filter(s => !s.addedDate || s.addedDate <= dateStr).length;
 
     // พนักงานที่มีสถานะ "ลาออก" ในวันนั้น ไม่นับรวมใน "ทั้งหมด (คน)" ของวันนั้น
     // (ต่างจาก "ขาด/ลา" ที่ยังนับเป็นพนักงานทั้งหมดอยู่ แค่ไม่ได้มาทำงานวันนั้นวันเดียว)
