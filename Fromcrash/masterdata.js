@@ -855,7 +855,7 @@ function addAbcStaffDB() {
   const businessUnit = buInput.value.trim();
   if (!name) { nameInput.focus(); return; }
   if (mdAbcStaffActive().some(s => s.name === name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
-  mdAbcStaff.push({ id: Date.now(), name, businessUnit });
+  mdAbcStaff.push({ id: Date.now(), name, businessUnit, addedDate: alcTodayLocal() });
   saveAbcStaffDB();
   nameInput.value = ''; buInput.value = ''; nameInput.focus();
   renderAbcStaffTable();
@@ -885,6 +885,15 @@ function mdAbcStaffActive() {
 // คนที่ถูกลบในเดือนนี้หรือก่อนหน้า จะไม่นับ (ตัดออกตั้งแต่เดือนที่ลบเป็นต้นไป เดือนก่อนหน้ายังนับตามเดิม)
 function mdAbcStaffActiveForMonth(monthVal) {
   return (mdAbcStaff || []).filter(s => !s.removedMonth || monthVal < s.removedMonth);
+}
+// พนักงานที่ "เริ่มมีผล" ณ วันที่นั้น — คนที่เพิ่มเข้าระบบวันไหนนับตั้งแต่วันนั้นเป็นต้นไป (ไม่ย้อนไปนับวันก่อนหน้า)
+// record เก่าที่ไม่มี addedDate ถือว่ามีมาตั้งแต่แรก นับทุกวันเหมือนเดิม
+function mdAbcStaffActiveForDate(dateStr) {
+  return mdAbcStaffActiveForMonth(dateStr.substring(0, 7)).filter(s => !s.addedDate || s.addedDate <= dateStr);
+}
+function alcTodayLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function deleteAllAbcStaffDB() {
   if (!mdConfirmDeleteAll('พนักงานลาน ABC')) return;
@@ -935,7 +944,7 @@ function importAbcStaffExcel(event) {
       // จับคู่ด้วยชื่อ — ถ้ามีอยู่แล้วจะแก้ไขหน่วยงานแทนการเพิ่มซ้ำ (รองรับแก้ไขผ่าน Excel)
       const idx = mdAbcStaff.findIndex(s => s.name === name);
       if (idx >= 0) { mdAbcStaff[idx] = { ...mdAbcStaff[idx], businessUnit }; updated++; }
-      else { mdAbcStaff.push({ id: Date.now() + i, name, businessUnit }); added++; }
+      else { mdAbcStaff.push({ id: Date.now() + i, name, businessUnit, addedDate: alcTodayLocal() }); added++; }
     });
     saveAbcStaffDB();
     renderAbcStaffTable();
