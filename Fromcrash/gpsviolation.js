@@ -9,7 +9,7 @@ let gvReady = false;
 let gvCharts = {};
 
 const GV_TYPE_PRESETS = ['ความเร็วเกิน', 'จอดรถติดเครื่องนาน'];
-const GV_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'เวลา', 'ประเภทความผิด', 'ทะเบียนรถ', 'ชื่อพนักงานขับรถ', 'หน่วยงาน', 'ลานจอด', 'รายละเอียด', 'หมายเหตุ'];
+const GV_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'ประเภทความผิด', 'ทะเบียนรถ', 'ชื่อพนักงานขับรถ', 'หน่วยงาน', 'ลานจอด', 'รายละเอียด', 'ความเร็วสูงสุด', 'หมายเหตุ'];
 
 function gvSave() { safeLocalStorageSet('finflow_gps_violations', JSON.stringify(gvRecords)); }
 
@@ -307,6 +307,7 @@ function gvSaveRecord() {
     businessUnit: document.getElementById('gv-bu').value.trim(),
     yard: document.getElementById('gv-yard').value.trim(),
     detail: document.getElementById('gv-detail').value.trim(),
+    maxSpeed: document.getElementById('gv-maxspeed').value.trim(),
     note: document.getElementById('gv-note').value.trim(),
   };
 
@@ -346,7 +347,7 @@ function gvClearForm() {
   if (banner) banner.style.display = 'none';
   document.getElementById('gv-date').value = '';
   tmSetTimeValue('gv-time', '');
-  ['gv-type', 'gv-plate', 'gv-driver', 'gv-bu', 'gv-yard', 'gv-detail', 'gv-note']
+  ['gv-type', 'gv-plate', 'gv-driver', 'gv-bu', 'gv-yard', 'gv-detail', 'gv-maxspeed', 'gv-note']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 }
 
@@ -364,6 +365,7 @@ function gvEditRecord(id) {
   document.getElementById('gv-bu').value = rec.businessUnit || '';
   document.getElementById('gv-yard').value = rec.yard || '';
   document.getElementById('gv-detail').value = rec.detail || '';
+  document.getElementById('gv-maxspeed').value = rec.maxSpeed || '';
   document.getElementById('gv-note').value = rec.note || '';
   gvSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -419,7 +421,7 @@ function gvRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
@@ -436,6 +438,7 @@ function gvRenderList() {
       <td>${escapeHtml(r.businessUnit || '-')}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.detail || '-')}</td>
+      <td>${escapeHtml(r.maxSpeed || '-')}</td>
       <td>
         <button class="action-btn action-view" onclick="gvEditRecord('${r.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="gvDeleteRecord('${r.id}')">ลบ</button>
@@ -484,6 +487,7 @@ async function gvSaveListReportImage() {
       <td>${escapeHtml(r.driverName || '-')}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.detail || '-')}</td>
+      <td>${escapeHtml(r.maxSpeed ? r.maxSpeed + ' กม./ชม.' : '-')}</td>
     </tr>
   `).join('');
 
@@ -517,7 +521,7 @@ async function gvSaveListReportImage() {
 function gvDownloadTemplate() {
   const sample = [
     GV_XLSX_HEADERS,
-    ['', '15/01/2026', '09:30', 'ความเร็วเกิน', '70-1234', 'นายสมชาย ใจดี', 'Trailer', 'ABC', 'ขับ 95 กม./ชม. ในเขตจำกัด 80', ''],
+    ['', '15/01/2026', 'ความเร็วเกิน', '70-1234', 'นายสมชาย ใจดี', 'Trailer', 'ABC', 'ขับ 95 กม./ชม. ในเขตจำกัด 80', 95, ''],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   const wb = XLSX.utils.book_new();
@@ -529,7 +533,7 @@ function gvDownloadTemplate() {
 function gvExportExcel() {
   if (!gvRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [GV_XLSX_HEADERS, ...gvRecords.map(r => [
-    r.runningNo, formatDMY(r.date), r.time || '', r.type || '', r.plate || '', r.driverName || '', r.businessUnit || '', r.yard || '', r.detail || '', r.note || '',
+    r.runningNo, formatDMY(r.date), r.type || '', r.plate || '', r.driverName || '', r.businessUnit || '', r.yard || '', r.detail || '', r.maxSpeed || '', r.note || '',
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
@@ -550,17 +554,17 @@ function gvImportExcel(evt) {
       let added = 0, updated = 0;
       const now = new Date().toISOString();
       rows.slice(1).forEach(row => {
-        const plate = String(row[4] || '').trim();
+        const plate = String(row[3] || '').trim();
         if (!plate) return;
         const data = {
           date: normalizeImportDate(row[1]),
-          time: String(row[2] || '').trim(),
-          type: String(row[3] || '').trim(),
+          type: String(row[2] || '').trim(),
           plate,
-          driverName: String(row[5] || '').trim(),
-          businessUnit: String(row[6] || '').trim(),
-          yard: String(row[7] || '').trim(),
-          detail: String(row[8] || '').trim(),
+          driverName: String(row[4] || '').trim(),
+          businessUnit: String(row[5] || '').trim(),
+          yard: String(row[6] || '').trim(),
+          detail: String(row[7] || '').trim(),
+          maxSpeed: String(row[8] || '').trim(),
           note: String(row[9] || '').trim(),
         };
         // จับคู่ด้วย "ลำดับที่" (คอลัมน์แรก) — ถ้ามีเลขนี้อยู่แล้วให้แก้ไขรายการเดิมแทนการเพิ่มซ้ำ

@@ -3409,12 +3409,13 @@
                     <th>หน่วยงาน</th>
                     <th>ลานจอด</th>
                     <th>รายละเอียด</th>
+                    <th>ความเร็วสูงสุด</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="gv-list-body">
                   <tr>
-                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -3465,6 +3466,12 @@
                 <div class="form-group full" style="grid-column:1/-1;">
                   <label>รายละเอียด</label>
                   <textarea class="fta" id="gv-detail" rows="2" placeholder="เช่น ขับ 95 กม./ชม. ในเขตจำกัด 80, จอดติดเครื่องนาน 45 นาที..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group">
+                  <label>ความเร็วสูงสุด (กม./ชม.)</label>
+                  <input type="number" min="0" class="fc" id="gv-maxspeed" placeholder="เช่น 95" />
                 </div>
               </div>
               <div class="form-row-3">
@@ -4225,7 +4232,7 @@
         <thead>
           <tr>
             <th>เลขที่</th><th>วันที่</th><th>ประเภทความผิด</th><th>ทะเบียนรถ</th>
-            <th>พนักงานขับรถ</th><th>ลานจอด</th><th>รายละเอียด</th>
+            <th>พนักงานขับรถ</th><th>ลานจอด</th><th>รายละเอียด</th><th>ความเร็วสูงสุด</th>
           </tr>
         </thead>
         <tbody id="gv-list-report-body"></tbody>
