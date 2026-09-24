@@ -35,9 +35,11 @@ function mdApplyServerVehicles(serverVehicles) {
 function mdApplyServerAbcStaff(serverAbcStaff) {
   // ข้อมูลเก่าบน Firebase อาจยังเป็น array ของชื่อ string เฉยๆ (ก่อนเพิ่มฟิลด์หน่วยงาน) แปลงให้เป็น record
   mdAbcStaff = (serverAbcStaff || []).map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
+  const fixed = mdApplyAbcStartFixups();
   saveAbcStaffDB();
   renderAbcStaffTable();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+  if (fixed) mdPushIfReady();
 }
 
 function mdApplyServerBreathalyzers(serverBreathalyzers) {

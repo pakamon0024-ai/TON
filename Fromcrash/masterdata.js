@@ -846,6 +846,18 @@ function renderChargeTypesTable() {
 // (แปลงข้อมูลเก่าที่เคยเก็บเป็น array ของชื่อ string เฉยๆ ให้เป็น record อัตโนมัติ)
 let mdAbcStaff = JSON.parse(localStorage.getItem('finflow_abc_staff_db') || '[]')
   .map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
+// ตั้งวันเริ่มมีผลให้พนักงานที่เพิ่มเข้ามาก่อนมีฟีเจอร์ addedDate (ตั้งเฉพาะคนที่ยังไม่มีวันที่ ไม่ทับค่าที่ตั้งเองแล้ว)
+const MD_ABC_STAFF_START_FIXUPS = { 'นายสายชล กลางกระโทก': '2026-09-23' };
+function mdApplyAbcStartFixups() {
+  let changed = false;
+  mdAbcStaff = (mdAbcStaff || []).map(s => {
+    const d = MD_ABC_STAFF_START_FIXUPS[(s.name || '').trim()];
+    if (d && !s.addedDate) { changed = true; return { ...s, addedDate: d }; }
+    return s;
+  });
+  return changed;
+}
+mdApplyAbcStartFixups();
 function saveAbcStaffDB() { safeLocalStorageSet('finflow_abc_staff_db', JSON.stringify(mdAbcStaff)); }
 
 function addAbcStaffDB() {
