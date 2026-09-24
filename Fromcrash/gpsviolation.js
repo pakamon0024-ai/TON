@@ -479,7 +479,7 @@ async function gvSaveListReportImage() {
   // เลขที่ในภาพรายงานรันใหม่เริ่มจาก 1 เฉพาะรายการที่กรองไว้ ไม่ใช่ runningNo เดิมที่นับรวมทั้งฐานข้อมูล
   // (runningNo เดิมของแต่ละแถวอาจกระโดดไม่ต่อเนื่องเพราะเป็นเลขที่ถาวรของทั้งระบบ ไม่ใช่ของรายงานนี้)
   // ภาพรายงาน "จอดรถติดเครื่องนาน" (ไม่ดับเครื่อง) ไม่ใช้ความเร็วสูงสุด — คอลัมน์ท้ายเปลี่ยนเป็น "สถานที่" ดึงจากหมายเหตุแทน
-  const isParking = (document.getElementById('gv-f-type')?.value || '') === 'จอดรถติดเครื่องนาน';
+  const isParking = (document.getElementById('gv-f-type')?.value || '').includes('จอด');
   document.getElementById('gv-list-rpt-last-th').textContent = isParking ? 'สถานที่' : 'ความเร็วสูงสุด';
   tbody.innerHTML = list.map((r, i) => `
     <tr>
