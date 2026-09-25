@@ -1410,7 +1410,9 @@ body {
 
 #gv-daily-report-container {
   position: fixed; left: -3000px; top: 0; z-index: 9998;
-  width: fit-content; min-width: 500px; max-width: 1200px; height: auto; overflow: hidden;
+  /* ไม่ตั้ง max-width ตายตัว เพราะจำนวนคอลัมน์ลานจอดไม่แน่นอน ถ้าจำกัดไว้ตัวอักษรใหญ่ขึ้นอาจดันตารางกว้างเกิน
+     แล้วถูก overflow:hidden ตัดคอลัมน์ขวาสุดหายไปจากภาพ (เช่นคอลัมน์ลานจอดสุดท้าย) ให้กว้างเท่าที่ตารางต้องการแทน */
+  width: fit-content; min-width: 500px; height: auto; overflow: hidden;
   background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
 }
 
