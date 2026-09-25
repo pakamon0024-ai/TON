@@ -16,15 +16,15 @@ const SIF = [
 
 const TRS = [
   {lbl:'เปิดเหตุ',            ic:'⚠️', gd:c=>c.incidentDate, gs:c=>c.plate||''},
-  {lbl:'ลูกค้าเก็บเรียกเก็บเงิน', ic:'🏢', gd:c=>null,           gs:c=>c.claimAmount?'฿'+icFmtNum(c.claimAmount):''},
-  {lbl:'ตั้งเบิก',             ic:'📋', gd:c=>c.billingDate,  gs:c=>c.voucherNo||''},
-  {lbl:'จ่ายเงิน',              ic:'💳', gd:c=>c.paymentDate,  gs:c=>c.voucherNo||''},
-  {lbl:'ประกันจ่าย',           ic:'📦', gd:c=>c.insPayDate,   gs:c=>c.insAmount?'฿'+icFmtNum(c.insAmount):''},
-  {lbl:'ปิดเคส',              ic:'✅', gd:c=>c.insPayDate,   gs:c=>(c.claimAmount&&c.insAmount)?'ส่วนต่าง ฿'+icFmtNum(c.claimAmount-c.insAmount):''},
+  {lbl:'ลูกค้าเก็บเรียกเก็บเงิน', ic:'🏢', gd:c=>null,           gs:c=>icClaimTotal(c)?'฿'+icFmtNum(icClaimTotal(c)):''},
+  {lbl:'ตั้งเบิก',             ic:'📋', gd:c=>c.billingDate||c.billingDate2,  gs:c=>c.voucherNo||c.voucherNo2||''},
+  {lbl:'จ่ายเงิน',              ic:'💳', gd:c=>c.paymentDate||c.paymentDate2,  gs:c=>c.voucherNo||c.voucherNo2||''},
+  {lbl:'ประกันจ่าย',           ic:'📦', gd:c=>c.insPayDate||c.insPayDate2,   gs:c=>icInsTotal(c)?'฿'+icFmtNum(icInsTotal(c)):''},
+  {lbl:'ปิดเคส',              ic:'✅', gd:c=>c.insPayDate||c.insPayDate2,   gs:c=>(icClaimTotal(c)&&icInsTotal(c))?'ส่วนต่าง ฿'+icFmtNum(icClaimTotal(c)-icInsTotal(c)):''},
 ];
 
-const CSVH = ['ลำดับ','วันที่เกิดเหตุ','ทะเบียน','ประเภทเหตุ','ประกัน','ลานจอด','เจ้าของรถ','ชื่อพนักงานขับรถ','เลขที่ TMS','ลักษณะการเกิดเหตุ','ลูกค้า','มูลค่าเรียกเก็บ','วันที่ตั้งเบิก','วันที่จ่ายเงิน','เลขที่ใบสำคัญจ่าย','ประกันจ่าย (บาท)','วันที่ประกันจ่าย','เลขที่ใบรับ','ส่วนต่าง (บาท)','หมายเหตุ'];
-const CSVK = ['seq','incidentDate','plate','incidentType','insurance','yard','owner','driver','tmsNo','incident','customer','claimAmount','billingDate','paymentDate','voucherNo','insAmount','insPayDate','receiptNo','diff','remark'];
+const CSVH = ['ลำดับ','วันที่เกิดเหตุ','ทะเบียน','ประเภทเหตุ','ประกัน','ลานจอด','เจ้าของรถ','ชื่อพนักงานขับรถ','เลขที่ TMS','ลักษณะการเกิดเหตุ','ลูกค้า','มูลค่าเรียกเก็บ','วันที่ตั้งเบิก','วันที่จ่ายเงิน','เลขที่ใบสำคัญจ่าย','ประกันจ่าย (บาท)','วันที่ประกันจ่าย','เลขที่ใบรับ','มูลค่าเรียกเก็บ รอบ 2','วันที่ตั้งเบิก รอบ 2','วันที่จ่ายเงิน รอบ 2','เลขที่ใบสำคัญจ่าย รอบ 2','ประกันจ่าย รอบ 2 (บาท)','วันที่ประกันจ่าย รอบ 2','เลขที่ใบรับ รอบ 2','ส่วนต่าง (บาท)','หมายเหตุ'];
+const CSVK = ['seq','incidentDate','plate','incidentType','insurance','yard','owner','driver','tmsNo','incident','customer','claimAmount','billingDate','paymentDate','voucherNo','insAmount','insPayDate','receiptNo','claimAmount2','billingDate2','paymentDate2','voucherNo2','insAmount2','insPayDate2','receiptNo2','diff','remark'];
 const INSURERS = ['Sompo','วิริยะ','เออร์โก','แอ๊กซ่า','สหมงคล','เมืองไทย'];
 const INCIDENT_TYPES = ['อุบัติเหตุ','สินค้าเสียหาย'];
 
@@ -51,12 +51,17 @@ function icNextSeq() {
   return claims.length ? Math.max(...claims.map(c => c.seq || 0)) + 1 : 1;
 }
 function icGetStatus(c) {
-  if (c.insPayDate) return 4;
-  if (c.paymentDate) return 3;
-  if (c.billingDate) return 2;
+  if (c.insPayDate || c.insPayDate2) return 4;
+  if (c.paymentDate || c.paymentDate2) return 3;
+  if (c.billingDate || c.billingDate2) return 2;
   if (c.claimAmount) return 1;
   return 0;
 }
+
+// รวมยอดทั้งรอบที่ 1 และรอบที่ 2 (ปกติไม่มีรอบ 2 ค่าจึงเป็น 0 ไม่กระทบยอดเดิม) — ใช้แทนการอ่าน
+// c.claimAmount/c.insAmount ตรงๆ ทุกจุดที่ต้องใช้ยอดรวมของเคส (แดชบอร์ด/สรุป/ตาราง/รายละเอียด)
+function icClaimTotal(c) { return (c.claimAmount || 0) + (c.claimAmount2 || 0); }
+function icInsTotal(c)   { return (c.insAmount   || 0) + (c.insAmount2   || 0); }
 
 // ═══════════════════════════════════════════
 // NAVIGATION
@@ -87,16 +92,27 @@ function icSetSelectValue(id, value) {
   el.value = value || '';
 }
 
+const ROUND2_KEYS = ['claimAmount2','billingDate2','paymentDate2','voucherNo2','insAmount2','insPayDate2','receiptNo2'];
+
+// เปิด/ปิดช่องกรอกรอบที่ 2 (ปกติไม่มีรอบ 2 จึงซ่อนไว้ก่อน) — ปิดแล้วล้างค่ารอบ 2 ทิ้งด้วย กัน
+// ผู้ใช้กดเปิดผิดแล้วปิด แต่ค่าที่กรอกไปแล้วยังค้างอยู่เบื้องหลังโดยไม่รู้ตัว
+function icToggleRound2(show) {
+  document.getElementById('round2Fields').style.display = show ? '' : 'none';
+  document.getElementById('round2Toggle').style.display = show ? 'none' : '';
+  if (!show) { ROUND2_KEYS.forEach(k => { const el = document.getElementById('f_' + k); if (el) el.value = ''; }); icCalcDiff(); }
+}
+
 function icResetForm() {
   editId = null;
   document.getElementById('fTitle').textContent = '➕ เพิ่มเคสใหม่';
   document.getElementById('editId').value = '';
   ['incidentDate','plate','incidentType','insurance','yard','owner','driver','tmsNo','customer',
    'incident','claimAmount','billingDate','paymentDate','voucherNo',
-   'insAmount','insPayDate','receiptNo','diff','remark'].forEach(k => {
+   'insAmount','insPayDate','receiptNo','diff','remark', ...ROUND2_KEYS].forEach(k => {
     const el = document.getElementById('f_' + k);
     if (el) el.value = '';
   });
+  icToggleRound2(false);
 }
 
 function icLoadForm(c) {
@@ -105,19 +121,23 @@ function icLoadForm(c) {
   document.getElementById('editId').value = c.id;
   ['incidentDate','plate','incidentType','yard','driver','tmsNo','customer',
    'incident','claimAmount','billingDate','paymentDate','voucherNo',
-   'insAmount','insPayDate','receiptNo','remark'].forEach(k => {
+   'insAmount','insPayDate','receiptNo','remark', ...ROUND2_KEYS].forEach(k => {
     const el = document.getElementById('f_' + k);
     if (el) el.value = c[k] || '';
   });
   icSetSelectValue('f_insurance', c.insurance || '');
   icSetSelectValue('f_owner', c.owner || '');
+  // เคสเก่าที่มีข้อมูลรอบ 2 อยู่แล้ว เปิดช่องรอบ 2 ให้เห็นทันที ไม่ต้องกดเพิ่มเอง
+  icToggleRound2(ROUND2_KEYS.some(k => c[k]));
   icCalcDiff();
 }
 
 function icCalcDiff() {
   const a = parseFloat(document.getElementById('f_claimAmount').value) || 0;
   const b = parseFloat(document.getElementById('f_insAmount').value) || 0;
-  document.getElementById('f_diff').value = (a || b) ? icFmtNum(a - b) : '';
+  const a2 = parseFloat(document.getElementById('f_claimAmount2').value) || 0;
+  const b2 = parseFloat(document.getElementById('f_insAmount2').value) || 0;
+  document.getElementById('f_diff').value = (a || b || a2 || b2) ? icFmtNum((a + a2) - (b + b2)) : '';
 }
 
 function icSaveCase() {
@@ -127,6 +147,8 @@ function icSaveCase() {
   if (!plate)  { icToast('กรุณาระบุทะเบียนรถ', 'err'); return; }
   const ca = parseFloat(document.getElementById('f_claimAmount').value) || 0;
   const ia = parseFloat(document.getElementById('f_insAmount').value) || 0;
+  const ca2 = parseFloat(document.getElementById('f_claimAmount2').value) || 0;
+  const ia2 = parseFloat(document.getElementById('f_insAmount2').value) || 0;
   const d = {
     incidentDate: iDate, plate,
     incidentType: document.getElementById('f_incidentType').value,
@@ -144,7 +166,14 @@ function icSaveCase() {
     insAmount: ia,
     insPayDate: document.getElementById('f_insPayDate').value,
     receiptNo:  document.getElementById('f_receiptNo').value.trim(),
-    diff: ca - ia,
+    claimAmount2: ca2,
+    billingDate2: document.getElementById('f_billingDate2').value,
+    paymentDate2: document.getElementById('f_paymentDate2').value,
+    voucherNo2:   document.getElementById('f_voucherNo2').value.trim(),
+    insAmount2: ia2,
+    insPayDate2: document.getElementById('f_insPayDate2').value,
+    receiptNo2:  document.getElementById('f_receiptNo2').value.trim(),
+    diff: (ca + ca2) - (ia + ia2),
     remark: document.getElementById('f_remark').value.trim(),
     updatedAt: new Date().toISOString(),
   };
@@ -156,7 +185,7 @@ function icSaveCase() {
     icToast('อัปเดตสำเร็จ ✓', 'ok');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
-        `🛡️ <b>แก้ไขเคสเคลมประกันภัย</b>\nเคส #${d.seq || claims[i]?.seq || '-'}\nทะเบียน: ${escapeHtml(d.plate)}\nลูกค้า: ${escapeHtml(d.customer || '-')}\nมูลค่าเรียกเก็บ: ${icFmtNum(d.claimAmount)} บาท`
+        `🛡️ <b>แก้ไขเคสเคลมประกันภัย</b>\nเคส #${d.seq || claims[i]?.seq || '-'}\nทะเบียน: ${escapeHtml(d.plate)}\nลูกค้า: ${escapeHtml(d.customer || '-')}\nมูลค่าเรียกเก็บ: ${icFmtNum(icClaimTotal(d))} บาท`
       );
     }
   } else {
@@ -168,7 +197,7 @@ function icSaveCase() {
     icToast('บันทึกเคสใหม่สำเร็จ ✓', 'ok');
     if (typeof sendTelegramNotification === 'function') {
       sendTelegramNotification(
-        `🛡️ <b>เพิ่มเคสเคลมประกันภัยใหม่</b>\nเคส #${d.seq}\nทะเบียน: ${escapeHtml(d.plate)}\nลูกค้า: ${escapeHtml(d.customer || '-')}\nมูลค่าเรียกเก็บ: ${icFmtNum(d.claimAmount)} บาท`
+        `🛡️ <b>เพิ่มเคสเคลมประกันภัยใหม่</b>\nเคส #${d.seq}\nทะเบียน: ${escapeHtml(d.plate)}\nลูกค้า: ${escapeHtml(d.customer || '-')}\nมูลค่าเรียกเก็บ: ${icFmtNum(icClaimTotal(d))} บาท`
       );
     }
   }
@@ -207,7 +236,7 @@ function icRenderDash() {
   const n = data.length, sc = [0,0,0,0,0];
   let tC = 0, tI = 0;
   const CC = icChartColors();
-  data.forEach(c => { sc[icGetStatus(c)]++; tC += c.claimAmount || 0; tI += c.insAmount || 0; });
+  data.forEach(c => { sc[icGetStatus(c)]++; tC += icClaimTotal(c); tI += icInsTotal(c); });
 
   document.getElementById('statGrid').innerHTML = `
     <div class="sc ca"><div class="sc-l">เคสทั้งหมด</div><div class="sc-v">${n}</div><div class="sc-u">รายการ</div></div>
@@ -264,7 +293,7 @@ function icRenderDash() {
     if (!c.incidentDate) return;
     const m = c.incidentDate.substring(0,7);
     if (!mm[m]) mm[m] = { c:0, i:0 };
-    mm[m].c += c.claimAmount || 0; mm[m].i += c.insAmount || 0;
+    mm[m].c += icClaimTotal(c); mm[m].i += icInsTotal(c);
   });
   const mks = Object.keys(mm).sort();
   icDestroyChart('cMonth');
@@ -312,7 +341,7 @@ function icRenderSum() {
   const n = claims.length, sc = [0,0,0,0,0]; let tC = 0, tI = 0;
   const ym = {}, dm = {}, cum = {};
   claims.forEach(c => {
-    sc[icGetStatus(c)]++; tC += c.claimAmount||0; tI += c.insAmount||0;
+    sc[icGetStatus(c)]++; tC += icClaimTotal(c); tI += icInsTotal(c);
     if (c.yard) ym[c.yard] = (ym[c.yard]||0)+1;
     if (c.driver) dm[c.driver] = (dm[c.driver]||0)+1;
     if (c.customer) cum[c.customer] = (cum[c.customer]||0)+1;
@@ -352,7 +381,7 @@ function icRenderStatus() {
           <div class="pid">#${c.seq} · ${c.incidentDate||'-'}</div>
           <div class="ppl">${c.plate||'-'}</div>
           <div class="pcu">${c.customer||'-'} ${c.driver ? '· '+c.driver : ''}</div>
-          ${c.claimAmount ? `<div class="pam">฿${icFmtNum(c.claimAmount)}</div>` : ''}
+          ${icClaimTotal(c) ? `<div class="pam">฿${icFmtNum(icClaimTotal(c))}</div>` : ''}
         </div>`).join('')}
       </div>
     </div>
@@ -398,7 +427,9 @@ function icRenderList() {
     document.getElementById('empState').style.display = 'none';
     tb.innerHTML = paged.map(c => {
       const si = SIF[icGetStatus(c)];
-      const diff = (c.claimAmount||0) - (c.insAmount||0);
+      const totC = icClaimTotal(c), totI = icInsTotal(c);
+      const diff = totC - totI;
+      const has2 = ROUND2_KEYS.some(k => c[k]);
       return `<tr>
         <td class="cm" style="font-family:'IBM Plex Mono',monospace">${c.seq}</td>
         <td>${icFmtDate(c.incidentDate)}</td>
@@ -409,9 +440,9 @@ function icRenderList() {
         <td>${c.driver||'-'}</td>
         <td class="cm" style="font-family:'IBM Plex Mono',monospace">${c.tmsNo||'-'}</td>
         <td>${c.customer||'-'}</td>
-        <td class="${c.claimAmount?'cr':'cm'}" style="font-family:'IBM Plex Mono',monospace">${c.claimAmount?'฿'+icFmtNum(c.claimAmount):'-'}</td>
-        <td class="${c.insAmount?'cg':'cm'}" style="font-family:'IBM Plex Mono',monospace">${c.insAmount?'฿'+icFmtNum(c.insAmount):'-'}</td>
-        <td class="${diff>0?'cr':diff<0?'cg':'cm'}" style="font-family:'IBM Plex Mono',monospace">${(c.claimAmount||c.insAmount)?'฿'+icFmtNum(diff):'-'}</td>
+        <td class="${totC?'cr':'cm'}" style="font-family:'IBM Plex Mono',monospace">${totC?'฿'+icFmtNum(totC):'-'}${has2?' <span class="badge s1" style="font-size:9px;">2 รอบ</span>':''}</td>
+        <td class="${totI?'cg':'cm'}" style="font-family:'IBM Plex Mono',monospace">${totI?'฿'+icFmtNum(totI):'-'}</td>
+        <td class="${diff>0?'cr':diff<0?'cg':'cm'}" style="font-family:'IBM Plex Mono',monospace">${(totC||totI)?'฿'+icFmtNum(diff):'-'}</td>
         <td><span class="badge ${si.c}">${si.e} ${si.l}</span></td>
         <td><div style="display:flex;gap:3px;">
           <button class="btn bic bs bxs" onclick="icShowDetail('${c.id}')">👁️</button>
@@ -440,7 +471,7 @@ function icClearFilters() { ['fY','fD','fS','fC','fT','fQ'].forEach(id => docume
 // TRACKER
 // ═══════════════════════════════════════════
 function icBuildTracker(c) {
-  const done = [!!c.incidentDate, !!(c.claimAmount>0), !!c.billingDate, !!c.paymentDate, !!c.insPayDate, !!c.insPayDate];
+  const done = [!!c.incidentDate, icClaimTotal(c)>0, !!(c.billingDate||c.billingDate2), !!(c.paymentDate||c.paymentDate2), !!(c.insPayDate||c.insPayDate2), !!(c.insPayDate||c.insPayDate2)];
   let ai = -1; for (let i = 0; i < done.length; i++) { if (done[i]) ai = i; }
   return `<div class="trwrap"><div class="trttl">📍 สถานะการดำเนินการ</div><div class="tracker">
     ${TRS.map((s,i) => {
@@ -461,7 +492,9 @@ function icShowDetail(id) {
   const c = claims.find(x => x.id === id); if (!c) return;
   detailId = id;
   const si = SIF[icGetStatus(c)];
-  const diff = (c.claimAmount||0) - (c.insAmount||0);
+  const has2 = ROUND2_KEYS.some(k => c[k]);
+  const totC = icClaimTotal(c), totI = icInsTotal(c);
+  const diff = totC - totI;
   document.getElementById('dm_id').textContent = `เคส #${c.seq} · ${icFmtDate(c.createdAt?.substring(0,10))}`;
   document.getElementById('dm_pl').textContent = c.plate || '-';
   document.getElementById('dm_badge').innerHTML = `<span class="badge ${si.c}">${si.e} ${si.l}</span>`;
@@ -479,7 +512,7 @@ function icShowDetail(id) {
       <div class="modi"><div class="dlab">ลูกค้า</div><div class="dval">${c.customer||'-'}</div></div>
       <div class="modi"><div class="dlab">ลักษณะเหตุ</div><div class="dval">${c.incident||'-'}</div></div>
     </div>
-    <div class="modsec">💰 การเงิน</div>
+    <div class="modsec">💰 การเงิน${has2 ? ' — รอบที่ 1' : ''}</div>
     <div class="modgr">
       <div class="modi"><div class="dlab">มูลค่าเรียกเก็บ</div><div class="dval cr" style="font-family:'IBM Plex Mono',monospace">${c.claimAmount?'฿'+icFmtNum(c.claimAmount):'-'}</div></div>
       <div class="modi"><div class="dlab">วันที่ตั้งเบิก</div><div class="dval">${icFmtDate(c.billingDate)||'-'}</div></div>
@@ -488,8 +521,26 @@ function icShowDetail(id) {
       <div class="modi"><div class="dlab">ประกันจ่าย</div><div class="dval cg" style="font-family:'IBM Plex Mono',monospace">${c.insAmount?'฿'+icFmtNum(c.insAmount):'-'}</div></div>
       <div class="modi"><div class="dlab">วันที่ประกันจ่าย</div><div class="dval">${icFmtDate(c.insPayDate)||'-'}</div></div>
       <div class="modi"><div class="dlab">เลขที่ใบรับ</div><div class="dval" style="font-family:'IBM Plex Mono',monospace">${c.receiptNo||'-'}</div></div>
-      <div class="modi"><div class="dlab">ส่วนต่าง</div><div class="dval ${diff>0?'cr':diff<0?'cg':''}" style="font-family:'IBM Plex Mono',monospace">${(c.claimAmount||c.insAmount)?'฿'+icFmtNum(diff):'-'}</div></div>
+      ${!has2 ? `<div class="modi"><div class="dlab">ส่วนต่าง</div><div class="dval ${diff>0?'cr':diff<0?'cg':''}" style="font-family:'IBM Plex Mono',monospace">${(totC||totI)?'฿'+icFmtNum(diff):'-'}</div></div>` : ''}
     </div>
+    ${has2 ? `
+    <div class="modsec">🔁 การเงิน — รอบที่ 2</div>
+    <div class="modgr">
+      <div class="modi"><div class="dlab">มูลค่าเรียกเก็บ รอบ 2</div><div class="dval cr" style="font-family:'IBM Plex Mono',monospace">${c.claimAmount2?'฿'+icFmtNum(c.claimAmount2):'-'}</div></div>
+      <div class="modi"><div class="dlab">วันที่ตั้งเบิก รอบ 2</div><div class="dval">${icFmtDate(c.billingDate2)||'-'}</div></div>
+      <div class="modi"><div class="dlab">วันที่จ่ายเงิน รอบ 2</div><div class="dval">${icFmtDate(c.paymentDate2)||'-'}</div></div>
+      <div class="modi"><div class="dlab">เลขที่ใบสำคัญจ่าย รอบ 2</div><div class="dval" style="font-family:'IBM Plex Mono',monospace">${c.voucherNo2||'-'}</div></div>
+      <div class="modi"><div class="dlab">ประกันจ่าย รอบ 2</div><div class="dval cg" style="font-family:'IBM Plex Mono',monospace">${c.insAmount2?'฿'+icFmtNum(c.insAmount2):'-'}</div></div>
+      <div class="modi"><div class="dlab">วันที่ประกันจ่าย รอบ 2</div><div class="dval">${icFmtDate(c.insPayDate2)||'-'}</div></div>
+      <div class="modi"><div class="dlab">เลขที่ใบรับ รอบ 2</div><div class="dval" style="font-family:'IBM Plex Mono',monospace">${c.receiptNo2||'-'}</div></div>
+    </div>
+    <div class="modsec">Σ รวมทั้ง 2 รอบ</div>
+    <div class="modgr">
+      <div class="modi"><div class="dlab">มูลค่าเรียกเก็บรวม</div><div class="dval cr" style="font-family:'IBM Plex Mono',monospace">${totC?'฿'+icFmtNum(totC):'-'}</div></div>
+      <div class="modi"><div class="dlab">ประกันจ่ายรวม</div><div class="dval cg" style="font-family:'IBM Plex Mono',monospace">${totI?'฿'+icFmtNum(totI):'-'}</div></div>
+      <div class="modi"><div class="dlab">ส่วนต่างรวม</div><div class="dval ${diff>0?'cr':diff<0?'cg':''}" style="font-family:'IBM Plex Mono',monospace">${(totC||totI)?'฿'+icFmtNum(diff):'-'}</div></div>
+    </div>
+    ` : ''}
     ${c.remark ? `<div class="modsec">📝 หมายเหตุ</div><div style="color:var(--muted);font-size:13px;line-height:1.6;">${c.remark}</div>` : ''}
     <div style="margin-top:18px;display:flex;gap:7px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--border);">
       <button class="btn bd bxs" onclick="icCloseDetail();icPromptDel('${c.id}')">🗑️ ลบ</button>
@@ -540,7 +591,7 @@ function icUpdate() {
 // IMPORT / EXPORT
 // ═══════════════════════════════════════════
 function icDownloadTemplate() {
-  const sample = ['1','2024-01-15','กข 1234 กรุงเทพ','สินค้าเสียหาย','วิริยะ','ABC','บริษัท เอ','นายสมชาย ใจดี','TMS-001','สินค้าเสียหายระหว่างขนส่ง','ลูกค้า สมชาย','50000','2024-01-20','2024-01-25','PV-001','45000','2024-02-01','RC-001','5000','หมายเหตุ'];
+  const sample = ['1','2024-01-15','กข 1234 กรุงเทพ','สินค้าเสียหาย','วิริยะ','ABC','บริษัท เอ','นายสมชาย ใจดี','TMS-001','สินค้าเสียหายระหว่างขนส่ง','ลูกค้า สมชาย','50000','2024-01-20','2024-01-25','PV-001','45000','2024-02-01','RC-001','','','','','','','','5000','หมายเหตุ'];
   icDownloadCSV([CSVH, sample], 'template_insurance_claim.csv');
   icToast('ดาวน์โหลด Template แล้ว ✓', 'ok');
 }
@@ -561,7 +612,7 @@ function icExportSummaryCSV() {
   const n = claims.length, sc = [0,0,0,0,0]; let tC = 0, tI = 0;
   const ym = {}, dm = {}, cum = {}, im = {};
   claims.forEach(c => {
-    sc[icGetStatus(c)]++; tC += c.claimAmount||0; tI += c.insAmount||0;
+    sc[icGetStatus(c)]++; tC += icClaimTotal(c); tI += icInsTotal(c);
     if (c.yard) ym[c.yard] = (ym[c.yard]||0)+1;
     if (c.driver) dm[c.driver] = (dm[c.driver]||0)+1;
     if (c.customer) cum[c.customer] = (cum[c.customer]||0)+1;
@@ -609,7 +660,7 @@ function icImportData(e) {
           header.forEach((h, j) => {
             const k = km[h]; if (k && k !== 'seq' && cols[j] !== undefined) {
               const v = cols[j].trim();
-              if (['claimAmount','insAmount','diff'].includes(k)) obj[k] = parseFloat(v) || 0;
+              if (['claimAmount','insAmount','claimAmount2','insAmount2','diff'].includes(k)) obj[k] = parseFloat(v) || 0;
               else obj[k] = v;
             }
           });

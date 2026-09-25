@@ -1419,7 +1419,9 @@ body {
 /* ตัวข้อความในภาพ "รายงานรายวัน" (ที่บันทึกส่งไลน์) ให้ใหญ่กว่าตารางบนหน้าจอ อ่านง่ายขึ้นตอนย่อดูในแชท */
 #gv-daily-report-container .gv-daily-table { min-width: 900px; font-size: 1.4rem; }
 #gv-daily-report-container .gv-daily-table th { font-size: 1.4rem; padding: 18px 24px; }
-#gv-daily-report-container .gv-daily-table td { padding: 16px 24px; }
+/* .data-table td (สไตล์กลางของทุกตาราง) ตั้ง font-size ตายตัวไว้ที่ 0.88rem มาทับ ต้องระบุใหม่ตรงนี้
+   ไม่งั้นคอลัมน์วันที่/ลานจอดจะไม่ใหญ่ขึ้นตามที่ตั้ง มีแต่คอลัมน์ "ทั้งหมด" ที่มีสไตล์เฉพาะทับอยู่แล้วเท่านั้นที่ใหญ่ขึ้น */
+#gv-daily-report-container .gv-daily-table td { padding: 16px 24px; font-size: 1.4rem; }
 #gv-daily-report-container .gv-daily-table td.gv-daily-total,
 #gv-daily-report-container .gv-daily-table tfoot td { font-size: 1.5rem; }
 

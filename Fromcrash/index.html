@@ -3951,6 +3951,40 @@
                     <div class="fl">ส่วนต่าง (อัตโนมัติ)</div><input type="text" class="fi" id="f_diff" readonly>
                   </div>
                 </div>
+                <div id="round2Toggle" style="margin-top:10px;">
+                  <button type="button" class="btn bs bxs" onclick="icToggleRound2(true)">➕ เพิ่มรอบที่ 2 (กรณีมีการจ่าย 2 รอบ)</button>
+                </div>
+                <div id="round2Fields" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <div style="font-weight:700;color:var(--muted);">🔁 รอบที่ 2</div>
+                    <button type="button" class="btn bd bxs" onclick="icToggleRound2(false)">✕ ลบรอบที่ 2</button>
+                  </div>
+                  <div class="fgr">
+                    <div class="fg2">
+                      <div class="fl">มูลค่าเรียกเก็บ รอบ 2 (บาท)</div><input type="number" class="fi" id="f_claimAmount2"
+                        placeholder="0.00" min="0" step="0.01" oninput="icCalcDiff()">
+                    </div>
+                    <div class="fg2">
+                      <div class="fl">วันที่ตั้งเบิก รอบ 2</div><input type="date" class="fi" id="f_billingDate2">
+                    </div>
+                    <div class="fg2">
+                      <div class="fl">วันที่จ่ายเงิน รอบ 2</div><input type="date" class="fi" id="f_paymentDate2">
+                    </div>
+                    <div class="fg2">
+                      <div class="fl">เลขที่ใบสำคัญจ่าย รอบ 2</div><input type="text" class="fi" id="f_voucherNo2">
+                    </div>
+                    <div class="fg2">
+                      <div class="fl">ประกันจ่าย รอบ 2 (บาท)</div><input type="number" class="fi" id="f_insAmount2"
+                        placeholder="0.00" min="0" step="0.01" oninput="icCalcDiff()">
+                    </div>
+                    <div class="fg2">
+                      <div class="fl">วันที่ประกันจ่าย รอบ 2</div><input type="date" class="fi" id="f_insPayDate2">
+                    </div>
+                    <div class="fg2">
+                      <div class="fl">เลขที่ใบรับ รอบ 2</div><input type="text" class="fi" id="f_receiptNo2">
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="fsec">
                 <div class="fst">📝 หมายเหตุ</div>
