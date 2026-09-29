@@ -899,12 +899,16 @@ body {
 .print-doc .pb-sig-line { white-space: nowrap; }
 .print-doc .pb-sig-blank { display: inline-block; width: 190px; overflow: hidden; }
 .print-doc .pb-sig-line-name { margin-top: 8px; }
+/* !important จำเป็น: ตอนพิมพ์เอกสารนี้ในโมดัล (#modalBody) มีกฎ "#modalBody *
+   { visibility: visible }" (ตัวเลือก id) ที่ specificity สูงกว่า .pb-sig-mirror เฉยๆ
+   มาทับให้ตัว mirror ที่ตั้งใจซ่อนไว้ (แค่ไว้ดันความกว้างให้เท่ากัน) กลับโผล่มาให้เห็นทับ
+   กับ "ลงวันที่" จริง ทำให้ตัวอักษรซ้อนกันอ่านไม่ออก ต้อง !important เพื่อชนะกฎนั้นเสมอ */
 .print-doc .pb-sig-line-name .pb-sig-prefix,
-.print-doc .pb-sig-line-name .pb-sig-suffix { visibility: hidden; }
+.print-doc .pb-sig-line-name .pb-sig-suffix { visibility: hidden !important; }
 .print-doc .pb-sig-line-name .pb-sig-blank { overflow: visible; text-align: center; }
 .print-doc .pb-sig-line-date { margin-top: 12px; }
 .print-doc .pb-sig-mirror-wrap { display: inline-block; position: relative; }
-.print-doc .pb-sig-mirror { visibility: hidden; }
+.print-doc .pb-sig-mirror { visibility: hidden !important; }
 .print-doc .pb-sig-date-text { position: absolute; left: 0; top: 0; white-space: nowrap; }
 .print-doc .pb-sig-box { border: 1px solid #333; border-radius: 4px; margin-top: 38px; padding: 24px 20px 14px; }
 .print-doc .pb-sig-box-title {
