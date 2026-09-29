@@ -1373,6 +1373,36 @@
                 <button class="btn-danger" onclick="clearTelegramSettings()">🗑️ ลบการตั้งค่า</button>
               </div>
             </div>
+
+            <div class="form-card" style="margin-top:24px;">
+              <div class="items-header">
+                <h3>💚 แจ้งเตือน LINE</h3>
+              </div>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px;line-height:1.7;">
+                LINE Messaging API ไม่อนุญาตให้เว็บเบราว์เซอร์ยิงคำขอตรงเข้าไปเหมือน Telegram
+                (ติด CORS) จึงต้องมี <strong>Cloudflare Worker</strong> เป็นตัวกลางคั่นก่อน 1 ตัว
+                (ตั้งค่าครั้งเดียว ใช้ฟรี) ดูขั้นตอนสร้างละเอียดได้ที่ไฟล์
+                <code>line-notify-worker/README.md</code> ในโปรเจกต์ แล้วนำ <strong>Worker
+                URL</strong> ที่ได้มากรอกด้านล่างนี้<br>
+                ⚠️ ค่านี้เก็บในเบราว์เซอร์นี้เท่านั้น (ไม่ sync ข้ามเครื่อง) — Channel Access
+                Token จริงของ LINE ไม่ได้เก็บที่นี่ อยู่ฝั่ง Worker เท่านั้น
+              </p>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>Worker URL</label>
+                  <input type="text" id="line-worker-url" placeholder="https://qa-line-notify.xxxx.workers.dev" />
+                </div>
+                <div class="form-group">
+                  <label>Shared Secret (ถ้าตั้งไว้ที่ Worker)</label>
+                  <input type="text" id="line-shared-secret" placeholder="ไม่บังคับ — เว้นว่างได้ถ้าไม่ได้ตั้งฝั่ง Worker" />
+                </div>
+              </div>
+              <div class="form-actions" style="justify-content:flex-start;">
+                <button class="btn-primary" onclick="saveLineSettings()">💾 บันทึก</button>
+                <button class="btn-secondary" onclick="testLineNotification()">📨 ทดสอบส่งข้อความ</button>
+                <button class="btn-danger" onclick="clearLineSettings()">🗑️ ลบการตั้งค่า</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -4295,6 +4325,7 @@
   <script src="backup.js"></script>
   <script src="records-sync.js"></script>
   <script src="telegram.js"></script>
+  <script src="line.js"></script>
   <script src="auth.js"></script>
 </body>
 

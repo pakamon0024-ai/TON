@@ -15,7 +15,11 @@ function saveTelegramConfigRaw(cfg) {
   safeLocalStorageSet('finflow_telegram_config', JSON.stringify(cfg));
 }
 
+// จุดนี้เป็นจุดเดียวที่ทุกโมดูลในแอปเรียกเพื่อแจ้งเตือนเหตุการณ์ต่างๆ (บันทึก/แก้ไขเคสต่างๆ)
+// เพื่อไม่ต้องแก้ไขจุดเรียกใช้กว่า 10 ที่ทั่วแอป ฟังก์ชันนี้จึงกระจายข้อความต่อไปยัง LINE ให้ด้วย
+// (ถ้าตั้งค่า LINE ไว้ที่เมนู "ฐานข้อมูลหลัก" > แจ้งเตือน) นอกเหนือจากส่งไป Telegram ตามชื่อฟังก์ชัน
 async function sendTelegramNotification(message) {
+  if (typeof sendLineNotification === 'function') sendLineNotification(message);
   const cfg = getTelegramConfig();
   if (!cfg.botToken || !cfg.chatId) return;
   try {
