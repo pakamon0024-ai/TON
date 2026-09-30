@@ -64,14 +64,18 @@ async function linePush(env, text) {
   if (!res.ok) throw new Error('LINE push error: ' + await res.text());
 }
 
-async function lineReply(env, replyToken, text) {
+// message คือ LINE message object เต็มๆ ({type:'text',...} หรือ {type:'flex',...}) ไม่ใช่ string ล้วน
+// เหมือน linePush ด้านบน เพราะคำตอบของบอทตอนนี้ส่งเป็น Flex Message (การ์ดสวยๆ) ได้ด้วย
+async function lineReply(env, replyToken, message) {
   const res = await fetch('https://api.line.me/v2/bot/message/reply', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}` },
-    body: JSON.stringify({ replyToken, messages: [{ type: 'text', text: text.slice(0, MAX_LINE_TEXT_LENGTH) }] }),
+    body: JSON.stringify({ replyToken, messages: [message] }),
   });
   if (!res.ok) console.error('LINE reply error:', await res.text());
 }
+
+function textMsg(text) { return { type: 'text', text: text.slice(0, MAX_LINE_TEXT_LENGTH) }; }
 
 // ═══════════════════════════════════════════
 // (B) Webhook — ตรวจลายเซ็นคำขอจาก LINE (HMAC-SHA256 ด้วย Channel Secret)
@@ -159,6 +163,45 @@ function todayBangkokISO() {
 }
 
 // ═══════════════════════════════════════════
+// Flex Message — การ์ดสรุปรายงานสวยๆ (แทนภาพ PNG ที่แอปบันทึกได้ แต่ Worker ไม่มี
+// เบราว์เซอร์/canvas ให้ใช้ html2canvas แบบเดียวกันได้ นี่คือทางเลือกที่ทำได้จริงจาก Worker)
+// ═══════════════════════════════════════════
+
+function flexRow(label, value, valueColor) {
+  return {
+    type: 'box', layout: 'baseline', spacing: 'sm',
+    contents: [
+      { type: 'text', text: String(label), size: 'sm', color: '#57606a', flex: 3, wrap: true },
+      { type: 'text', text: String(value), size: 'sm', weight: 'bold', align: 'end', flex: 2, color: valueColor || '#1c2033' },
+    ],
+  };
+}
+
+function flexBubble({ title, subtitle, headerColor, rows, footerText }) {
+  const bodyContents = [...rows];
+  if (footerText) {
+    bodyContents.push({ type: 'separator', margin: 'md' });
+    bodyContents.push({ type: 'text', text: footerText, size: 'xs', color: '#8b949e', wrap: true, margin: 'md' });
+  }
+  return {
+    type: 'bubble', size: 'kilo',
+    header: {
+      type: 'box', layout: 'vertical', backgroundColor: headerColor, paddingAll: '16px',
+      contents: [
+        { type: 'text', text: title, color: '#ffffff', weight: 'bold', size: 'md' },
+        { type: 'text', text: subtitle, color: '#cbd5e1', size: 'xs', margin: 'sm' },
+      ],
+    },
+    body: { type: 'box', layout: 'vertical', spacing: 'md', paddingAll: '16px', contents: bodyContents },
+  };
+}
+
+// altText คือข้อความสำรองที่โชว์ตอนแจ้งเตือน/preview แชท (จำกัด 400 ตัวอักษรตามสเปก LINE)
+function flexMsg(altText, bubble) {
+  return { type: 'flex', altText: altText.slice(0, 400), contents: bubble };
+}
+
+// ═══════════════════════════════════════════
 // คำสั่งที่บอทตอบได้ (อ่านอย่างเดียว)
 // ═══════════════════════════════════════════
 
@@ -168,14 +211,26 @@ async function alcoholSummary(env, scope) {
     scope === 'month' ? (r.date || '').startsWith(today.substring(0, 7)) : r.date === today
   );
   const label = scope === 'month' ? `เดือนนี้ (${today.substring(0, 7)})` : `วันนี้ (${today})`;
-  if (rows.length === 0) return `ℹ️ ${label} ยังไม่มีการบันทึกผลเป่าแอลกอฮอล์`;
+  if (rows.length === 0) return textMsg(`ℹ️ ${label} ยังไม่มีการบันทึกผลเป่าแอลกอฮอล์`);
+
   const c = (field, val) => rows.filter(r => r[field] === val).length;
-  return [
-    `📊 สรุปผลเป่าแอลกอฮอล์ ${label}`,
-    `บันทึกแล้ว: ${rows.length} รายการ`,
-    `ขาไป: ผ่าน ${c('resultOut', 'ผ่าน')} / ไม่ผ่าน ${c('resultOut', 'ไม่ผ่าน')}`,
-    `ขากลับ: ผ่าน ${c('resultReturn', 'ผ่าน')} / ไม่ผ่าน ${c('resultReturn', 'ไม่ผ่าน')}`,
-  ].join('\n');
+  const passOut = c('resultOut', 'ผ่าน'), failOut = c('resultOut', 'ไม่ผ่าน');
+  const passRet = c('resultReturn', 'ผ่าน'), failRet = c('resultReturn', 'ไม่ผ่าน');
+  const red = n => (n > 0 ? '#ef4444' : '#8b949e');
+
+  const bubble = flexBubble({
+    title: '📊 สรุปผลเป่าแอลกอฮอล์', subtitle: label, headerColor: '#163a63',
+    rows: [
+      flexRow('บันทึกแล้ว', `${rows.length} รายการ`),
+      { type: 'separator', margin: 'sm' },
+      flexRow('ขาไป: ผ่าน', passOut, '#22c55e'),
+      flexRow('ขาไป: ไม่ผ่าน', failOut, red(failOut)),
+      { type: 'separator', margin: 'sm' },
+      flexRow('ขากลับ: ผ่าน', passRet, '#22c55e'),
+      flexRow('ขากลับ: ไม่ผ่าน', failRet, red(failRet)),
+    ],
+  });
+  return flexMsg(`สรุปเป่าแอลกอฮอล์ ${label}: บันทึก ${rows.length} รายการ`, bubble);
 }
 
 async function incidentSummary(env, scope) {
@@ -184,30 +239,45 @@ async function incidentSummary(env, scope) {
     scope === 'month' ? (r.incidentDate || '').startsWith(today.substring(0, 7)) : r.incidentDate === today
   );
   const label = scope === 'month' ? `เดือนนี้ (${today.substring(0, 7)})` : `วันนี้ (${today})`;
-  if (rows.length === 0) return `✅ ${label} ยังไม่มีอุบัติเหตุบันทึกไว้`;
-  if (scope === 'month') return `🚨 อุบัติเหตุ ${label}: ${rows.length} เคส`;
-  const list = rows.slice(0, 10).map(r => `- ${r.plate || '-'}${r.location ? ' @ ' + r.location : ''}`).join('\n');
-  const more = rows.length > 10 ? `\n…และอีก ${rows.length - 10} เคส` : '';
-  return `🚨 อุบัติเหตุ ${label}: ${rows.length} เคส\n${list}${more}`;
+  if (rows.length === 0) return textMsg(`✅ ${label} ยังไม่มีอุบัติเหตุบันทึกไว้`);
+
+  if (scope === 'month') {
+    const bubble = flexBubble({
+      title: '🚨 อุบัติเหตุ', subtitle: label, headerColor: '#7c2d12',
+      rows: [flexRow('จำนวนเคส', `${rows.length} เคส`, '#ef4444')],
+    });
+    return flexMsg(`อุบัติเหตุ ${label}: ${rows.length} เคส`, bubble);
+  }
+
+  // รายวัน: แสดงเป็นรายการทะเบียน+สถานที่ทีละเคส (จำกัด 10 แถวแรก กันการ์ดยาวเกินไป)
+  const shown = rows.slice(0, 10);
+  const itemRows = shown.map(r => flexRow(r.plate || '-', r.location || '-'));
+  const footerText = rows.length > 10 ? `…และอีก ${rows.length - 10} เคส` : null;
+  const bubble = flexBubble({
+    title: '🚨 อุบัติเหตุ', subtitle: `${label} · ${rows.length} เคส`, headerColor: '#7c2d12',
+    rows: itemRows, footerText,
+  });
+  return flexMsg(`อุบัติเหตุ ${label}: ${rows.length} เคส`, bubble);
 }
 
-async function buildReplyText(env, text) {
+// คืนค่าเป็น LINE message object เสมอ (textMsg(...) หรือ flexMsg(...)) ไม่ใช่ string ธรรมดา
+async function buildReplyMessage(env, text) {
   const t = (text || '').trim();
   try {
     if (t.includes('แอลกอฮอล์') || t.includes('เป่า')) return await alcoholSummary(env, t.includes('เดือน') ? 'month' : 'day');
     if (t.includes('อุบัติเหตุ')) return await incidentSummary(env, t.includes('เดือน') ? 'month' : 'day');
   } catch (e) {
-    return '⚠️ ดึงข้อมูลไม่สำเร็จ: ' + e.message;
+    return textMsg('⚠️ ดึงข้อมูลไม่สำเร็จ: ' + e.message);
   }
-  return HELP_TEXT;
+  return textMsg(HELP_TEXT);
 }
 
 async function handleLineWebhook(env, body) {
   const events = body?.events || [];
   for (const event of events) {
     if (event.type !== 'message' || event.message?.type !== 'text') continue;
-    const replyText = await buildReplyText(env, event.message.text);
-    await lineReply(env, event.replyToken, replyText);
+    const replyMessage = await buildReplyMessage(env, event.message.text);
+    await lineReply(env, event.replyToken, replyMessage);
   }
 }
 

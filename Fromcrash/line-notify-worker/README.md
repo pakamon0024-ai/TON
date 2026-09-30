@@ -70,6 +70,10 @@ curl -X POST https://qa-line-notify.<your-subdomain>.workers.dev \
 **Channel Secret** (ให้ Worker เช็คว่าคำขอมาจาก LINE จริง) และ **Firebase Service Account**
 (ให้ Worker มีสิทธิ์อ่านข้อมูลจาก Firebase เพราะ Security Rules ปิดอ่านแบบไม่ล็อกอินไว้)
 
+คำตอบของบอทเป็น **LINE Flex Message** (การ์ดสรุปสวยๆ มีหัวข้อ สี แถวตัวเลข) ไม่ใช่ภาพ PNG
+จริงแบบที่ปุ่ม "บันทึกภาพรายงาน" ในแอปสร้าง เพราะ Worker ไม่มีเบราว์เซอร์/canvas ให้ใช้
+html2canvas เหมือนแอป — แต่ให้ผลลัพธ์คล้ายกันคือการ์ดสวยงามอ่านง่ายในแชท
+
 ### 2.1 หา Channel Secret
 
 1. หน้า Channel เดิม (อันเดียวกับส่วนที่ 1) → แท็บ **Basic settings**
