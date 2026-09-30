@@ -1446,9 +1446,10 @@ body {
 /* ตัวอักษรในภาพที่บันทึกส่งไลน์ให้ใหญ่กว่าที่เห็นบนจอ — เหมือน .data-table th/td
    (สไตล์กลางของทุกตาราง) ตั้ง font-size ตายตัวไว้ที่ 0.8rem/0.88rem มาทับ specificity เท่ากัน
    แต่มาทีหลังในไฟล์ ต้องระบุ selector ที่ scope ไปที่ container นี้เพื่อชนะแทน */
-#gv-list-report-container .gv-list-report-table { font-size: 1.15rem; }
+#gv-list-report-container .gv-list-report-table { font-size: 1.35rem; }
 #gv-list-report-container .gv-list-report-table th,
-#gv-list-report-container .gv-list-report-table td { font-size: 1.15rem; padding: 14px 18px; }
+#gv-list-report-container .gv-list-report-table td { font-size: 1.35rem; padding: 16px 20px; }
+#gv-list-report-container .gv-list-report-table td:nth-child(7) { max-width: 340px; }
 .rpt-header {
   background: linear-gradient(135deg, #0a1f38 0%, #163a63 100%);
   color: #fff; padding: 24px 36px;
