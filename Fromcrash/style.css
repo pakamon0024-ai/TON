@@ -1438,9 +1438,17 @@ body {
 .gv-list-report-table tbody tr:nth-child(even) td { background: #f6f8fc; }
 #gv-list-report-container {
   position: fixed; left: -3000px; top: 0; z-index: 9998;
-  width: fit-content; min-width: 720px; max-width: 1300px; height: auto; overflow: hidden;
+  /* ไม่ตั้ง max-width ตายตัว (เดิม 1300px) เพราะพอขยายตัวอักษรใหญ่ขึ้น ตารางกว้างเกินกรอบ
+     แล้ว overflow:hidden จะตัดคอลัมน์ขวาสุดหายไปจากภาพเงียบๆ (เจอบั๊กนี้มาแล้วกับตารางรายวัน) */
+  width: fit-content; min-width: 720px; height: auto; overflow: hidden;
   background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
 }
+/* ตัวอักษรในภาพที่บันทึกส่งไลน์ให้ใหญ่กว่าที่เห็นบนจอ — เหมือน .data-table th/td
+   (สไตล์กลางของทุกตาราง) ตั้ง font-size ตายตัวไว้ที่ 0.8rem/0.88rem มาทับ specificity เท่ากัน
+   แต่มาทีหลังในไฟล์ ต้องระบุ selector ที่ scope ไปที่ container นี้เพื่อชนะแทน */
+#gv-list-report-container .gv-list-report-table { font-size: 1.15rem; }
+#gv-list-report-container .gv-list-report-table th,
+#gv-list-report-container .gv-list-report-table td { font-size: 1.15rem; padding: 14px 18px; }
 .rpt-header {
   background: linear-gradient(135deg, #0a1f38 0%, #163a63 100%);
   color: #fff; padding: 24px 36px;
