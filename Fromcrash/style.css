@@ -973,6 +973,25 @@ body {
 .print-doc.ap-memo-doc .print-sig-line,
 .print-doc.pc-voucher-doc .print-sig-line { margin: 96px 16px 6px; }
 
+/* ใบสำคัญจ่ายเงินสดย่อยต้องพิมพ์ให้จบในหน้าเดียวเสมอ (A4) — ขนาดตัวอักษร/ระยะห่างเดิมใหญ่เกินจนล้นไปหน้า 2
+   เมื่อมีหลายรายการ จึงลดขนาดและระยะห่างลงเฉพาะเอกสารนี้ (ไม่กระทบใบอนุมัติสำรองจ่ายที่ใช้ CSS ร่วมกัน) */
+.print-doc.pc-voucher-doc { font-size: 14px; line-height: 1.45; }
+.print-doc.pc-voucher-doc .letterhead-name-th { font-size: 16px; }
+.print-doc.pc-voucher-doc .letterhead-name-en { font-size: 12px; }
+.print-doc.pc-voucher-doc .letterhead-detail { font-size: 10px; }
+.print-doc.pc-voucher-doc h1 { font-size: 19px; margin-bottom: 2px; }
+.print-doc.pc-voucher-doc .print-subtitle { font-size: 13px; margin-bottom: 4px; }
+.print-doc.pc-voucher-doc .print-info { font-size: 14px; gap: 4px 20px; margin-bottom: 6px; }
+.print-doc.pc-voucher-doc table.expense-table { margin: 6px auto; }
+.print-doc.pc-voucher-doc table.expense-table th,
+.print-doc.pc-voucher-doc table.expense-table td { font-size: 13px; padding: 5px 8px; }
+.print-doc.pc-voucher-doc .print-total { font-size: 15px; margin-top: 4px; padding: 5px 10px; }
+.print-doc.pc-voucher-doc .print-sigs { margin-top: 10px; gap: 14px; }
+.print-doc.pc-voucher-doc .print-sig-label,
+.print-doc.pc-voucher-doc .print-sig-name { font-size: 13px; }
+.print-doc.pc-voucher-doc .print-sig-date { font-size: 12px; }
+.print-doc.pc-voucher-doc .print-sig-line { margin: 34px 12px 4px; }
+
 /* ตารางรายการค่าใช้จ่าย (ใบสำคัญจ่ายเงินสดย่อย/หนังสือขออนุมัติสำรองจ่าย) — เดิม width:100% ทำให้ตารางกว้างเกินไปเวลามีแค่ 1-2 รายการ
    สั้นๆ ดูโหว่ๆ ลดความกว้างและจัดกึ่งกลางหน้าแทน ให้ดูพอดีกับเนื้อหาโดยไม่ต้องยืดเต็มหน้ากระดาษ */
 .print-doc table.expense-table { width: 90%; margin: 8px auto; }
