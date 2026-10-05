@@ -125,6 +125,10 @@
           <span class="nav-icon">🛠️</span>
           <span>บันทึกปัญหาการทำงาน</span>
         </a>
+        <a href="#" class="nav-item" data-page="breakdown" onclick="showPage('breakdown')">
+          <span class="nav-icon">🚛</span>
+          <span>Truck Breakdown</span>
+        </a>
         <a href="#" class="nav-item" data-page="tickets" onclick="showPage('tickets')">
           <span class="nav-icon">🎫</span>
           <span>บันทึกใบสั่ง</span>
@@ -734,6 +738,7 @@
             <button class="subtab" id="md-tab-yard" onclick="mdSwitchTopic('yard')">🅿️ ลานจอด</button>
             <button class="subtab" id="md-tab-pattern" onclick="mdSwitchTopic('pattern')">💥 ลักษณะการเกิดเหตุ</button>
             <button class="subtab" id="md-tab-topic" onclick="mdSwitchTopic('topic')">🛠️ หัวข้อปัญหาการทำงาน</button>
+            <button class="subtab" id="md-tab-bdtype" onclick="mdSwitchTopic('bdtype')">🚛 อาการเสีย (Truck Breakdown)</button>
             <button class="subtab" id="md-tab-charge" onclick="mdSwitchTopic('charge')">🎫 ข้อหา (ใบสั่ง)</button>
             <button class="subtab" id="md-tab-abcstaff" onclick="mdSwitchTopic('abcstaff')">🍃 พนักงานลาน ABC</button>
             <button class="subtab" id="md-tab-bz" onclick="mdSwitchTopic('bz')">🫁 เครื่องเป่าแอลกอฮอล์</button>
@@ -1061,6 +1066,43 @@
                 </table>
               </div>
               <div id="md-topic-pager"></div>
+            </div>
+          </div>
+
+          <!-- Truck Breakdown Types -->
+          <div class="subpage" id="md-subpage-bdtype">
+            <div class="form-card" style="margin-bottom:24px;">
+              <div class="items-header">
+                <h3>🚛 อาการเสีย (Truck Breakdown)</h3>
+              </div>
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label>อาการเสีย</label>
+                  <input type="text" id="md-bdtype-name" placeholder="เช่น ยางแตก"
+                    onkeydown="if(event.key==='Enter') addBreakdownTypeDB()" />
+                </div>
+              </div>
+              <div class="form-actions" style="justify-content:flex-start;">
+                <button class="btn-primary" onclick="addBreakdownTypeDB()">+ เพิ่มอาการเสีย</button>
+                <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllBreakdownTypesDB()">🗑️
+                  ลบทั้งหมด</button>
+              </div>
+              <div class="recent-table-wrap" style="margin-top:16px;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>อาการเสีย</th>
+                      <th>จัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="md-bdtype-body">
+                    <tr>
+                      <td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="md-bdtype-pager"></div>
             </div>
           </div>
 
@@ -2159,6 +2201,171 @@
               <div class="form-actions">
                 <button class="btn-secondary" onclick="wiClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRUCK BREAKDOWN PAGE (ทำเหมือนบันทึกปัญหาการทำงาน) -->
+      <div class="page" id="page-breakdown">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🚛</div>
+            <div>
+              <h2>Truck Breakdown</h2>
+              <p>บันทึกและติดตามรถเสีย/ขัดข้องระหว่างทาง พร้อมอาการเสียที่เพิ่มเองได้</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="bd-tab-dashboard" onclick="bdSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="bd-tab-list" onclick="bdSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="bd-tab-add" onclick="bdSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="bd-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="bd-dash-month" onchange="bdRenderDashboard()" />
+              </div>
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="bd-dash-yard" onchange="bdRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="bd-dash-bu" onchange="bdRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนรายการรายเดือน</span><span class="chart-total" id="bd-chart-month-total"></span></div>
+                <div class="chart-box"><canvas id="bd-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนรายการตามอาการเสีย</span><span class="chart-total" id="bd-chart-type-total"></span></div>
+                <div class="chart-box"><canvas id="bd-chart-type"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนรายการตามลานจอด</span><span class="chart-total" id="bd-chart-yard-total"></span></div>
+                <div class="chart-box"><canvas id="bd-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนรายการตามหน่วยงาน</span><span class="chart-total" id="bd-chart-bu-total"></span></div>
+                <div class="chart-box"><canvas id="bd-chart-bu"></canvas></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage" id="bd-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>อาการเสีย</label>
+                <select id="bd-f-type" onchange="bdRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>ลานจอด</label>
+                <select id="bd-f-yard" onchange="bdRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="bd-f-search"
+                  placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="debouncedRender('bdRenderList')" /></div>
+              <button class="btn-secondary" onclick="bdClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="bdExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="bdImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="bdDownloadTemplate()">📋 Template</button>
+            </div>
+            <div class="ctxt" id="bd-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>วันที่</th>
+                    <th>อาการเสีย</th>
+                    <th>พนักงาน</th>
+                    <th>ทะเบียน</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
+                    <th>รายละเอียด</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="bd-list-body">
+                  <tr>
+                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="bd-list-pager"></div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="bd-subpage-add">
+            <div class="edit-banner" id="bd-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขบันทึก <strong id="bd-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="bdCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูล Truck Breakdown</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date"
+                    id="bd-date" /></div>
+                <div class="form-group">
+                  <label>อาการเสีย <span class="req">*</span></label>
+                  <div style="display:flex; gap:6px;">
+                    <input type="text" id="bd-type" list="bd-type-list" placeholder="พิมพ์หรือเลือก..."
+                      style="flex:1;" />
+                    <datalist id="bd-type-list"></datalist>
+                    <button type="button" class="btn-secondary" title="เพิ่มอาการเสียใหม่"
+                      onclick="bdQuickAddType()">+</button>
+                  </div>
+                </div>
+                <div class="form-group"><label>ชื่อพนักงานขับรถ</label>
+                  <input type="text" id="bd-driver" list="bd-driver-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="bd-driver-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียน</label>
+                  <input type="text" id="bd-plate" list="bd-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..."
+                    oninput="bdLookupVehicle()" />
+                  <datalist id="bd-plate-list"></datalist>
+                </div>
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="bd-bu" list="bd-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="bd-bu-list"></datalist>
+                </div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="bd-yard" list="bd-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="bd-yard-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดอาการเสีย <span
+                      class="req">*</span></label>
+                  <textarea class="fta" id="bd-detail" rows="3" placeholder="อธิบายรายละเอียดอาการเสียที่พบ..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="bdClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="bdSaveCase()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
           </div>
@@ -4315,6 +4522,7 @@
   <script src="masterdata-sync.js"></script>
   <script src="incidents.js"></script>
   <script src="issues.js"></script>
+  <script src="breakdown.js"></script>
   <script src="tickets.js"></script>
   <script src="probation.js"></script>
   <script src="alcohol.js"></script>

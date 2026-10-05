@@ -121,6 +121,7 @@ function showPage(page) {
     users: 'จัดการผู้ใช้',
     incidents: 'บันทึกอุบัติเหตุ',
     issues: 'บันทึกปัญหาการทำงาน',
+    breakdown: 'Truck Breakdown',
     alcohol: 'บันทึกการเป่าวัดแอลกอฮอล์',
     jointvehicle: 'บันทึกรถร่วม',
     gpscctv: 'จัดการ GPS/CCTV',
@@ -137,6 +138,7 @@ function showPage(page) {
   if (page === 'users' && typeof renderUsersPage === 'function') renderUsersPage();
   if (page === 'incidents' && typeof incOnPageShown === 'function') incOnPageShown();
   if (page === 'issues' && typeof wiOnPageShown === 'function') wiOnPageShown();
+  if (page === 'breakdown' && typeof bdOnPageShown === 'function') bdOnPageShown();
   if (page === 'tickets' && typeof tkOnPageShown === 'function') tkOnPageShown();
   if (page === 'probation' && typeof pbOnPageShown === 'function') pbOnPageShown();
   if (page === 'alcohol' && typeof alcOnPageShown === 'function') alcOnPageShown();

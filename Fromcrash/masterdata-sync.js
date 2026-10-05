@@ -3,7 +3,7 @@
 // employees/vehicles เก็บเป็น object คีย์ id ส่วนหน่วยงาน/ประกัน/ลานจอด/ลักษณะเหตุ
 // เป็นแค่ array ของชื่อ (string) เก็บง่ายๆ ตรงๆ ที่ path ของตัวเอง
 
-let mdEmpRef = null, mdVehRef = null, mdBuRef = null, mdInsRef = null, mdYardRef = null, mdPatRef = null, mdTopicRef = null, mdChargeRef = null, mdAbcRef = null, mdReqRef = null, mdBzRef = null;
+let mdEmpRef = null, mdVehRef = null, mdBuRef = null, mdInsRef = null, mdYardRef = null, mdPatRef = null, mdTopicRef = null, mdBdTypeRef = null, mdChargeRef = null, mdAbcRef = null, mdReqRef = null, mdBzRef = null;
 let mdReady = false;
 
 function mdRecordsToObj(arr) {
@@ -99,6 +99,7 @@ function mdPushIfReady() {
   mdWriteSimpleList(mdYardRef, mdYards);
   mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
   mdWriteSimpleList(mdTopicRef, mdIssueTopics);
+  mdWriteSimpleList(mdBdTypeRef, mdBreakdownTypes);
   mdWriteSimpleList(mdChargeRef, mdChargeTypes);
   mdWriteSimpleList(mdReqRef, mdRequesters);
 }
@@ -119,10 +120,12 @@ function mdApplySimpleList(kind, arr) {
   if (kind === 'yard') { mdYards = arr; saveYardsDB(); renderYardsTable(); }
   if (kind === 'pattern') { mdIncidentPatterns = arr; savePatternsDB(); renderIncidentPatternsTable(); }
   if (kind === 'topic') { mdIssueTopics = arr; saveIssueTopicsDB(); renderIssueTopicsTable(); }
+  if (kind === 'bdtype') { mdBreakdownTypes = arr; saveBreakdownTypesDB(); renderBreakdownTypesTable(); }
   if (kind === 'charge') { mdChargeTypes = arr; saveChargeTypesDB(); renderChargeTypesTable(); }
   if (kind === 'requesters') { mdRequesters = arr; saveRequestersDB(); renderRequestersTable(); updateRequesterDatalist(); }
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  if (typeof bdRefreshLookupDropdowns === 'function') bdRefreshLookupDropdowns();
   if (typeof tkRefreshLookupDropdowns === 'function') tkRefreshLookupDropdowns();
   if (typeof pbRefreshLookupDropdowns === 'function') pbRefreshLookupDropdowns();
 }
@@ -138,6 +141,7 @@ async function mdInit() {
     mdYardRef = ref(fbDb, '/yards');
     mdPatRef = ref(fbDb, '/incidentPatterns');
     mdTopicRef = ref(fbDb, '/issueTopics');
+    mdBdTypeRef = ref(fbDb, '/breakdownTypes');
     mdChargeRef = ref(fbDb, '/chargeTypes');
     mdAbcRef = ref(fbDb, '/abcStaff');
     mdReqRef = ref(fbDb, '/requesters');
@@ -147,13 +151,13 @@ async function mdInit() {
     // เพิ่ม path ใหม่แล้วลืมอัปเดต Rules) จะได้ไม่ทำให้ path อื่นที่ปกติดีพลอย sync ไม่ขึ้นไปด้วย
     // (เดิมใช้ Promise.all แล้วเจอบั๊กจริง: get() หนึ่งตัว reject ทำให้ mdReady ไม่ถูกตั้งเป็น true เลย)
     const results = await Promise.allSettled([
-      get(mdEmpRef), get(mdVehRef), get(mdBuRef), get(mdInsRef), get(mdYardRef), get(mdPatRef), get(mdTopicRef), get(mdChargeRef), get(mdAbcRef), get(mdReqRef), get(mdBzRef),
+      get(mdEmpRef), get(mdVehRef), get(mdBuRef), get(mdInsRef), get(mdYardRef), get(mdPatRef), get(mdTopicRef), get(mdBdTypeRef), get(mdChargeRef), get(mdAbcRef), get(mdReqRef), get(mdBzRef),
     ]);
     const NULL_SNAP = { exists: () => false, val: () => null };
     results.forEach((r, i) => {
       if (r.status === 'rejected') console.warn(`mdInit: path #${i} โหลดไม่สำเร็จ (อาจยังไม่มี Security Rule)`, r.reason);
     });
-    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap, topicSnap, chargeSnap, abcSnap, reqSnap, bzSnap] =
+    const [empSnap, vehSnap, buSnap, insSnap, yardSnap, patSnap, topicSnap, bdTypeSnap, chargeSnap, abcSnap, reqSnap, bzSnap] =
       results.map(r => r.status === 'fulfilled' ? r.value : NULL_SNAP);
 
     if (empSnap.exists()) mdApplyServerDrivers(mdObjToRecords(empSnap.val()));
@@ -163,6 +167,7 @@ async function mdInit() {
     if (yardSnap.exists()) mdApplySimpleList('yard', yardSnap.val() || []);
     if (patSnap.exists()) mdApplySimpleList('pattern', patSnap.val() || []);
     if (topicSnap.exists()) mdApplySimpleList('topic', topicSnap.val() || []);
+    if (bdTypeSnap.exists()) mdApplySimpleList('bdtype', bdTypeSnap.val() || []);
     if (chargeSnap.exists()) mdApplySimpleList('charge', chargeSnap.val() || []);
     if (abcSnap.exists()) mdApplyServerAbcStaff(mdObjToRecords(abcSnap.val()));
     if (reqSnap.exists()) mdApplySimpleList('requesters', reqSnap.val() || []);
@@ -176,6 +181,7 @@ async function mdInit() {
     if (!yardSnap.exists() && mdYards.length > 0) await mdWriteSimpleList(mdYardRef, mdYards);
     if (!patSnap.exists() && mdIncidentPatterns.length > 0) await mdWriteSimpleList(mdPatRef, mdIncidentPatterns);
     if (!topicSnap.exists() && mdIssueTopics.length > 0) await mdWriteSimpleList(mdTopicRef, mdIssueTopics);
+    if (!bdTypeSnap.exists() && mdBreakdownTypes.length > 0) await mdWriteSimpleList(mdBdTypeRef, mdBreakdownTypes);
     if (!chargeSnap.exists() && mdChargeTypes.length > 0) await mdWriteSimpleList(mdChargeRef, mdChargeTypes);
     if (!abcSnap.exists() && mdAbcStaff.length > 0) await mdWriteAbcStaff();
     if (!reqSnap.exists() && mdRequesters.length > 0) await mdWriteSimpleList(mdReqRef, mdRequesters);
@@ -188,6 +194,7 @@ async function mdInit() {
     onValue(mdYardRef, snap => { if (snap.exists()) mdApplySimpleList('yard', snap.val() || []); });
     onValue(mdPatRef, snap => { if (snap.exists()) mdApplySimpleList('pattern', snap.val() || []); });
     onValue(mdTopicRef, snap => { if (snap.exists()) mdApplySimpleList('topic', snap.val() || []); });
+    onValue(mdBdTypeRef, snap => { if (snap.exists()) mdApplySimpleList('bdtype', snap.val() || []); });
     onValue(mdChargeRef, snap => { if (snap.exists()) mdApplySimpleList('charge', snap.val() || []); });
     onValue(mdAbcRef, snap => { if (snap.exists()) mdApplyServerAbcStaff(mdObjToRecords(snap.val())); });
     onValue(mdReqRef, snap => { if (snap.exists()) mdApplySimpleList('requesters', snap.val() || []); });

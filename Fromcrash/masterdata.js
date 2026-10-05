@@ -788,6 +788,54 @@ function renderIssueTopicsTable() {
   `).join('');
 }
 
+// ===== อาการเสีย (สำหรับ "บันทึก Truck Breakdown" - breakdown.js) =====
+let mdBreakdownTypes = JSON.parse(localStorage.getItem('finflow_breakdown_types_db') || '[]');
+function saveBreakdownTypesDB() { safeLocalStorageSet('finflow_breakdown_types_db', JSON.stringify(mdBreakdownTypes)); }
+
+function addBreakdownTypeDB() {
+  const input = document.getElementById('md-bdtype-name');
+  const name = input.value.trim();
+  if (!name) { input.focus(); return; }
+  if (mdBreakdownTypes.includes(name)) { showToast('มีอาการเสียนี้อยู่แล้ว', 'warning'); return; }
+  mdBreakdownTypes.push(name);
+  saveBreakdownTypesDB();
+  input.value = ''; input.focus();
+  renderBreakdownTypesTable();
+  if (typeof bdRefreshLookupDropdowns === 'function') bdRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('เพิ่มอาการเสียแล้ว', 'success');
+}
+function deleteBreakdownTypeDB(name) {
+  if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
+  mdBreakdownTypes = mdBreakdownTypes.filter(n => n !== name);
+  saveBreakdownTypesDB();
+  renderBreakdownTypesTable();
+  if (typeof bdRefreshLookupDropdowns === 'function') bdRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบแล้ว', 'warning');
+}
+function deleteAllBreakdownTypesDB() {
+  if (!mdConfirmDeleteAll('อาการเสีย')) return;
+  mdBreakdownTypes = [];
+  saveBreakdownTypesDB();
+  renderBreakdownTypesTable();
+  if (typeof bdRefreshLookupDropdowns === 'function') bdRefreshLookupDropdowns();
+  mdPushIfReady();
+  showToast('ลบอาการเสียทั้งหมดแล้ว', 'warning');
+}
+
+function renderBreakdownTypesTable() {
+  const tbody = document.getElementById('md-bdtype-body');
+  const pagerEl = document.getElementById('md-bdtype-pager');
+  if (!tbody) return;
+  if (mdBreakdownTypes.length === 0) { tbody.innerHTML = '<tr><td colspan="2" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const { pageItems, page, totalPages, total } = paginateSlice('md-bdtype', mdBreakdownTypes);
+  if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-bdtype', page, totalPages, total, 'renderBreakdownTypesTable');
+  tbody.innerHTML = pageItems.map(name => `
+    <tr><td>${escapeHtml(name)}</td><td><button class="action-btn action-delete" onclick="deleteBreakdownTypeDB('${escapeHtml(name).replace(/'/g, "&apos;")}')">ลบ</button></td></tr>
+  `).join('');
+}
+
 // ===== ข้อหา (สำหรับ "บันทึกใบสั่ง" - tickets.js) =====
 let mdChargeTypes = JSON.parse(localStorage.getItem('finflow_charge_types_db') || '[]');
 function saveChargeTypesDB() { safeLocalStorageSet('finflow_charge_types_db', JSON.stringify(mdChargeTypes)); }
@@ -1160,7 +1208,7 @@ function renderCategoriesTable() {
 }
 
 // ===== เลือกหัวข้อที่จะบันทึก (แสดงเฉพาะส่วนที่เลือก) =====
-const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'charge', 'abcstaff', 'bz', 'customer', 'requester', 'category', 'telegram'];
+const MD_TOPICS = ['driver', 'vehicle', 'bu', 'insurer', 'yard', 'pattern', 'topic', 'bdtype', 'charge', 'abcstaff', 'bz', 'customer', 'requester', 'category', 'telegram'];
 function mdSwitchTopic(topic) {
   MD_TOPICS.forEach(t => {
     document.getElementById(`md-tab-${t}`).classList.toggle('active', t === topic);
@@ -1180,6 +1228,7 @@ function renderMasterData() {
   renderYardsTable();
   renderIncidentPatternsTable();
   renderIssueTopicsTable();
+  renderBreakdownTypesTable();
   renderChargeTypesTable();
   renderAbcStaffTable();
   renderBreathalyzersTable();
@@ -1189,6 +1238,7 @@ function renderMasterData() {
   if (typeof loadTelegramSettingsForm === 'function') loadTelegramSettingsForm();
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
+  if (typeof bdRefreshLookupDropdowns === 'function') bdRefreshLookupDropdowns();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
   mdApplyAdminOnlyVisibility();
 }
