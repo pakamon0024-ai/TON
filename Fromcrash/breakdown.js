@@ -2,7 +2,13 @@
 // ทำโครงสร้างเหมือน "บันทึกปัญหาการทำงาน" (issues.js) ทุกอย่าง เก็บ local ที่ localStorage
 // key 'finflow_truck_breakdowns' และ sync กับ Firebase ที่ /truckBreakdowns
 
-let truckBreakdowns = JSON.parse(localStorage.getItem('finflow_truck_breakdowns') || '[]');
+let truckBreakdowns = [];
+let bdFbLoaded = false; // ถ้า Firebase ส่งข้อมูลมาแล้ว แคชในเครื่องจะไม่ทับข้อมูลจริง
+cacheLoad('finflow_truck_breakdowns').then(v => {
+  if (bdFbLoaded || !Array.isArray(v)) return;
+  truckBreakdowns = v;
+  if (document.readyState !== 'loading') bdRenderList();
+});
 let bdEditingId = null;
 let bdRef = null;
 let bdReady = false;
@@ -10,7 +16,7 @@ let bdCharts = {};
 
 const BD_XLSX_HEADERS = ['เลขที่','วันที่','อาการเสีย','ชื่อพนักงาน','ทะเบียน','หน่วยงาน','ลานจอด','รายละเอียด'];
 
-function bdSave() { safeLocalStorageSet('finflow_truck_breakdowns', JSON.stringify(truckBreakdowns)); }
+function bdSave() { cacheSet('finflow_truck_breakdowns', truckBreakdowns); }
 
 // ===== Sub-tabs =====
 function bdSwitchTab(tab) {
@@ -378,6 +384,7 @@ function bdObjToRecords(obj) {
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function bdApplyServer(serverBreakdowns) {
+  bdFbLoaded = true;
   const serverIds = new Set(serverBreakdowns.map(r => r.id));
   const localOnly = (truckBreakdowns || []).filter(t => t && t.id && !serverIds.has(t.id));
   truckBreakdowns = serverBreakdowns.concat(localOnly);

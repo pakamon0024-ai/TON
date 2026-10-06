@@ -14,25 +14,17 @@ const ALC_DOW_SHORT_TH = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
 const ALC_MONTH_SHORT_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 const ALC_MONTH_FULL_TH = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
 
-let alcTests = JSON.parse(localStorage.getItem('finflow_alcohol_tests') || '[]');
+let alcTests = [];
+let alcFbLoaded = false; // ถ้า Firebase ส่งข้อมูลมาแล้ว แคชในเครื่องจะไม่ทับข้อมูลจริง
+cacheLoad('finflow_alcohol_tests').then(v => {
+  if (alcFbLoaded || !Array.isArray(v)) return;
+  alcTests = v;
+  if (document.readyState !== 'loading') alcRenderList();
+});
 let alcRef = null;
 let alcReady = false;
 
-// บันทึกทุกวัน x ~88 คน สะสมมานานพอจะทำให้ไฟล์แคชในเครื่องใหญ่เกินโควตา localStorage (เคยเจอ error
-// "exceeded the quota" มาแล้ว) ข้อมูลเต็มทุกปีอยู่ครบใน Firebase อยู่แล้วเสมอ (ดึงมาครบทุกครั้งที่เปิดเว็บ
-// ผ่าน alcInit) แคชในเครื่องนี้มีไว้แค่ให้เปิดเว็บเห็นข้อมูลเร็ว/สำรองไว้ใช้ตอนออฟไลน์ชั่วคราวเท่านั้น
-// จึงจำกัดให้แคชแค่ N เดือนล่าสุด กันไม่ให้แคชโตไม่มีที่สิ้นสุดจนล้นอีก
-const ALC_CACHE_MONTHS = 3;
-function alcCacheCutoff() {
-  const d = new Date();
-  d.setMonth(d.getMonth() - ALC_CACHE_MONTHS);
-  return d.toISOString().substring(0, 7); // YYYY-MM
-}
-function alcSave() {
-  const cutoff = alcCacheCutoff();
-  const forCache = alcTests.filter(t => !t.date || t.date.slice(0, 7) >= cutoff);
-  safeLocalStorageSet('finflow_alcohol_tests', JSON.stringify(forCache));
-}
+function alcSave() { cacheSet('finflow_alcohol_tests', alcTests); }
 
 // ===== Sub-tabs =====
 function alcSwitchTab(tab) {
@@ -803,6 +795,7 @@ function alcObjToRecords(obj) {
 // ทำให้ push ไม่สำเร็จตั้งแต่ตอนนั้น) ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ
 // แล้ว sync ส่วนที่ตกหล่นนี้กลับขึ้น server ทันทีที่เรียกครั้งนี้ (ทั้งตอนโหลดครั้งแรกและตอนมี snapshot ใหม่จาก onValue)
 function alcApplyServer(serverTests) {
+  alcFbLoaded = true;
   const serverIds = new Set(serverTests.map(r => r.id));
   const localOnly = (alcTests || []).filter(t => t && t.id && !serverIds.has(t.id));
   alcTests = serverTests.concat(localOnly);

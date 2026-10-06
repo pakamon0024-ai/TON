@@ -2,7 +2,13 @@
 // เก็บ local ที่ localStorage key 'finflow_gps_violations' และ sync กับ Firebase ที่ /gpsViolations
 // (ใช้ Firebase connection เดียวกับ claims.js — fbDb/fbReady)
 
-let gvRecords = JSON.parse(localStorage.getItem('finflow_gps_violations') || '[]');
+let gvRecords = [];
+let gvFbLoaded = false; // ถ้า Firebase ส่งข้อมูลมาแล้ว แคชในเครื่องจะไม่ทับข้อมูลจริง
+cacheLoad('finflow_gps_violations').then(v => {
+  if (gvFbLoaded || !Array.isArray(v)) return;
+  gvRecords = v;
+  if (document.readyState !== 'loading') gvRenderList();
+});
 let gvEditingId = null;
 let gvRef = null;
 let gvReady = false;
@@ -11,7 +17,7 @@ let gvCharts = {};
 const GV_TYPE_PRESETS = ['ความเร็วเกิน', 'จอดรถติดเครื่องนาน'];
 const GV_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'ประเภทความผิด', 'ทะเบียนรถ', 'ชื่อพนักงานขับรถ', 'หน่วยงาน', 'ลานจอด', 'รายละเอียด', 'ความเร็วสูงสุด', 'หมายเหตุ'];
 
-function gvSave() { safeLocalStorageSet('finflow_gps_violations', JSON.stringify(gvRecords)); }
+function gvSave() { cacheSet('finflow_gps_violations', gvRecords); }
 
 function gvNextRunningNo() {
   return gvRecords.length ? Math.max(...gvRecords.map(r => r.runningNo || 0)) + 1 : 1;
@@ -609,6 +615,7 @@ function gvObjToRecords(obj) {
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function gvApplyServer(serverRecords) {
+  gvFbLoaded = true;
   const serverIds = new Set(serverRecords.map(r => r.id));
   const localOnly = (gvRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
   gvRecords = serverRecords.concat(localOnly);

@@ -2,7 +2,13 @@
 // เก็บ local ที่ localStorage key 'finflow_fuel_rate' และ sync กับ Firebase ที่ /fuelRate
 // (ใช้ Firebase connection เดียวกับ claims.js — fbDb/fbReady)
 
-let frRecords = JSON.parse(localStorage.getItem('finflow_fuel_rate') || '[]');
+let frRecords = [];
+let frFbLoaded = false; // ถ้า Firebase ส่งข้อมูลมาแล้ว แคชในเครื่องจะไม่ทับข้อมูลจริง
+cacheLoad('finflow_fuel_rate').then(v => {
+  if (frFbLoaded || !Array.isArray(v)) return;
+  frRecords = v;
+  if (document.readyState !== 'loading') frRenderList();
+});
 let frEditingId = null;
 let frRef = null;
 let frReady = false;
@@ -10,7 +16,7 @@ let frCharts = {};
 
 const FR_XLSX_HEADERS = ['ลำดับที่', 'วันที่', 'ชื่อพนักงาน', 'ทะเบียนรถ', 'หน่วยงาน', 'ลานจอด', 'เรทเชื้อเพลิง (บาท)'];
 
-function frSave() { safeLocalStorageSet('finflow_fuel_rate', JSON.stringify(frRecords)); }
+function frSave() { cacheSet('finflow_fuel_rate', frRecords); }
 
 function frNextRunningNo() {
   return frRecords.length ? Math.max(...frRecords.map(r => r.runningNo || 0)) + 1 : 1;
@@ -379,6 +385,7 @@ function frObjToRecords(obj) {
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function frApplyServer(serverRecords) {
+  frFbLoaded = true;
   const serverIds = new Set(serverRecords.map(r => r.id));
   const localOnly = (frRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
   frRecords = serverRecords.concat(localOnly);
