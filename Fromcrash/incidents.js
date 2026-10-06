@@ -806,11 +806,16 @@ function incObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function incApplyServer(serverIncidents) {
-  incidents = serverIncidents;
+  const serverIds = new Set(serverIncidents.map(r => r.id));
+  const localOnly = (incidents || []).filter(t => t && t.id && !serverIds.has(t.id));
+  incidents = serverIncidents.concat(localOnly);
   incSave();
   incRenderList();
   incRenderDashboard();
+  if (localOnly.length > 0) incWriteFB();
 }
 async function incWriteFB() {
   if (!incRef) return;
@@ -1294,11 +1299,16 @@ function ghObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function ghApplyServer(serverRecords) {
-  ghRecords = serverRecords;
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (ghRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
+  ghRecords = serverRecords.concat(localOnly);
   ghSave();
   ghRenderList();
   if (document.getElementById('gh-subpage-dashboard')?.classList.contains('active')) ghRenderDashboard();
+  if (localOnly.length > 0) ghWriteFB();
 }
 async function ghWriteFB() {
   if (!ghRef) return;

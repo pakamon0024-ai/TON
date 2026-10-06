@@ -606,13 +606,18 @@ function gvObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function gvApplyServer(serverRecords) {
-  gvRecords = serverRecords;
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (gvRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
+  gvRecords = serverRecords.concat(localOnly);
   gvSave();
   gvFillTypeSelect('gv-f-type');
   gvRenderList();
   if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) { gvFillTypeSelect('gv-dash-type'); gvRenderDashboard(); }
   if (document.getElementById('gv-subpage-daily')?.classList.contains('active')) { gvFillTypeSelect('gv-daily-type'); gvRenderDailyReport(); }
+  if (localOnly.length > 0) gvWriteFB();
 }
 async function gvWriteFB() {
   if (!gvRef) return;

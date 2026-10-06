@@ -375,11 +375,16 @@ function bdObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function bdApplyServer(serverBreakdowns) {
-  truckBreakdowns = serverBreakdowns;
+  const serverIds = new Set(serverBreakdowns.map(r => r.id));
+  const localOnly = (truckBreakdowns || []).filter(t => t && t.id && !serverIds.has(t.id));
+  truckBreakdowns = serverBreakdowns.concat(localOnly);
   bdSave();
   bdRenderList();
   if (document.getElementById('bd-subpage-dashboard')?.classList.contains('active')) bdRenderDashboard();
+  if (localOnly.length > 0) bdWriteFB();
 }
 async function bdWriteFB() {
   if (!bdRef) return;

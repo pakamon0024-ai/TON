@@ -24,11 +24,16 @@ function rsObjToRecords(obj) {
   return arr;
 }
 
+// ถ้าเครื่องนี้มีรายการที่ server ยังไม่มี (เช่น บันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function rsApplyServerRecords(serverRecords) {
-  records = serverRecords;
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (records || []).filter(r => r && r.id && !serverIds.has(r.id));
+  records = serverRecords.concat(localOnly).sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
   saveRecords();
   renderDashboard();
   renderHistory();
+  if (localOnly.length > 0) rsWriteFB();
 }
 
 async function rsWriteFB() {

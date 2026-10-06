@@ -374,11 +374,16 @@ function wiObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function wiApplyServer(serverIssues) {
-  workIssues = serverIssues;
+  const serverIds = new Set(serverIssues.map(r => r.id));
+  const localOnly = (workIssues || []).filter(t => t && t.id && !serverIds.has(t.id));
+  workIssues = serverIssues.concat(localOnly);
   wiSave();
   wiRenderList();
   if (document.getElementById('wi-subpage-dashboard')?.classList.contains('active')) wiRenderDashboard();
+  if (localOnly.length > 0) wiWriteFB();
 }
 async function wiWriteFB() {
   if (!wiRef) return;

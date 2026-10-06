@@ -516,11 +516,16 @@ function pbObjToRecords(obj) {
   if (Array.isArray(obj)) return obj.filter(Boolean);
   return Object.values(obj).filter(r => r && r.id);
 }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function pbApplyServer(serverRecords) {
-  probationRecords = serverRecords;
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (probationRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
+  probationRecords = serverRecords.concat(localOnly);
   pbSave();
   pbRenderList();
   if (document.getElementById('pb-subpage-dashboard')?.classList.contains('active')) pbRenderDashboard();
+  if (localOnly.length > 0) pbWriteFB();
 }
 async function pbWriteFB() {
   if (!pbRef) return;

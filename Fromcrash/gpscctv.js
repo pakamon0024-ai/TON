@@ -603,7 +603,16 @@ async function grSaveReportImage() {
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
 function gcRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function gcObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
-function gcApplyServer(serverRecords) { gcRecords = serverRecords; gcSave(); gcRenderList(); }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
+function gcApplyServer(serverRecords) {
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (gcRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
+  gcRecords = serverRecords.concat(localOnly);
+  gcSave();
+  gcRenderList();
+  if (localOnly.length > 0) gcWriteFB();
+}
 async function gcWriteFB() {
   if (!gcRef) return;
   try {
@@ -632,7 +641,16 @@ async function gcRemoveOne(id) {
 }
 function gcRemoveOneIfReady(id) { if (gcReady) gcRemoveOne(id); }
 
-function grApplyServer(serverRecords) { grRecords = serverRecords; grSave(); grRenderList(); }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
+function grApplyServer(serverRecords) {
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (grRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
+  grRecords = serverRecords.concat(localOnly);
+  grSave();
+  grRenderList();
+  if (localOnly.length > 0) grWriteFB();
+}
 async function grWriteFB() {
   if (!grRef) return;
   try {
@@ -933,7 +951,16 @@ function ddbImportExcel(type, event) {
 // ===== Firebase Sync =====
 function ddbRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function ddbObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
-function ddbApplyServer(type, serverRecords) { ddbRecords[type] = serverRecords; ddbSave(type); ddbRenderList(type); }
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
+function ddbApplyServer(type, serverRecords) {
+  const serverIds = new Set(serverRecords.map(r => r.id));
+  const localOnly = (ddbRecords[type] || []).filter(t => t && t.id && !serverIds.has(t.id));
+  ddbRecords[type] = serverRecords.concat(localOnly);
+  ddbSave(type);
+  ddbRenderList(type);
+  if (localOnly.length > 0) ddbWriteFB(type);
+}
 
 async function ddbWriteFB(type) {
   if (!ddbRef[type]) return;

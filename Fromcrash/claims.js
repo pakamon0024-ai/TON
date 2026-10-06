@@ -852,10 +852,15 @@ async function icRetryAfterLogin() {
   }
 }
 
+// ถ้าเครื่องนี้มีเคสที่ server ยังไม่มี (เช่น บันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function icApplyServerClaims(serverClaims) {
-  claims = serverClaims;
+  const serverIds = new Set(serverClaims.map(c => c.id));
+  const localOnly = (claims || []).filter(c => c && c.id && !serverIds.has(c.id));
+  claims = serverClaims.concat(localOnly);
   icSave();
   icUpdate();
+  if (localOnly.length > 0) icWriteFB();
   const ap = document.querySelector('#page-claims .pg.on');
   if (!ap) return;
   const id = ap.id.replace('pg-', '');

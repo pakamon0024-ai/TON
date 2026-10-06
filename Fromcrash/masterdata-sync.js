@@ -18,34 +18,49 @@ function mdObjToRecords(obj) {
   return Object.values(obj).filter(r => r && r.id);
 }
 
+// ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
+function mdLocalOnly(localArr, serverArr) {
+  const serverIds = new Set((serverArr || []).map(r => r && r.id));
+  return (localArr || []).filter(t => t && t.id && !serverIds.has(t.id));
+}
+
 function mdApplyServerDrivers(serverDrivers) {
-  mdDrivers = serverDrivers;
+  const localOnly = mdLocalOnly(mdDrivers, serverDrivers);
+  mdDrivers = serverDrivers.concat(localOnly);
   saveDriversDB();
   renderDriversTable();
   updateDriverDatalist();
+  if (localOnly.length > 0) mdWriteEmployees();
 }
 
 function mdApplyServerVehicles(serverVehicles) {
-  mdVehicles = serverVehicles;
+  const localOnly = mdLocalOnly(mdVehicles, serverVehicles);
+  mdVehicles = serverVehicles.concat(localOnly);
   saveVehiclesDB();
   renderVehiclesTable();
   updatePlateDatalist();
+  if (localOnly.length > 0) mdWriteVehicles();
 }
 
 function mdApplyServerAbcStaff(serverAbcStaff) {
   // ข้อมูลเก่าบน Firebase อาจยังเป็น array ของชื่อ string เฉยๆ (ก่อนเพิ่มฟิลด์หน่วยงาน) แปลงให้เป็น record
-  mdAbcStaff = (serverAbcStaff || []).map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
+  const normalized = (serverAbcStaff || []).map((s, i) => typeof s === 'string' ? { id: Date.now() + i, name: s, businessUnit: '' } : s);
+  const localOnly = mdLocalOnly(mdAbcStaff, normalized);
+  mdAbcStaff = normalized.concat(localOnly);
   const fixed = mdApplyAbcStartFixups();
   saveAbcStaffDB();
   renderAbcStaffTable();
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
-  if (fixed) mdPushIfReady();
+  if (fixed || localOnly.length > 0) mdPushIfReady();
 }
 
 function mdApplyServerBreathalyzers(serverBreathalyzers) {
-  mdBreathalyzers = serverBreathalyzers;
+  const localOnly = mdLocalOnly(mdBreathalyzers, serverBreathalyzers);
+  mdBreathalyzers = serverBreathalyzers.concat(localOnly);
   saveBreathalyzersDB();
   renderBreathalyzersTable();
+  if (localOnly.length > 0) mdWriteBreathalyzers();
 }
 
 async function mdWriteEmployees() {
@@ -114,15 +129,18 @@ function mdWaitForFirebase() {
   });
 }
 
+// ถ้าเครื่องนี้มีชื่อที่ server ยังไม่มี (เช่น เพิ่มไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
+// ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
 function mdApplySimpleList(kind, arr) {
-  if (kind === 'bu') { mdBusinessUnits = arr; saveBusinessUnitsDB(); renderBusinessUnitsTable(); }
-  if (kind === 'ins') { mdInsurers = arr; saveInsurersDB(); renderInsurersTable(); }
-  if (kind === 'yard') { mdYards = arr; saveYardsDB(); renderYardsTable(); }
-  if (kind === 'pattern') { mdIncidentPatterns = arr; savePatternsDB(); renderIncidentPatternsTable(); }
-  if (kind === 'topic') { mdIssueTopics = arr; saveIssueTopicsDB(); renderIssueTopicsTable(); }
-  if (kind === 'bdtype') { mdBreakdownTypes = arr; saveBreakdownTypesDB(); renderBreakdownTypesTable(); }
-  if (kind === 'charge') { mdChargeTypes = arr; saveChargeTypesDB(); renderChargeTypesTable(); }
-  if (kind === 'requesters') { mdRequesters = arr; saveRequestersDB(); renderRequestersTable(); updateRequesterDatalist(); }
+  let localOnly = [];
+  if (kind === 'bu') { localOnly = (mdBusinessUnits || []).filter(n => !arr.includes(n)); mdBusinessUnits = arr.concat(localOnly); saveBusinessUnitsDB(); renderBusinessUnitsTable(); if (localOnly.length) mdWriteSimpleList(mdBuRef, mdBusinessUnits); }
+  if (kind === 'ins') { localOnly = (mdInsurers || []).filter(n => !arr.includes(n)); mdInsurers = arr.concat(localOnly); saveInsurersDB(); renderInsurersTable(); if (localOnly.length) mdWriteSimpleList(mdInsRef, mdInsurers); }
+  if (kind === 'yard') { localOnly = (mdYards || []).filter(n => !arr.includes(n)); mdYards = arr.concat(localOnly); saveYardsDB(); renderYardsTable(); if (localOnly.length) mdWriteSimpleList(mdYardRef, mdYards); }
+  if (kind === 'pattern') { localOnly = (mdIncidentPatterns || []).filter(n => !arr.includes(n)); mdIncidentPatterns = arr.concat(localOnly); savePatternsDB(); renderIncidentPatternsTable(); if (localOnly.length) mdWriteSimpleList(mdPatRef, mdIncidentPatterns); }
+  if (kind === 'topic') { localOnly = (mdIssueTopics || []).filter(n => !arr.includes(n)); mdIssueTopics = arr.concat(localOnly); saveIssueTopicsDB(); renderIssueTopicsTable(); if (localOnly.length) mdWriteSimpleList(mdTopicRef, mdIssueTopics); }
+  if (kind === 'bdtype') { localOnly = (mdBreakdownTypes || []).filter(n => !arr.includes(n)); mdBreakdownTypes = arr.concat(localOnly); saveBreakdownTypesDB(); renderBreakdownTypesTable(); if (localOnly.length) mdWriteSimpleList(mdBdTypeRef, mdBreakdownTypes); }
+  if (kind === 'charge') { localOnly = (mdChargeTypes || []).filter(n => !arr.includes(n)); mdChargeTypes = arr.concat(localOnly); saveChargeTypesDB(); renderChargeTypesTable(); if (localOnly.length) mdWriteSimpleList(mdChargeRef, mdChargeTypes); }
+  if (kind === 'requesters') { localOnly = (mdRequesters || []).filter(n => !arr.includes(n)); mdRequesters = arr.concat(localOnly); saveRequestersDB(); renderRequestersTable(); updateRequesterDatalist(); if (localOnly.length) mdWriteSimpleList(mdReqRef, mdRequesters); }
   if (typeof incRefreshLookupDropdowns === 'function') incRefreshLookupDropdowns();
   if (typeof wiRefreshLookupDropdowns === 'function') wiRefreshLookupDropdowns();
   if (typeof bdRefreshLookupDropdowns === 'function') bdRefreshLookupDropdowns();
