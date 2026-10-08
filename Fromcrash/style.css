@@ -92,6 +92,10 @@ body {
 .sidebar-nav {
   flex: 1; padding: 16px 12px;
   display: flex; flex-direction: column; gap: 4px;
+  /* เมนูยาวขึ้นเรื่อยๆ ตามจำนวนเมนูที่เพิ่ม (ล่าสุดคือ Truck Breakdown) จนสูงเกินจอ
+     ไม่งั้นเมนูท้ายๆ (สำรองข้อมูล, จัดการผู้ใช้) จะตกขอบจอไปเงียบๆ โดยไม่มี scrollbar ให้เลื่อนดู */
+  overflow-y: auto;
+  min-height: 0;
 }
 .nav-item {
   display: flex; align-items: center; gap: 12px;
