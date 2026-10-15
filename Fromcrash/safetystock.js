@@ -5,10 +5,23 @@
 
 // รายการสินค้า (เพิ่ม/ลบเองได้ในหน้าเว็บ) — 3 รายการตั้งต้นใช้ id คงที่ เพื่อไม่ให้เครื่องต่างๆ สร้างซ้ำกัน
 const SS_DEFAULT_ITEMS = [
-  { id: 'SI_default_1', name: 'สติ๊กเกอร์', unit: 'แผ่น' },
-  { id: 'SI_default_2', name: 'สายรัดชิ่ง', unit: 'เส้น' },
-  { id: 'SI_default_3', name: 'ไม้หนุนล้อ', unit: 'อัน' },
+  { id: 'SI_default_h', name: 'สายรัดชิ่ง (หัว)', unit: 'หัว' },
+  { id: 'SI_default_s', name: 'สายรัดชิ่ง (สาย)', unit: 'สาย' },
+  { id: 'SI_default_c', name: 'ไม้หนุนล้อ', unit: 'คู่' },
+  { id: 'SI_default_st1', name: 'สติ๊กเกอร์ ประกอบการเอพีฯ', unit: 'แผ่น' },
+  { id: 'SI_default_st2', name: 'สติ๊กเกอร์ ประกอบการอำพล', unit: 'แผ่น' },
+  { id: 'SI_default_st3', name: 'สติ๊กเกอร์ คาดหน้า', unit: 'แผ่น' },
+  { id: 'SI_default_st4', name: 'สติ๊กเกอร์ รูปโลก', unit: 'แผ่น' },
+  { id: 'SI_default_st5', name: 'สติ๊กเกอร์ ตรวจสอบก่อนขึ้นขับ', unit: 'แผ่น' },
+  { id: 'SI_default_st6', name: 'สติ๊กเกอร์ ห้ามโดยสาร', unit: 'แผ่น' },
+  { id: 'SI_default_st7', name: 'สติ๊กเกอร์ อย่าลืมล็อกกลอนประตูตู้', unit: 'แผ่น' },
+  { id: 'SI_default_st8', name: 'สติ๊กเกอร์ Q-Mark', unit: 'แผ่น' },
+  { id: 'SI_default_st9', name: 'สติ๊กเกอร์ ISO', unit: 'แผ่น' },
 ];
+// รุ่นแรกของแอปใช้ 3 รายการรวม (สติ๊กเกอร์ / สายรัดชิ่ง / ไม้หนุนล้อ) — ย้ายมาแบบแยกประเภทแล้ว
+// รายการเก่าจะถูกเอาออกอัตโนมัติถ้ายังไม่มีประวัติรับเข้า/เบิกจ่ายอ้างถึง (ดู ssMigrateItems)
+const SS_LEGACY_ITEM_IDS = ['SI_default_1', 'SI_default_2', 'SI_default_3'];
+const SS_ITEMS_SCHEMA = 2;
 let ssItems = SS_DEFAULT_ITEMS.map(i => ({ ...i }));
 let ssItemsFbLoaded = false;
 cacheLoad('finflow_safety_items').then(v => {
@@ -96,6 +109,19 @@ function ssRenderSummary() {
     }).join('');
     return `<tr><td>${m} ${year}</td>${cells}</tr>`;
   }).join('');
+}
+
+// ย้ายจากรายการรุ่นแรกมาเป็นรายการแยกประเภท: เอา legacy ที่ไม่มีประวัติออก แล้วเติมรายการตั้งต้นที่ยังไม่มี
+// ทำครั้งเดียว (ใช้ _schema ใน Firebase เป็นตัวกัน) เพื่อไม่ให้รายการตั้งต้นที่ผู้ใช้ลบทิ้งแล้วเด้งกลับมาอีก
+function ssMigrateItems() {
+  const used = new Set(safetyStock.map(r => r.item));
+  ssItems = ssItems.filter(i => !SS_LEGACY_ITEM_IDS.includes(i.id) || used.has(i.name));
+  SS_DEFAULT_ITEMS.forEach(d => {
+    if (!ssItems.some(i => i.id === d.id || i.name === d.name)) ssItems.push({ ...d });
+  });
+  ssSaveItems();
+  ssRefreshItemSelects();
+  ssRenderAll();
 }
 
 // ===== จัดการรายการสินค้า (เพิ่ม/ลบเอง) =====
@@ -426,6 +452,7 @@ async function ssWriteItemsFB() {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     const o = {};
     ssItems.forEach(i => { o[i.id] = i; });
+    o._schema = SS_ITEMS_SCHEMA; // ไม่ใช่ record (ไม่มี id) — ssObjToRecords กรองทิ้งเอง
     await set(ssItemsRef, o);
   } catch (e) { console.warn('ssWriteItemsFB error', e); notifySyncWriteError(e.message); }
 }
@@ -452,7 +479,10 @@ async function ssInit() {
     const snap = await get(ssRef);
     if (snap.exists()) ssApplyServer(ssObjToRecords(snap.val()));
     ssReady = true;
-    if (!itemsSnap.exists()) await ssWriteItemsFB();
+    if (!itemsSnap.exists() || itemsSnap.val()?._schema !== SS_ITEMS_SCHEMA) {
+      ssMigrateItems();
+      await ssWriteItemsFB();
+    }
     onValue(ssItemsRef, s => { if (s.exists()) ssApplyServerItems(ssObjToRecords(s.val())); });
     if (!snap.exists() && safetyStock.length > 0) await ssWriteFB();
     onValue(ssRef, s => { if (s.exists()) ssApplyServer(ssObjToRecords(s.val())); });
