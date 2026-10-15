@@ -4,24 +4,27 @@
 // เก็บ local ที่ key 'finflow_safety_stock' และ sync กับ Firebase ที่ /safetyStock (โครงสร้างเหมือน breakdown.js)
 
 // รายการสินค้า (เพิ่ม/ลบเองได้ในหน้าเว็บ) — 3 รายการตั้งต้นใช้ id คงที่ เพื่อไม่ให้เครื่องต่างๆ สร้างซ้ำกัน
+// หมวดหลัก 3 หมวด — เลือกหมวดแล้วค่อยเลือกรายการย่อย (item.group / item.sub)
+const SS_GROUPS = ['สติ๊กเกอร์', 'สายรัดชิ่ง', 'ไม้หนุนล้อ'];
+const SS_OTHER_GROUP = 'อื่นๆ'; // รายการที่ไม่รู้หมวด (เช่น เพิ่มไว้รุ่นก่อนมีหมวด)
 const SS_DEFAULT_ITEMS = [
-  { id: 'SI_default_h', name: 'สายรัดชิ่ง (หัว)', unit: 'หัว' },
-  { id: 'SI_default_s', name: 'สายรัดชิ่ง (สาย)', unit: 'สาย' },
-  { id: 'SI_default_c', name: 'ไม้หนุนล้อ', unit: 'คู่' },
-  { id: 'SI_default_st1', name: 'สติ๊กเกอร์ ประกอบการเอพีฯ', unit: 'แผ่น' },
-  { id: 'SI_default_st2', name: 'สติ๊กเกอร์ ประกอบการอำพล', unit: 'แผ่น' },
-  { id: 'SI_default_st3', name: 'สติ๊กเกอร์ คาดหน้า', unit: 'แผ่น' },
-  { id: 'SI_default_st4', name: 'สติ๊กเกอร์ รูปโลก', unit: 'แผ่น' },
-  { id: 'SI_default_st5', name: 'สติ๊กเกอร์ ตรวจสอบก่อนขึ้นขับ', unit: 'แผ่น' },
-  { id: 'SI_default_st6', name: 'สติ๊กเกอร์ ห้ามโดยสาร', unit: 'แผ่น' },
-  { id: 'SI_default_st7', name: 'สติ๊กเกอร์ อย่าลืมล็อกกลอนประตูตู้', unit: 'แผ่น' },
-  { id: 'SI_default_st8', name: 'สติ๊กเกอร์ Q-Mark', unit: 'แผ่น' },
-  { id: 'SI_default_st9', name: 'สติ๊กเกอร์ ISO', unit: 'แผ่น' },
+  { id: 'SI_default_h', group: 'สายรัดชิ่ง', sub: 'หัว', name: 'สายรัดชิ่ง (หัว)', unit: 'หัว' },
+  { id: 'SI_default_s', group: 'สายรัดชิ่ง', sub: 'สาย', name: 'สายรัดชิ่ง (สาย)', unit: 'สาย' },
+  { id: 'SI_default_c', group: 'ไม้หนุนล้อ', sub: 'ไม้หนุนล้อ', name: 'ไม้หนุนล้อ', unit: 'คู่' },
+  { id: 'SI_default_st1', group: 'สติ๊กเกอร์', sub: 'ประกอบการเอพีฯ', name: 'สติ๊กเกอร์ ประกอบการเอพีฯ', unit: 'แผ่น' },
+  { id: 'SI_default_st2', group: 'สติ๊กเกอร์', sub: 'ประกอบการอำพล', name: 'สติ๊กเกอร์ ประกอบการอำพล', unit: 'แผ่น' },
+  { id: 'SI_default_st3', group: 'สติ๊กเกอร์', sub: 'คาดหน้า', name: 'สติ๊กเกอร์ คาดหน้า', unit: 'แผ่น' },
+  { id: 'SI_default_st4', group: 'สติ๊กเกอร์', sub: 'รูปโลก', name: 'สติ๊กเกอร์ รูปโลก', unit: 'แผ่น' },
+  { id: 'SI_default_st5', group: 'สติ๊กเกอร์', sub: 'ตรวจสอบก่อนขึ้นขับ', name: 'สติ๊กเกอร์ ตรวจสอบก่อนขึ้นขับ', unit: 'แผ่น' },
+  { id: 'SI_default_st6', group: 'สติ๊กเกอร์', sub: 'ห้ามโดยสาร', name: 'สติ๊กเกอร์ ห้ามโดยสาร', unit: 'แผ่น' },
+  { id: 'SI_default_st7', group: 'สติ๊กเกอร์', sub: 'อย่าลืมล็อกกลอนประตูตู้', name: 'สติ๊กเกอร์ อย่าลืมล็อกกลอนประตูตู้', unit: 'แผ่น' },
+  { id: 'SI_default_st8', group: 'สติ๊กเกอร์', sub: 'Q-Mark', name: 'สติ๊กเกอร์ Q-Mark', unit: 'แผ่น' },
+  { id: 'SI_default_st9', group: 'สติ๊กเกอร์', sub: 'ISO', name: 'สติ๊กเกอร์ ISO', unit: 'แผ่น' },
 ];
 // รุ่นแรกของแอปใช้ 3 รายการรวม (สติ๊กเกอร์ / สายรัดชิ่ง / ไม้หนุนล้อ) — ย้ายมาแบบแยกประเภทแล้ว
 // รายการเก่าจะถูกเอาออกอัตโนมัติถ้ายังไม่มีประวัติรับเข้า/เบิกจ่ายอ้างถึง (ดู ssMigrateItems)
 const SS_LEGACY_ITEM_IDS = ['SI_default_1', 'SI_default_2', 'SI_default_3'];
-const SS_ITEMS_SCHEMA = 2;
+const SS_ITEMS_SCHEMA = 3;
 let ssItems = SS_DEFAULT_ITEMS.map(i => ({ ...i }));
 let ssItemsFbLoaded = false;
 cacheLoad('finflow_safety_items').then(v => {
@@ -45,6 +48,26 @@ let ssReady = false;
 
 function ssSave() { cacheSet('finflow_safety_stock', safetyStock); }
 function ssSaveItems() { cacheSet('finflow_safety_items', ssItems); }
+// หมวด/ชื่อย่อยของรายการ — รายการเก่าที่ยังไม่มีฟิลด์ group จะเดาจากชื่อที่ขึ้นต้นด้วยชื่อหมวด
+function ssGroupOf(it) {
+  if (it.group) return it.group;
+  return SS_GROUPS.find(g => (it.name || '').startsWith(g)) || SS_OTHER_GROUP;
+}
+function ssSubOf(it) {
+  if (it.sub) return it.sub;
+  const g = ssGroupOf(it);
+  const rest = (it.name || '').slice(g.length).replace(/^[\s(]+|[\s)]+$/g, '');
+  return rest || it.name;
+}
+function ssGroupsInUse() {
+  const extra = ssItems.some(it => ssGroupOf(it) === SS_OTHER_GROUP) ? [SS_OTHER_GROUP] : [];
+  return SS_GROUPS.concat(extra);
+}
+function ssItemsOfGroup(group) { return ssItems.filter(it => ssGroupOf(it) === group); }
+function ssGroupOfItemName(name) {
+  const it = ssItems.find(i => i.name === name);
+  return it ? ssGroupOf(it) : (SS_GROUPS.find(g => (name || '').startsWith(g)) || SS_OTHER_GROUP);
+}
 function ssUnit(name) { return (ssItems.find(i => i.name === name) || {}).unit || ''; }
 
 // ยอดคงเหลือต่อรายการ (รับเข้า - เบิกจ่าย) ; excludeId ใช้ตอนแก้ไขรายการเดิม ไม่ให้นับซ้ำ
@@ -81,30 +104,44 @@ function ssRenderAll() {
 function ssRenderSummary() {
   const wrap = document.getElementById('ss-balance-cards');
   if (!wrap) return;
-  wrap.innerHTML = ssItems.map(it => {
-    const bal = ssBalance(it.name);
-    const color = bal <= 0 ? '#ef4444' : bal <= 10 ? '#f59e0b' : '#22c55e';
-    return `<div class="stat-card" style="border-left:4px solid ${color};">
-      <div class="stat-label">${escapeHtml(it.name)}
-        <button class="action-btn action-delete" style="float:right;padding:0 6px;" title="ลบรายการนี้" onclick="ssDeleteItem('${it.id}')">×</button></div>
-      <div class="stat-value" style="color:${color};">${bal.toLocaleString()} <span style="font-size:0.9rem;">${escapeHtml(it.unit)}</span></div>
-      <div style="font-size:0.75rem;color:var(--text-muted);">คงเหลือ${bal <= 10 ? ' (ใกล้หมด)' : ''}</div>
+  wrap.innerHTML = ssGroupsInUse().map(g => {
+    const cards = ssItemsOfGroup(g).map(it => {
+      const bal = ssBalance(it.name);
+      const color = bal <= 0 ? '#ef4444' : bal <= 10 ? '#f59e0b' : '#22c55e';
+      return `<div class="stat-card" style="border-left:4px solid ${color};">
+        <div class="stat-label">${escapeHtml(ssSubOf(it))}
+          <button class="action-btn action-delete" style="float:right;padding:0 6px;" title="ลบรายการนี้" onclick="ssDeleteItem('${it.id}')">×</button></div>
+        <div class="stat-value" style="color:${color};">${bal.toLocaleString()} <span style="font-size:0.9rem;">${escapeHtml(it.unit)}</span></div>
+        <div style="font-size:0.75rem;color:var(--text-muted);">คงเหลือ${bal <= 10 ? ' (ใกล้หมด)' : ''}</div>
+      </div>`;
+    }).join('');
+    const addBtn = g === SS_OTHER_GROUP ? '' :
+      `<button class="btn-secondary" style="margin-left:10px;" onclick="ssAddItem('${escapeHtml(g)}')">➕ เพิ่มรายการย่อย</button>`;
+    return `<div style="margin-bottom:20px;">
+      <div class="fieldset-title" style="display:flex;align-items:center;">${escapeHtml(g)}${addBtn}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">${cards || '<div class="empty-state">ยังไม่มีรายการย่อย</div>'}</div>
     </div>`;
   }).join('');
 
-  // สรุปเบิกจ่ายรายเดือน (ปีปัจจุบัน) แยกตามรายการ
+  // สรุปเบิกจ่ายรายเดือน (ปีปัจจุบัน) เฉพาะหมวดที่เลือก
+  const sel = document.getElementById('ss-month-group');
+  if (sel && !sel.options.length) {
+    sel.innerHTML = ssGroupsInUse().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  }
+  const group = sel ? sel.value : SS_GROUPS[0];
+  const groupItems = ssItemsOfGroup(group);
   const year = String(new Date().getFullYear());
   const months = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
   const tbody = document.getElementById('ss-month-body');
   if (!tbody) return;
   const head = document.getElementById('ss-month-head');
-  if (head) head.innerHTML = '<tr><th>เดือน</th>' + ssItems.map(it => `<th>${escapeHtml(it.name)} (${escapeHtml(it.unit)})</th>`).join('') + '</tr>';
+  if (head) head.innerHTML = '<tr><th>เดือน</th>' + groupItems.map(it => `<th>${escapeHtml(ssSubOf(it))} (${escapeHtml(it.unit)})</th>`).join('') + '</tr>';
   tbody.innerHTML = months.map((m, idx) => {
     const prefix = `${year}-${String(idx + 1).padStart(2, '0')}`;
-    const cells = ssItems.map(it => {
+    const cells = groupItems.map(it => {
       const n = safetyStock
         .filter(r => r.type === SS_TYPE_OUT && r.item === it.name && (r.date || '').startsWith(prefix))
-        .reduce((s, r) => s + (Number(r.qty) || 0), 0);
+        .reduce((sum, r) => sum + (Number(r.qty) || 0), 0);
       return `<td>${n || '-'}</td>`;
     }).join('');
     return `<tr><td>${m} ${year}</td>${cells}</tr>`;
@@ -119,32 +156,71 @@ function ssMigrateItems() {
   SS_DEFAULT_ITEMS.forEach(d => {
     if (!ssItems.some(i => i.id === d.id || i.name === d.name)) ssItems.push({ ...d });
   });
+  // รายการที่ยังไม่มีหมวด (รุ่นก่อน) ใส่หมวด/ชื่อย่อยให้ ไม่แตะชื่อเดิมเพราะประวัติอ้างชื่อนี้อยู่
+  ssItems = ssItems.map(i => i.group ? i : { ...i, group: ssGroupOf(i), sub: ssSubOf(i) });
   ssSaveItems();
   ssRefreshItemSelects();
   ssRenderAll();
 }
 
 // ===== จัดการรายการสินค้า (เพิ่ม/ลบเอง) =====
-function ssRefreshItemSelects() {
-  const fill = (id, placeholder) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    const current = el.value;
-    el.innerHTML = `<option value="">${placeholder}</option>` +
-      ssItems.map(it => `<option value="${escapeHtml(it.name)}">${escapeHtml(it.name)}</option>`).join('');
-    if (ssItems.some(it => it.name === current)) el.value = current;
-  };
-  fill('ss-item', '-- เลือก --');
-  fill('ss-f-item', 'ทั้งหมด');
+function ssFillItemSelect(id, group, placeholder) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  const list = group ? ssItemsOfGroup(group) : [];
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    list.map(it => `<option value="${escapeHtml(it.name)}">${escapeHtml(ssSubOf(it))}</option>`).join('');
+  if (list.some(it => it.name === current)) el.value = current;
 }
 
-function ssAddItem() {
-  const name = (prompt('ชื่อรายการสินค้าใหม่ (เช่น กรวยจราจร):') || '').trim();
-  if (!name) return;
+function ssFillGroupSelect(id, placeholder) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const current = el.value;
+  el.innerHTML = `<option value="">${placeholder}</option>` +
+    ssGroupsInUse().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  if (ssGroupsInUse().includes(current)) el.value = current;
+}
+
+function ssRefreshItemSelects() {
+  ssFillGroupSelect('ss-group', '-- เลือกหมวด --');
+  ssFillItemSelect('ss-item', document.getElementById('ss-group')?.value, '-- เลือกรายการย่อย --');
+  ssFillGroupSelect('ss-f-group', 'ทั้งหมด');
+  ssFillItemSelect('ss-f-item', document.getElementById('ss-f-group')?.value, 'ทั้งหมด');
+  const ms = document.getElementById('ss-month-group');
+  if (ms) {
+    const cur = ms.value;
+    ms.innerHTML = ssGroupsInUse().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+    if (ssGroupsInUse().includes(cur)) ms.value = cur;
+  }
+}
+
+// เปลี่ยนหมวดในฟอร์ม -> โหลดรายการย่อยของหมวดนั้นขึ้นมา
+function ssOnGroupChange() {
+  ssFillItemSelect('ss-item', document.getElementById('ss-group').value, '-- เลือกรายการย่อย --');
+  document.getElementById('ss-item').value = '';
+  ssUpdateFormHints();
+}
+
+function ssOnFilterGroupChange() {
+  ssFillItemSelect('ss-f-item', document.getElementById('ss-f-group').value, 'ทั้งหมด');
+  const it = document.getElementById('ss-f-item');
+  if (it) it.value = '';
+  ssRenderList();
+}
+
+// เพิ่มรายการย่อยในหมวดที่ระบุ (ปุ่มในแต่ละหมวดของหน้ายอดคงเหลือ หรือปุ่ม + ในฟอร์ม ซึ่งใช้หมวดที่เลือกอยู่)
+function ssAddItem(group) {
+  group = group || document.getElementById('ss-group')?.value;
+  if (!group) { showToast('เลือกหมวดก่อน แล้วค่อยเพิ่มรายการย่อย', 'warning'); return; }
+  const sub = (prompt(`ชื่อรายการย่อยใหม่ในหมวด "${group}":`) || '').trim();
+  if (!sub) return;
+  const name = `${group} ${sub}`;
   if (ssItems.some(it => it.name === name)) { showToast('มีรายการนี้อยู่แล้ว', 'warning'); return; }
-  const unit = (prompt(`หน่วยนับของ "${name}" (เช่น อัน, เส้น, แผ่น):`, 'อัน') || '').trim();
+  const unit = (prompt(`หน่วยนับของ "${name}" (เช่น อัน, เส้น, แผ่น, คู่):`, ssItemsOfGroup(group)[0]?.unit || 'อัน') || '').trim();
   if (!unit) return;
-  ssItems.push({ id: 'SI_' + Date.now(), name, unit });
+  ssItems.push({ id: 'SI_' + Date.now(), group, sub, name, unit });
   ssSaveItems();
   ssPushItemsIfReady();
   ssRefreshItemSelects();
@@ -270,6 +346,8 @@ function ssClearForm() {
   document.getElementById('ss-edit-banner').style.display = 'none';
   document.getElementById('ss-date').value = alcTodayLocalSafe();
   document.getElementById('ss-type').value = SS_TYPE_OUT;
+  document.getElementById('ss-group').value = '';
+  ssFillItemSelect('ss-item', '', '-- เลือกรายการย่อย --');
   document.getElementById('ss-item').value = '';
   document.getElementById('ss-qty').value = '';
   ['ss-receiver', 'ss-plate', 'ss-bu', 'ss-yard', 'ss-note'].forEach(id => { document.getElementById(id).value = ''; });
@@ -290,6 +368,8 @@ function ssEditCase(id) {
   document.getElementById('ss-edit-no').textContent = rec.runningNo;
   document.getElementById('ss-date').value = rec.date || '';
   document.getElementById('ss-type').value = rec.type || SS_TYPE_OUT;
+  document.getElementById('ss-group').value = ssGroupOfItemName(rec.item);
+  ssFillItemSelect('ss-item', document.getElementById('ss-group').value, '-- เลือกรายการย่อย --');
   document.getElementById('ss-item').value = rec.item || '';
   document.getElementById('ss-qty').value = rec.qty || '';
   document.getElementById('ss-receiver').value = rec.receiver || '';
@@ -320,11 +400,13 @@ function ssDeleteCase(id) {
 function ssFilteredList() {
   const type = document.getElementById('ss-f-type')?.value || '';
   const item = document.getElementById('ss-f-item')?.value || '';
+  const group = document.getElementById('ss-f-group')?.value || '';
   const month = document.getElementById('ss-f-month')?.value || '';
   const search = (document.getElementById('ss-f-search')?.value || '').toLowerCase().trim();
   return safetyStock.filter(i => {
     if (type && i.type !== type) return false;
     if (item && i.item !== item) return false;
+    if (group && ssGroupOfItemName(i.item) !== group) return false;
     if (month && !(i.date || '').startsWith(month)) return false;
     if (search && !(`${i.receiver} ${i.plate} ${i.businessUnit} ${i.yard} ${i.note}`.toLowerCase().includes(search))) return false;
     return true;
@@ -332,7 +414,8 @@ function ssFilteredList() {
 }
 
 function ssClearListFilters() {
-  ['ss-f-type', 'ss-f-item', 'ss-f-month', 'ss-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['ss-f-type', 'ss-f-group', 'ss-f-month', 'ss-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ssFillItemSelect('ss-f-item', '', 'ทั้งหมด');
   ssRenderList();
 }
 
