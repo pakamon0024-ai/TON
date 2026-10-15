@@ -908,13 +908,28 @@ function mdApplyAbcStartFixups() {
 mdApplyAbcStartFixups();
 function saveAbcStaffDB() { safeLocalStorageSet('finflow_abc_staff_db', JSON.stringify(mdAbcStaff)); }
 
+let mdAbcStaffEditId = null; // null = โหมดเพิ่มใหม่, มีค่า = กำลังแก้ไขพนักงานคนนี้อยู่
+
 function addAbcStaffDB() {
   const nameInput = document.getElementById('md-abcstaff-name');
   const buInput = document.getElementById('md-abcstaff-bu');
   const name = nameInput.value.trim();
   const businessUnit = buInput.value.trim();
   if (!name) { nameInput.focus(); return; }
-  if (mdAbcStaffActive().some(s => s.name === name)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
+  if (mdAbcStaffActive().some(s => s.name === name && s.id !== mdAbcStaffEditId)) { showToast('มีพนักงานคนนี้อยู่แล้ว', 'warning'); return; }
+
+  if (mdAbcStaffEditId !== null) {
+    const idx = mdAbcStaff.findIndex(s => s.id === mdAbcStaffEditId);
+    if (idx >= 0) mdAbcStaff[idx] = { ...mdAbcStaff[idx], name, businessUnit };
+    cancelEditAbcStaffDB();
+    saveAbcStaffDB();
+    renderAbcStaffTable();
+    if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
+    mdPushIfReady();
+    showToast('แก้ไขข้อมูลพนักงานแล้ว', 'success');
+    return;
+  }
+
   mdAbcStaff.push({ id: Date.now(), name, businessUnit, addedDate: alcTodayLocal() });
   saveAbcStaffDB();
   nameInput.value = ''; buInput.value = ''; nameInput.focus();
@@ -922,6 +937,29 @@ function addAbcStaffDB() {
   if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
   mdPushIfReady();
   showToast('เพิ่มพนักงานแล้ว', 'success');
+}
+
+function editAbcStaffDB(id) {
+  const s = mdAbcStaff.find(s => s.id === id);
+  if (!s) return;
+  mdAbcStaffEditId = id;
+  document.getElementById('md-abcstaff-name').value = s.name || '';
+  document.getElementById('md-abcstaff-bu').value = s.businessUnit || '';
+  const btn = document.getElementById('md-abcstaff-save-btn');
+  if (btn) btn.textContent = '💾 บันทึกการแก้ไข';
+  const cancelBtn = document.getElementById('md-abcstaff-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = '';
+  document.getElementById('md-abcstaff-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelEditAbcStaffDB() {
+  mdAbcStaffEditId = null;
+  document.getElementById('md-abcstaff-name').value = '';
+  document.getElementById('md-abcstaff-bu').value = '';
+  const btn = document.getElementById('md-abcstaff-save-btn');
+  if (btn) btn.textContent = '+ เพิ่มพนักงาน';
+  const cancelBtn = document.getElementById('md-abcstaff-cancel-btn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
 }
 // ลบแบบ "soft delete": ไม่ลบ record ทิ้งจริง แค่ประทับเดือนที่ลบ (removedMonth)
 // เพื่อให้รายงานย้อนหลัง (เดือนก่อนลบ) ยังนับพนักงานคนนี้เหมือนเดิม ส่วนเดือนที่ลบเป็นต้นไปจะไม่ถูกนับแล้ว
@@ -987,7 +1025,10 @@ function renderAbcStaffTable() {
       <td>${escapeHtml(s.name)}</td>
       <td>${escapeHtml(s.businessUnit || '-')}</td>
       <td><input type="date" value="${s.addedDate || ''}" onchange="setAbcStaffStartDate(${s.id}, this.value)" /></td>
-      <td><button class="action-btn action-delete" onclick="deleteAbcStaffDB(${s.id})">ลบ</button></td>
+      <td>
+        <button class="action-btn action-view" onclick="editAbcStaffDB(${s.id})">แก้ไข</button>
+        <button class="action-btn action-delete" onclick="deleteAbcStaffDB(${s.id})">ลบ</button>
+      </td>
     </tr>
   `).join('');
 }

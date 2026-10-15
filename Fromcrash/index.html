@@ -1169,7 +1169,9 @@
                 </div>
               </div>
               <div class="form-actions" style="justify-content:flex-start;">
-                <button class="btn-primary" onclick="addAbcStaffDB()">+ เพิ่มพนักงาน</button>
+                <button class="btn-primary" id="md-abcstaff-save-btn" onclick="addAbcStaffDB()">+ เพิ่มพนักงาน</button>
+                <button class="btn-secondary" id="md-abcstaff-cancel-btn" style="display:none;"
+                  onclick="cancelEditAbcStaffDB()">ยกเลิก</button>
                 <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllAbcStaffDB()">🗑️
                   ลบทั้งหมด</button>
               </div>
