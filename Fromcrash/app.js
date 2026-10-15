@@ -123,6 +123,7 @@ function showPage(page) {
     issues: 'บันทึกปัญหาการทำงาน',
     breakdown: 'Truck Breakdown',
     safetystock: 'เบิกจ่าย Stock Safety',
+    memo: 'MEMO แจ้งผู้บริหาร',
     alcohol: 'บันทึกการเป่าวัดแอลกอฮอล์',
     jointvehicle: 'บันทึกรถร่วม',
     gpscctv: 'จัดการ GPS/CCTV',
@@ -141,6 +142,7 @@ function showPage(page) {
   if (page === 'issues' && typeof wiOnPageShown === 'function') wiOnPageShown();
   if (page === 'breakdown' && typeof bdOnPageShown === 'function') bdOnPageShown();
   if (page === 'safetystock' && typeof ssOnPageShown === 'function') ssOnPageShown();
+  if (page === 'memo' && typeof mmOnPageShown === 'function') mmOnPageShown();
   if (page === 'tickets' && typeof tkOnPageShown === 'function') tkOnPageShown();
   if (page === 'probation' && typeof pbOnPageShown === 'function') pbOnPageShown();
   if (page === 'alcohol' && typeof alcOnPageShown === 'function') alcOnPageShown();

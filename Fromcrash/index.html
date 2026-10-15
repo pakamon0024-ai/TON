@@ -133,6 +133,10 @@
           <span class="nav-icon">🦺</span>
           <span>เบิกจ่าย Stock Safety</span>
         </a>
+        <a href="#" class="nav-item" data-page="memo" onclick="showPage('memo')">
+          <span class="nav-icon">📝</span>
+          <span>MEMO แจ้งผู้บริหาร</span>
+        </a>
         <a href="#" class="nav-item" data-page="tickets" onclick="showPage('tickets')">
           <span class="nav-icon">🎫</span>
           <span>บันทึกใบสั่ง</span>
@@ -2524,6 +2528,101 @@
         </div>
       </div>
 
+      <!-- MEMO PAGE (บันทึกข้อความแจ้งผู้บริหารรับทราบ) -->
+      <div class="page" id="page-memo">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">📝</div>
+            <div>
+              <h2>MEMO แจ้งผู้บริหารรับทราบ</h2>
+              <p>สร้างบันทึกข้อความ ดูตัวอย่าง แล้วพิมพ์หรือ Export เป็น PDF ได้ทันที</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="mm-tab-list" onclick="mmSwitchTab('list')">📋 รายการ MEMO</button>
+            <button class="subtab" id="mm-tab-add" onclick="mmSwitchTab('add')">➕ สร้าง MEMO</button>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage active" id="mm-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="mm-f-search"
+                  placeholder="เลขที่ / เรื่อง / ผู้รับ..." oninput="debouncedRender('mmRenderList')" /></div>
+            </div>
+            <div class="ctxt" id="mm-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr><th>เลขที่</th><th>วันที่</th><th>เรียน</th><th>เรื่อง</th><th>ความเร่งด่วน</th><th>จัดการ</th></tr>
+                </thead>
+                <tbody id="mm-list-body">
+                  <tr><td colspan="6" class="empty-state">ยังไม่มี MEMO</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="mm-list-pager"></div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="mm-subpage-add">
+            <div class="edit-banner" id="mm-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไข MEMO <strong id="mm-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="mmCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลบันทึกข้อความ</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>เลขที่เอกสาร</label><input type="text" id="mm-docno" /></div>
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="mm-date" /></div>
+                <div class="form-group"><label>ความเร่งด่วน</label>
+                  <select id="mm-priority">
+                    <option value="ปกติ">ปกติ</option>
+                    <option value="ด่วน">ด่วน</option>
+                    <option value="ด่วนมาก">ด่วนมาก</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>จาก (ผู้ส่ง/แผนก)</label><input type="text" id="mm-from" placeholder="เช่น ฝ่ายปฏิบัติการ" /></div>
+                <div class="form-group"><label>เรียน <span class="req">*</span></label>
+                  <input type="text" id="mm-to" list="mm-to-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="mm-to-list"></datalist>
+                </div>
+                <div class="form-group"><label>สำเนาเรียน (ถ้ามี)</label><input type="text" id="mm-cc" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>เรื่อง <span class="req">*</span></label>
+                  <input type="text" id="mm-subject" placeholder="เช่น แจ้งผลการตรวจสอบ..." /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>เนื้อหา <span class="req">*</span></label>
+                  <textarea class="fta" id="mm-body" rows="9" placeholder="พิมพ์เนื้อหา ขึ้นบรรทัดใหม่ = ขึ้นย่อหน้าใหม่"></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>สิ่งที่แนบมาด้วย</label><input type="text" id="mm-attach" placeholder="เช่น รายงานสรุป 1 ชุด" /></div>
+                <div class="form-group"><label>ข้อความปิดท้าย</label><input type="text" id="mm-closing" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ผู้เสนอ (ชื่อ)</label><input type="text" id="mm-requester" /></div>
+                <div class="form-group"><label>ตำแหน่ง</label><input type="text" id="mm-position" /></div>
+                <div class="form-group"><label>ช่องผู้บริหารรับทราบ</label>
+                  <label style="font-weight:400;display:flex;align-items:center;gap:6px;">
+                    <input type="checkbox" id="mm-ack" checked style="width:auto;" /> แสดงช่อง "ผู้บริหารรับทราบ / สั่งการ"
+                  </label>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="mmClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-secondary" onclick="mmPreviewForm()">👁️ ดูตัวอย่าง / พิมพ์</button>
+                <button class="btn-primary" onclick="mmSaveCase()">💾 บันทึก</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- TICKETS PAGE (บันทึกใบสั่ง) -->
       <div class="page" id="page-tickets">
         <div class="form-section">
@@ -4677,6 +4776,7 @@
   <script src="issues.js"></script>
   <script src="breakdown.js"></script>
   <script src="safetystock.js"></script>
+  <script src="memo.js"></script>
   <script src="tickets.js"></script>
   <script src="probation.js"></script>
   <script src="alcohol.js"></script>
