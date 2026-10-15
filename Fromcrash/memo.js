@@ -219,11 +219,10 @@ function mmBuildDoc(m) {
       return `<p class="print-body-text mm-para">&emsp;&emsp;&emsp;${extra}${escapeHtml(s.slice(lead.length))}</p>`;
     }).join('');
   const urgent = m.priority && m.priority !== 'ปกติ' ? `<div class="mm-priority">${escapeHtml(m.priority)}</div>` : '';
-  const dots = '.'.repeat(60);
   const ack = m.showAck === false ? '' : `
     <div class="mm-ack-box">
       <div class="mm-ack-title">ผู้บริหารรับทราบ / สั่งการ</div>
-      <div class="mm-ack-lines">${(dots + '<br>').repeat(2)}</div>
+      <div class="mm-ack-lines">${Array(4).fill('<div class="mm-ack-line"></div>').join('')}</div>
       <div class="mm-ack-sig">ลงชื่อ ${'.'.repeat(36)} &nbsp;ผู้บริหาร<br>วันที่ ........../............../..........</div>
     </div>`;
   return `
