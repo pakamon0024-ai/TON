@@ -41,6 +41,15 @@ function mmOnPageShown() {
   mmRenderList();
 }
 
+// ในช่องเนื้อหา กด Tab = แทรก Tab (เยื้องย่อหน้า) แทนการย้ายโฟกัสไปช่องถัดไป; Shift+Tab ยังย้ายโฟกัสกลับได้ตามปกติ
+document.addEventListener('keydown', e => {
+  if (e.target?.id !== 'mm-body' || e.key !== 'Tab' || e.shiftKey) return;
+  e.preventDefault();
+  const t = e.target, start = t.selectionStart, end = t.selectionEnd;
+  t.value = t.value.slice(0, start) + '\t' + t.value.slice(end);
+  t.selectionStart = t.selectionEnd = start + 1;
+});
+
 function mmFillDatalists() {
   const el = document.getElementById('mm-to-list');
   if (el) el.innerHTML = MM_RECIPIENTS.map(n => `<option value="${escapeHtml(n)}">`).join('');
@@ -62,7 +71,8 @@ function mmReadForm() {
   return {
     docno: v('mm-docno'), date: document.getElementById('mm-date').value, priority: document.getElementById('mm-priority').value,
     from: v('mm-from'), to: v('mm-to'), cc: v('mm-cc'), subject: v('mm-subject'),
-    body: document.getElementById('mm-body').value.trim(),
+    // ไม่ trim หน้าข้อความ — Tab/ช่องว่างที่ผู้ใช้เคาะไว้ต้นย่อหน้าแรกต้องเก็บไว้ (ตัดเฉพาะบรรทัดว่างหน้าสุดและช่องว่างท้ายสุด)
+    body: document.getElementById('mm-body').value.replace(/^(\s*\n)+/, '').replace(/\s+$/, ''),
     attachments: v('mm-attach'), closing: v('mm-closing'),
     requester: v('mm-requester'), position: v('mm-position'),
     showAck: document.getElementById('mm-ack').checked,
@@ -200,8 +210,14 @@ function mmThaiLongDate(val) {
 }
 
 function mmBuildDoc(m) {
-  const paragraphs = String(m.body || '').split(/\n+/).map(s => s.trim()).filter(Boolean)
-    .map(s => `<p class="print-body-text mm-para">${escapeHtml(s)}</p>`).join('');
+  // ทุกย่อหน้าเริ่มด้วยการเยื้องบรรทัดแรก (3 em ≈ 1 Tab) ใช้ตัวอักษร em-space แทน text-indent เพราะ html2canvas
+  // วาดย่อหน้ายาวที่ใช้ text-indent เพี้ยน; Tab/ช่องว่างที่ผู้ใช้เคาะไว้หน้าย่อหน้าจะเยื้องเพิ่มจากฐานนี้
+  const paragraphs = String(m.body || '').split(/\n+/).map(s => s.replace(/\s+$/, '')).filter(s => s.trim())
+    .map(s => {
+      const lead = s.match(/^[ \t]*/)[0];
+      const extra = lead.replace(/\t/g, '&emsp;&emsp;&emsp;').replace(/ /g, '&nbsp;');
+      return `<p class="print-body-text mm-para">&emsp;&emsp;&emsp;${extra}${escapeHtml(s.slice(lead.length))}</p>`;
+    }).join('');
   const urgent = m.priority && m.priority !== 'ปกติ' ? `<div class="mm-priority">${escapeHtml(m.priority)}</div>` : '';
   const dots = '.'.repeat(60);
   const ack = m.showAck === false ? '' : `

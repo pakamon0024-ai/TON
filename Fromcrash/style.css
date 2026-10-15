@@ -1510,7 +1510,9 @@ body {
 
 /* ===== MEMO แจ้งผู้บริหารรับทราบ =====
    ไม่ใช้ text-indent / flex กับเนื้อความ (html2canvas วาดย่อหน้ายาวทับกัน — ดูหมายเหตุที่ pb-memo-doc) */
-.print-doc.mm-memo-doc { font-size: 16px; line-height: 1.8; padding: 22px 24px; }
+/* ความกว้างตายตัว: ถ้าปล่อยให้ยืดตามหน้าต่างพรีวิว การตัดบรรทัดตอน Export PDF (ซึ่ง html2pdf จัดเลย์เอาต์ด้วยความกว้างของตัวเอง)
+   จะไม่ตรงกับที่เห็นในพรีวิว เกิดคำโดดท้ายบรรทัด — ล็อกความกว้างไว้ให้ทั้งสองที่ตัดบรรทัดเหมือนกัน (modal กว้างสุด 820px) */
+.print-doc.mm-memo-doc { font-size: 16px; line-height: 1.8; padding: 22px 24px; width: 700px; box-sizing: border-box; margin: 0 auto; }
 .print-doc.mm-memo-doc .letterhead-name-th { font-size: 18px; }
 .print-doc.mm-memo-doc .letterhead-name-en { font-size: 14px; }
 .print-doc.mm-memo-doc .letterhead-detail { font-size: 12px; }
@@ -1520,7 +1522,7 @@ body {
 /* .print-doc table td ตั้ง font-size 11px ไว้ (specificity ต่ำกว่าอันนี้) — ต้องกำหนดที่ td เอง ไม่งั้นหัวเอกสารเล็กกว่าเนื้อหา */
 .print-doc.mm-memo-doc .mm-head td { padding: 3px 4px; vertical-align: top; border: 0; font-size: 16px; line-height: 1.8; }
 .print-doc.mm-memo-doc .mm-head .mm-k { width: 86px; font-weight: 700; white-space: nowrap; }
-.print-doc.mm-memo-doc .mm-para { font-size: 16px; line-height: 1.95; margin: 10px 0; text-indent: 0; padding-left: 2.2em; }
+.print-doc.mm-memo-doc .mm-para { font-size: 16px; line-height: 1.95; margin: 10px 0; text-indent: 0; }
 .print-doc.mm-memo-doc .mm-sender { margin: 36px 0 0 auto; width: 55%; text-align: center; page-break-inside: avoid; }
 .print-doc.mm-memo-doc .mm-sender-line { margin-bottom: 4px; }
 .print-doc.mm-memo-doc .mm-ack-box { border: 1px solid #333; border-radius: 4px; margin-top: 34px; padding: 22px 20px 14px; page-break-inside: avoid; }
