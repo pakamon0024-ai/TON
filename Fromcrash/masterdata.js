@@ -920,13 +920,36 @@ function addAbcStaffDB() {
 
   if (mdAbcStaffEditId !== null) {
     const idx = mdAbcStaff.findIndex(s => s.id === mdAbcStaffEditId);
+    const oldName = idx >= 0 ? mdAbcStaff[idx].name : null;
+    // ผลเป่าแอลกอฮอล์ผูกกับพนักงานด้วย "ชื่อ" (alcTests[].employee) ถ้าเปลี่ยนชื่อโดยไม่ตามไปแก้ประวัติ
+    // ข้อมูลเก่าจะไม่ตรงกับรายชื่อ แล้วหายจากรายงาน/สรุปรายเดือนทั้งหมด — จึงต้องย้ายชื่อในประวัติตามไปด้วย
+    let renamed = [];
+    if (oldName !== null && oldName !== name && typeof alcTests !== 'undefined') {
+      const hasHistory = alcTests.some(t => t.employee === oldName);
+      // ถ้ายังเชื่อมต่อ Firebase ไม่เสร็จ การแก้ประวัติในเครื่องจะถูกข้อมูลจาก server ทับกลับเป็นชื่อเดิม — ไม่ยอมให้ทำ
+      if (hasHistory && typeof alcReady !== 'undefined' && !alcReady) {
+        showToast('ยังเชื่อมต่อฐานข้อมูลไม่เสร็จ รอสักครู่แล้วลองแก้ชื่ออีกครั้ง (กันประวัติการเป่าของคนนี้หาย)', 'warning');
+        return;
+      }
+      alcTests = alcTests.map(t => {
+        if (t.employee !== oldName) return t;
+        const r = { ...t, employee: name, updatedAt: new Date().toISOString() };
+        renamed.push(r);
+        return r;
+      });
+    }
     if (idx >= 0) mdAbcStaff[idx] = { ...mdAbcStaff[idx], name, businessUnit };
+    if (renamed.length) {
+      alcSave();
+      alcPushManyIfReady(renamed);
+      if (typeof alcRenderList === 'function') { alcRenderList(); alcRenderRoster(); alcRenderSummary(); alcRenderDailyReport(); }
+    }
     cancelEditAbcStaffDB();
     saveAbcStaffDB();
     renderAbcStaffTable();
     if (typeof alcRefreshLookupDropdowns === 'function') alcRefreshLookupDropdowns();
     mdPushIfReady();
-    showToast('แก้ไขข้อมูลพนักงานแล้ว', 'success');
+    showToast(renamed.length ? `แก้ไขข้อมูลพนักงานแล้ว (ย้ายประวัติการเป่า ${renamed.length} รายการไปใช้ชื่อใหม่)` : 'แก้ไขข้อมูลพนักงานแล้ว', 'success');
     return;
   }
 
