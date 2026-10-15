@@ -1533,4 +1533,5 @@ body {
 .print-doc.mm-memo-doc .mm-ack-lines { margin-top: 4px; }
 /* เส้นประเต็มความกว้างกรอบ ด้วย border แทนตัวจุด (ความยาวไม่ขึ้นกับฟอนต์) */
 .print-doc.mm-memo-doc .mm-ack-line { height: 34px; border-bottom: 1px dotted #333; }
-.print-doc.mm-memo-doc .mm-ack-sig { text-align: right; margin-top: 18px; }
+/* เว้นระยะเหนือบรรทัดลงชื่อให้มีที่เซ็น; บล็อกลงชื่อ+วันที่ชิดขวาของกรอบ แต่ข้อความในบล็อกอยู่กึ่งกลาง (วันที่อยู่กลางใต้ลายเซ็น) */
+.print-doc.mm-memo-doc .mm-ack-sig { width: 55%; margin: 46px 0 0 auto; text-align: center; }
