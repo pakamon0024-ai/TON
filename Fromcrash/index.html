@@ -129,6 +129,10 @@
           <span class="nav-icon">🚛</span>
           <span>Truck Breakdown</span>
         </a>
+        <a href="#" class="nav-item" data-page="safetystock" onclick="showPage('safetystock')">
+          <span class="nav-icon">🦺</span>
+          <span>เบิกจ่าย Stock Safety</span>
+        </a>
         <a href="#" class="nav-item" data-page="tickets" onclick="showPage('tickets')">
           <span class="nav-icon">🎫</span>
           <span>บันทึกใบสั่ง</span>
@@ -2374,6 +2378,140 @@
         </div>
       </div>
 
+      <!-- STOCK SAFETY PAGE (เบิกจ่ายสติ๊กเกอร์ / สายรัดชิ่ง / ไม้หนุนล้อ) -->
+      <div class="page" id="page-safetystock">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🦺</div>
+            <div>
+              <h2>เบิกจ่าย Stock Safety</h2>
+              <p>รับเข้าและเบิกจ่ายสติ๊กเกอร์ สายรัดชิ่ง ไม้หนุนล้อ พร้อมยอดคงเหลือ (เบิกเกินยอดคงเหลือไม่ได้)</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="ss-tab-summary" onclick="ssSwitchTab('summary')">📊 ยอดคงเหลือ</button>
+            <button class="subtab" id="ss-tab-list" onclick="ssSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="ss-tab-add" onclick="ssSwitchTab('add')">➕ เบิกจ่าย / รับเข้า</button>
+          </div>
+
+          <!-- SUMMARY SUBPAGE -->
+          <div class="subpage active" id="ss-subpage-summary">
+            <div id="ss-balance-cards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px;"></div>
+            <div class="filter-bar" style="margin-bottom:12px;">
+              <button class="btn-secondary" onclick="ssAddItem()">➕ เพิ่มรายการสินค้า</button>
+            </div>
+            <div class="fieldset-title">จำนวนที่เบิกจ่ายรายเดือน (ปีนี้)</div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead id="ss-month-head"></thead>
+                <tbody id="ss-month-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage" id="ss-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ประเภท</label>
+                <select id="ss-f-type" onchange="ssRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="เบิกจ่าย">เบิกจ่าย</option>
+                  <option value="รับเข้า">รับเข้า</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>รายการ</label>
+                <select id="ss-f-item" onchange="ssRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>เดือน</label><input type="month" id="ss-f-month" onchange="ssRenderList()" /></div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="ss-f-search"
+                  placeholder="ผู้เบิก / ทะเบียน / หมายเหตุ..." oninput="debouncedRender('ssRenderList')" /></div>
+              <button class="btn-secondary" onclick="ssClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="ssExportExcel()">📥 Export</button>
+            </div>
+            <div class="ctxt" id="ss-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th><th>วันที่</th><th>ประเภท</th><th>รายการ</th><th>จำนวน</th>
+                    <th>ผู้เบิก</th><th>ทะเบียน</th><th>ลานจอด</th><th>หมายเหตุ</th><th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="ss-list-body">
+                  <tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="ss-list-pager"></div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="ss-subpage-add">
+            <div class="edit-banner" id="ss-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="ss-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="ssCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลการเบิกจ่าย / รับเข้า Stock Safety</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่ <span class="req">*</span></label><input type="date" id="ss-date" /></div>
+                <div class="form-group"><label>ประเภท <span class="req">*</span></label>
+                  <select id="ss-type" onchange="ssUpdateFormHints()">
+                    <option value="เบิกจ่าย">📤 เบิกจ่าย</option>
+                    <option value="รับเข้า">📥 รับเข้า (เติม stock)</option>
+                  </select>
+                </div>
+                <div class="form-group"><label>รายการ <span class="req">*</span></label>
+                  <div style="display:flex; gap:6px;">
+                    <select id="ss-item" onchange="ssUpdateFormHints()" style="flex:1;">
+                      <option value="">-- เลือก --</option>
+                    </select>
+                    <button type="button" class="btn-secondary" title="เพิ่มรายการสินค้าใหม่" onclick="ssAddItem()">+</button>
+                  </div>
+                  <div id="ss-balance-hint" style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;"></div>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>จำนวน <span class="req">*</span> <span id="ss-unit"></span></label>
+                  <input type="number" id="ss-qty" min="1" step="1" /></div>
+                <div class="form-group ss-out-only"><label>ผู้เบิก/ผู้รับ <span class="req">*</span></label>
+                  <input type="text" id="ss-receiver" list="ss-driver-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="ss-driver-list"></datalist>
+                </div>
+                <div class="form-group ss-out-only"><label>ทะเบียนรถ</label>
+                  <input type="text" id="ss-plate" list="ss-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..." oninput="ssLookupVehicle()" />
+                  <datalist id="ss-plate-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3 ss-out-only">
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="ss-bu" list="ss-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="ss-bu-list"></datalist>
+                </div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="ss-yard" list="ss-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="ss-yard-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
+                  <textarea class="fta" id="ss-note" rows="2" placeholder="เช่น เหตุผลที่เบิก / เลขที่ใบสั่งซื้อที่รับเข้า"></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="ssClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="ssSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- TICKETS PAGE (บันทึกใบสั่ง) -->
       <div class="page" id="page-tickets">
         <div class="form-section">
@@ -4526,6 +4664,7 @@
   <script src="incidents.js"></script>
   <script src="issues.js"></script>
   <script src="breakdown.js"></script>
+  <script src="safetystock.js"></script>
   <script src="tickets.js"></script>
   <script src="probation.js"></script>
   <script src="alcohol.js"></script>

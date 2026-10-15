@@ -50,6 +50,7 @@ async function bkExportAll() {
     ['หมวดหมู่ค่าใช้จ่าย', bkNameList(typeof loadCategoriesDB === 'function' ? loadCategoriesDB() : [])],
     ['บันทึกอุบัติเหตุ', typeof incidents !== 'undefined' ? incidents : []],
     ['บันทึกปัญหาการทำงาน', typeof workIssues !== 'undefined' ? workIssues : []],
+    ['เบิกจ่าย Stock Safety', typeof safetyStock !== 'undefined' ? safetyStock : []],
     ['เป่าวัดแอลกอฮอล์', typeof alcTests !== 'undefined' ? alcTests : []],
     ['บันทึกรถร่วม', typeof jvRecords !== 'undefined' ? jvRecords : []],
     ['GPSCCTV-ติดตั้งถอด', typeof gcRecords !== 'undefined' ? gcRecords : []],
