@@ -222,7 +222,7 @@ function mmBuildDoc(m) {
   const ack = m.showAck === false ? '' : `
     <div class="mm-ack-box">
       <div class="mm-ack-title">ผู้บริหารรับทราบ / สั่งการ</div>
-      <div class="mm-ack-lines">${Array(4).fill('<div class="mm-ack-line"></div>').join('')}</div>
+      <div class="mm-ack-lines">${Array(3).fill('<div class="mm-ack-line"></div>').join('')}</div>
       <div class="mm-ack-sig">ลงชื่อ ${'.'.repeat(36)} &nbsp;ผู้บริหาร<br>วันที่ ........../............../..........</div>
     </div>`;
   return `

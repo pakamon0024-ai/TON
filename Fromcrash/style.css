@@ -1512,7 +1512,7 @@ body {
    ไม่ใช้ text-indent / flex กับเนื้อความ (html2canvas วาดย่อหน้ายาวทับกัน — ดูหมายเหตุที่ pb-memo-doc) */
 /* ความกว้างตายตัว: ถ้าปล่อยให้ยืดตามหน้าต่างพรีวิว การตัดบรรทัดตอน Export PDF (ซึ่ง html2pdf จัดเลย์เอาต์ด้วยความกว้างของตัวเอง)
    จะไม่ตรงกับที่เห็นในพรีวิว เกิดคำโดดท้ายบรรทัด — ล็อกความกว้างไว้ให้ทั้งสองที่ตัดบรรทัดเหมือนกัน (modal กว้างสุด 820px) */
-.print-doc.mm-memo-doc { font-size: 15px; line-height: 1.8; padding: 22px 16px; width: 750px; box-sizing: border-box; margin: 0 auto; }
+.print-doc.mm-memo-doc { font-size: 15px; line-height: 1.8; padding: 22px 16px; width: 720px; box-sizing: border-box; margin: 0 auto; }
 .print-doc.mm-memo-doc .letterhead-name-th { font-size: 18px; }
 .print-doc.mm-memo-doc .letterhead-name-en { font-size: 14px; }
 .print-doc.mm-memo-doc .letterhead-detail { font-size: 12px; }
