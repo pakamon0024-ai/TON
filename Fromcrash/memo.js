@@ -1,7 +1,7 @@
 // ===== MEMO — บันทึกข้อความแจ้งผู้บริหารรับทราบ (กรอกฟอร์ม -> ตัวอย่าง -> พิมพ์/Export PDF) =====
 // เก็บ local ที่ key 'finflow_memos' และ sync กับ Firebase ที่ /memos (โครงสร้างเหมือน breakdown.js)
 // หน้าตัวอย่างใช้ modal ร่วม (printModal) เหมือนเอกสารอื่น — ข้อควรระวังที่เรียนรู้จาก probation.js/style.css:
-//  - html2canvas วาดย่อหน้าที่ตัดบรรทัดผิดเพี้ยนถ้า capture จากใน modal -> ต้อง clone ออกมานอก modal ก่อน
+//  - capture จาก modalBody ตรงๆ (เหมือนใบสั่ง) เพื่อให้ตัดบรรทัดตรงกับพรีวิว — clone ออกนอก modal แล้วตัดบรรทัดเพี้ยน
 //  - อย่าใช้ text-indent กับย่อหน้ายาว และอย่าใช้ flex กับโครงสร้างที่ต้องแม่น (ใช้ grid/table แทน)
 
 let memos = [];
@@ -254,13 +254,8 @@ function mmOpenPrint(m) {
   document.getElementById('modalBody').innerHTML = mmBuildDoc(m);
   document.getElementById('printModal').classList.add('show');
   currentPrintFn = () => {
-    // ย้าย clone ออกมานอก modal ก่อน capture — html2canvas วาดย่อหน้าที่ตัดบรรทัดทับกันถ้า capture จากใน modal (ดู probation.js)
-    const orig = document.getElementById('modalBody');
-    const clone = orig.cloneNode(true);
-    clone.removeAttribute('id');
-    clone.style.cssText = `position:fixed;top:0;left:-9999px;overflow:visible;height:auto;max-height:none;width:${orig.clientWidth}px;`;
-    document.body.appendChild(clone);
-    const cleanup = () => { if (clone.parentNode) clone.parentNode.removeChild(clone); };
+    // capture จาก modalBody ตรงๆ เหมือนใบสั่ง/อนุมัติสำรองจ่าย — ตัวที่ clone ออกไปนอก modal (แบบ probation.js)
+    // ทำให้ความกว้างเลย์เอาต์ต่างจากที่เห็นในพรีวิว ข้อความเลยตัดบรรทัดคนละที่กับตัวอย่าง
     html2pdf().set({
       margin: [8, 8, 8, 8],
       filename: `MEMO_${m.docno}.pdf`,
@@ -268,7 +263,7 @@ function mmOpenPrint(m) {
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'avoid-all'] },
-    }).from(clone).save().then(cleanup).catch(cleanup);
+    }).from(document.getElementById('modalBody')).save();
   };
 }
 
