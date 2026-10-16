@@ -2395,13 +2395,14 @@
 
           <div class="subtabs">
             <button class="subtab active" id="ss-tab-summary" onclick="ssSwitchTab('summary')">📊 ยอดคงเหลือ</button>
+            <button class="subtab" id="ss-tab-dashboard" onclick="ssSwitchTab('dashboard')">📈 แดชบอร์ด</button>
             <button class="subtab" id="ss-tab-list" onclick="ssSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="ss-tab-add" onclick="ssSwitchTab('add')">➕ เบิกจ่าย / รับเข้า</button>
           </div>
 
           <!-- SUMMARY SUBPAGE -->
           <div class="subpage active" id="ss-subpage-summary">
-            <div id="ss-balance-cards" style="margin-bottom:20px;"></div>
+            <div id="ss-balance-cards" class="ss-columns"></div>
             <div class="fieldset-title" style="display:flex;align-items:center;gap:10px;">จำนวนที่เบิกจ่ายรายเดือน (ปีนี้)
               <select id="ss-month-group" onchange="ssRenderSummary()" style="width:auto;"></select>
             </div>
@@ -2414,6 +2415,53 @@
           </div>
 
           <!-- LIST SUBPAGE -->
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage" id="ss-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ปี (พ.ศ.)</label>
+                <select id="ss-dash-year" onchange="ssRenderDashboard()"></select>
+              </div>
+              <div class="filter-group">
+                <label>หมวด</label>
+                <select id="ss-dash-group" onchange="ssDashOnGroupChange()"></select>
+              </div>
+              <div class="filter-group">
+                <label>รายการย่อย</label>
+                <select id="ss-dash-item" onchange="ssRenderDashboard()"></select>
+              </div>
+              <div class="filter-group">
+                <label>เดือน (กราฟหน่วยงาน/ลานจอด)</label>
+                <select id="ss-dash-month" onchange="ssRenderDashboard()">
+                  <option value="">ทั้งปี</option>
+                  <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option><option value="03">มีนาคม</option>
+                  <option value="04">เมษายน</option><option value="05">พฤษภาคม</option><option value="06">มิถุนายน</option>
+                  <option value="07">กรกฎาคม</option><option value="08">สิงหาคม</option><option value="09">กันยายน</option>
+                  <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+                </select>
+              </div>
+            </div>
+            <div class="ss-kpi-row">
+              <div class="ss-kpi"><div class="ss-kpi-label">รับเข้า · <span id="ss-kpi-period"></span></div><div class="ss-kpi-val" id="ss-kpi-in" style="color:#22c55e;">0</div></div>
+              <div class="ss-kpi"><div class="ss-kpi-label">เบิกจ่าย · ช่วงเดียวกัน</div><div class="ss-kpi-val" id="ss-kpi-out" style="color:#ff6b00;">0</div></div>
+              <div class="ss-kpi"><div class="ss-kpi-label">คงเหลือปัจจุบัน (ทั้งหมด)</div><div class="ss-kpi-val" id="ss-kpi-bal">0</div></div>
+            </div>
+            <div class="chart-grid">
+              <div class="chart-card" style="grid-column:1/-1;">
+                <div class="chart-title"><span>รับเข้า / เบิกจ่าย รายเดือน</span></div>
+                <div class="chart-box"><canvas id="ss-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>เบิกจ่ายตามหน่วยงาน</span></div>
+                <div class="chart-box"><canvas id="ss-chart-unit"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>เบิกจ่ายตามลานจอด</span></div>
+                <div class="chart-box"><canvas id="ss-chart-yard"></canvas></div>
+              </div>
+            </div>
+          </div>
+
           <div class="subpage" id="ss-subpage-list">
             <div class="filter-bar">
               <div class="filter-group">

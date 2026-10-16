@@ -1612,3 +1612,17 @@ body {
   align-self: flex-start; margin-top: 4px; padding: 3px 12px; border-radius: 999px;
   font-size: 0.78rem; font-weight: 700; color: var(--ss-c); background: var(--ss-bg);
 }
+
+/* Stock Safety: 3 หมวดเป็นแถวตั้ง (คอลัมน์) เรียงข้างกัน การ์ดในแต่ละหมวดเรียงซ้อนลงมา */
+.ss-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: start; margin-bottom: 20px; }
+.ss-columns .ss-card-grid { grid-template-columns: 1fr; gap: 12px; }
+.ss-columns .ss-group { margin-bottom: 0; }
+.ss-columns .ss-group-head { flex-wrap: wrap; }
+.ss-columns .ss-card { padding: 14px 18px 12px; }
+.ss-columns .ss-card-name { min-height: 0; }
+
+/* แดชบอร์ด Stock Safety: การ์ดสรุป */
+.ss-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin: 14px 0; }
+.ss-kpi { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
+.ss-kpi-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+.ss-kpi-val { font-size: 1.6rem; font-weight: 800; font-family: 'Kanit', 'Sarabun', sans-serif; }

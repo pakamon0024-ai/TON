@@ -87,11 +87,12 @@ function ssBalance(itemName, excludeId) {
 
 // ===== Tabs =====
 function ssSwitchTab(tab) {
-  ['summary', 'list', 'add'].forEach(t => {
+  ['summary', 'dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`ss-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`ss-subpage-${t}`).classList.toggle('active', t === tab);
   });
   if (tab === 'summary') ssRenderSummary();
+  if (tab === 'dashboard') { ssDashRefreshFilters(); ssRenderDashboard(); }
   if (tab === 'list') ssRenderList();
   if (tab === 'add' && !ssEditingId) ssClearForm();
 }
@@ -107,6 +108,7 @@ function ssOnPageShown() {
 function ssRenderAll() {
   ssRenderSummary();
   ssRenderList();
+  if (document.getElementById('ss-subpage-dashboard')?.classList.contains('active')) { ssDashRefreshFilters(); ssRenderDashboard(); }
 }
 
 // ===== Summary =====
@@ -796,4 +798,119 @@ async function ssRemoveDuplicates() {
   ssRenderAll();
   ssUpdateFormHints();
   showToast(`ลบรายการซ้ำ ${dups.length} รายการแล้ว`, 'success');
+}
+
+// ===== แดชบอร์ด: รับเข้า/เบิกจ่ายรายเดือน, ตามหน่วยงาน, ตามลานจอด =====
+// กรองด้วย "หมวด" เสมอ (ไม่มีตัวเลือกทั้งหมด) เพราะรายการต่างหมวดนับคนละหน่วย (แผ่น/คู่) รวมกันแล้วตัวเลขไม่มีความหมาย
+// ภายในหมวดเดียวกันหน่วยเดียวกัน จึงรวมได้ และเลือกรายการย่อยเจาะลึกต่อได้
+let ssCharts = {};
+const SS_DASH_COLORS = {
+  in:   { bg: 'rgba(34,197,94,0.85)',  border: '#22c55e' },
+  out:  { bg: 'rgba(255,107,0,0.88)',  border: '#ff6b00' },
+  unit: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
+  yard: { bg: 'rgba(6,214,160,0.88)',  border: '#06d6a0' },
+};
+const SS_MONTHS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+function ssDestroyChart(key) { if (ssCharts[key]) { ssCharts[key].destroy(); delete ssCharts[key]; } }
+
+function ssDashRefreshFilters() {
+  const yearEl = document.getElementById('ss-dash-year');
+  const groupEl = document.getElementById('ss-dash-group');
+  if (!yearEl || !groupEl) return;
+  const curYear = new Date().getFullYear();
+  const years = new Set([curYear]);
+  safetyStock.forEach(r => { const y = Number((r.date || '').slice(0, 4)); if (y > 2000 && y < 2100) years.add(y); });
+  const prevYear = yearEl.value;
+  yearEl.innerHTML = [...years].sort((a, b) => b - a).map(y => `<option value="${y}">${y + 543}</option>`).join('');
+  yearEl.value = prevYear && years.has(Number(prevYear)) ? prevYear : String(curYear);
+  const prevGroup = groupEl.value;
+  groupEl.innerHTML = ssGroupsInUse().map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+  if (prevGroup && ssGroupsInUse().includes(prevGroup)) groupEl.value = prevGroup;
+  ssDashFillItems();
+}
+
+function ssDashFillItems() {
+  const itemEl = document.getElementById('ss-dash-item');
+  const group = document.getElementById('ss-dash-group')?.value;
+  if (!itemEl) return;
+  const prev = itemEl.value;
+  itemEl.innerHTML = '<option value="">ทุกรายการในหมวด</option>' +
+    ssItemsOfGroup(group).map(it => `<option value="${escapeHtml(it.name)}">${escapeHtml(ssSubOf(it))}</option>`).join('');
+  if (ssItemsOfGroup(group).some(it => it.name === prev)) itemEl.value = prev;
+}
+
+function ssDashOnGroupChange() { ssDashFillItems(); ssRenderDashboard(); }
+
+function ssDashBar(canvasId, key, labels, datasets, rotation) {
+  ssDestroyChart(key);
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  ssCharts[key] = new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { font: { family: "'Kanit','Sarabun',sans-serif", size: 13 } } },
+        datalabels: {
+          display: true, anchor: 'end', align: 'end', color: '#1a2540',
+          font: { family: "'Kanit','Sarabun',sans-serif", size: 12, weight: '700' },
+          formatter: v => v > 0 ? v.toLocaleString() : '',
+        },
+      },
+      scales: {
+        y: { beginAtZero: true, grace: '15%', grid: { color: 'rgba(10,31,56,0.07)' }, ticks: { color: '#3d4f6d', precision: 0 } },
+        x: { grid: { display: false }, ticks: { color: '#3d4f6d', autoSkip: false, minRotation: rotation || 0, maxRotation: rotation || 0 } },
+      },
+    },
+  });
+}
+
+function ssRenderDashboard() {
+  const year = document.getElementById('ss-dash-year')?.value;
+  const group = document.getElementById('ss-dash-group')?.value;
+  if (!year || !group) return;
+  const itemName = document.getElementById('ss-dash-item')?.value || '';
+  const month = document.getElementById('ss-dash-month')?.value || ''; // '' = ทั้งปี (ใช้กับกราฟหน่วยงาน/ลานจอด และการ์ดสรุป)
+  const names = new Set(itemName ? [itemName] : ssItemsOfGroup(group).map(i => i.name));
+  const unit = itemName ? ssUnit(itemName) : (ssItemsOfGroup(group)[0]?.unit || '');
+  const inGroup = safetyStock.filter(r => names.has(r.item));
+
+  // กราฟรายเดือน: ทั้งปีที่เลือก รับเข้า vs เบิกจ่าย
+  const monthIn = new Array(12).fill(0), monthOut = new Array(12).fill(0);
+  inGroup.forEach(r => {
+    if (!(r.date || '').startsWith(year + '-')) return;
+    const mi = Number(r.date.slice(5, 7)) - 1;
+    if (mi < 0 || mi > 11) return;
+    (r.type === SS_TYPE_IN ? monthIn : monthOut)[mi] += Number(r.qty) || 0;
+  });
+  ssDashBar('ss-chart-month', 'month', SS_MONTHS_TH, [
+    { label: `รับเข้า (${unit})`, data: monthIn, backgroundColor: SS_DASH_COLORS.in.bg, borderRadius: 5 },
+    { label: `เบิกจ่าย (${unit})`, data: monthOut, backgroundColor: SS_DASH_COLORS.out.bg, borderRadius: 5 },
+  ]);
+
+  // ช่วงที่ใช้กับ KPI / หน่วยงาน / ลานจอด: ทั้งปี หรือเดือนที่เลือก
+  const prefix = month ? `${year}-${month}` : `${year}-`;
+  const period = inGroup.filter(r => (r.date || '').startsWith(prefix));
+  const sum = list => list.reduce((s, r) => s + (Number(r.qty) || 0), 0);
+  const totalIn = sum(period.filter(r => r.type === SS_TYPE_IN));
+  const outs = period.filter(r => r.type === SS_TYPE_OUT);
+  const totalOut = sum(outs);
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('ss-kpi-in', `${totalIn.toLocaleString()} ${unit}`);
+  setText('ss-kpi-out', `${totalOut.toLocaleString()} ${unit}`);
+  setText('ss-kpi-bal', `${[...names].reduce((s, n) => s + ssBalance(n), 0).toLocaleString()} ${unit}`);
+  setText('ss-kpi-period', month ? `${SS_MONTHS_TH[Number(month) - 1]} ${Number(year) + 543}` : `ทั้งปี ${Number(year) + 543}`);
+
+  // เบิกจ่ายตามหน่วยงาน / ลานจอด (เรียงมากไปน้อย; ไม่ได้ระบุ = "ไม่ระบุ")
+  const countBy = field => {
+    const map = {};
+    outs.forEach(r => { const k = (r[field] || '').trim() || 'ไม่ระบุ'; map[k] = (map[k] || 0) + (Number(r.qty) || 0); });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  };
+  const bu = countBy('businessUnit');
+  ssDashBar('ss-chart-unit', 'unit', bu.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: bu.map(e => e[1]), backgroundColor: SS_DASH_COLORS.unit.bg, borderRadius: 5 }], 30);
+  const yd = countBy('yard');
+  ssDashBar('ss-chart-yard', 'yard', yd.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: yd.map(e => e[1]), backgroundColor: SS_DASH_COLORS.yard.bg, borderRadius: 5 }], 30);
 }
