@@ -2441,6 +2441,7 @@
                 </select>
               </div>
             </div>
+            <div id="ss-dash-warn" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,0.14);color:#b45309;font-size:0.88rem;"></div>
             <div class="ss-kpi-row">
               <div class="ss-kpi"><div class="ss-kpi-label">รับเข้า · <span id="ss-kpi-period"></span></div><div class="ss-kpi-val" id="ss-kpi-in" style="color:#22c55e;">0</div></div>
               <div class="ss-kpi"><div class="ss-kpi-label">เบิกจ่าย · ช่วงเดียวกัน</div><div class="ss-kpi-val" id="ss-kpi-out" style="color:#ff6b00;">0</div></div>
@@ -2494,6 +2495,7 @@
                 <input type="file" accept=".xlsx,.xls" style="display:none" onchange="ssImportExcel(event)">
               </label>
               <button class="btn-secondary" onclick="ssDownloadTemplate()">📋 Template</button>
+              <button class="btn-secondary" onclick="ssFixBuddhistYears()" title="แปลงวันที่ที่เป็นปี พ.ศ. (เช่น 2569) เป็น ค.ศ. (2026)">📅 แก้ปี พ.ศ.</button>
               <button class="btn-secondary" onclick="ssRemoveDuplicates()" title="ลบรายการที่เลขที่และเนื้อหาซ้ำกันทุกช่อง เก็บไว้อย่างละ 1">🧹 ลบรายการซ้ำ</button>
               <button class="btn-danger admin-only-btn" style="display:none;" onclick="ssDeleteAll()">🗑️ ลบทั้งหมด</button>
             </div>

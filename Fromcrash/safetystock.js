@@ -296,7 +296,12 @@ function ssNextRunningNo() {
 
 // ===== Save / Edit / Delete =====
 function ssSaveCase() {
-  const date = document.getElementById('ss-date').value;
+  let date = document.getElementById('ss-date').value;
+  if (date) {
+    const fx = ssNormalizeYear(date);
+    if (!fx.ok) { showToast('ปีของวันที่ผิดปกติ ตรวจสอบอีกครั้ง (ใช้ปี ค.ศ. เช่น 2026)', 'warning'); return; }
+    if (fx.converted) { showToast(`แปลงปี พ.ศ. ${date.slice(0, 4)} เป็น ค.ศ. ${fx.date.slice(0, 4)} ให้แล้ว`, 'warning'); date = fx.date; }
+  }
   const type = document.getElementById('ss-type').value;
   const item = document.getElementById('ss-item').value;
   const qty = Number(document.getElementById('ss-qty').value);
@@ -538,7 +543,12 @@ function ssImportExcel(evt) {
       rows.slice(1).forEach((row, idx) => {
         const line = idx + 2;
         if (row.every(c => str(c) === '')) return;
-        const date = normalizeImportDate(row[0]);
+        let date = normalizeImportDate(row[0]);
+        if (date) {
+          const fx = ssNormalizeYear(date);
+          if (!fx.ok) { errors.push(`แถว ${line}: ปีของวันที่ผิดปกติ (${date})`); return; }
+          date = fx.date; // ปี พ.ศ. ในไฟล์แปลงเป็น ค.ศ. ให้อัตโนมัติ
+        }
         const type = str(row[1]);
         const group = str(row[2]), sub = str(row[3]);
         const qty = Number(row[4]);
@@ -898,6 +908,13 @@ function ssRenderDashboard() {
   const outs = period.filter(r => r.type === SS_TYPE_OUT);
   const totalOut = sum(outs);
   const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  // รายการที่ปีอยู่นอก 2000-2100 (เช่น ปี พ.ศ. ที่บันทึกลงช่อง ค.ศ.) ไม่ถูกนับในกราฟ แต่ยังนับในยอดคงเหลือ — เตือนให้แก้
+  const badYear = safetyStock.filter(r => !/^(20\d\d|2100)/.test(r.date || '')).length;
+  const warnEl = document.getElementById('ss-dash-warn');
+  if (warnEl) {
+    warnEl.style.display = badYear ? '' : 'none';
+    warnEl.textContent = badYear ? `⚠️ มี ${badYear} รายการที่ปีของวันที่ผิดปกติ (เช่นปี พ.ศ.) จึงไม่แสดงในกราฟ — ไปที่แท็บ "รายการทั้งหมด" กดปุ่ม 📅 แก้ปี พ.ศ.` : '';
+  }
   setText('ss-kpi-in', `${totalIn.toLocaleString()} ${unit}`);
   setText('ss-kpi-out', `${totalOut.toLocaleString()} ${unit}`);
   setText('ss-kpi-bal', `${[...names].reduce((s, n) => s + ssBalance(n), 0).toLocaleString()} ${unit}`);
@@ -913,4 +930,35 @@ function ssRenderDashboard() {
   ssDashBar('ss-chart-unit', 'unit', bu.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: bu.map(e => e[1]), backgroundColor: SS_DASH_COLORS.unit.bg, borderRadius: 5 }], 30);
   const yd = countBy('yard');
   ssDashBar('ss-chart-yard', 'yard', yd.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: yd.map(e => e[1]), backgroundColor: SS_DASH_COLORS.yard.bg, borderRadius: 5 }], 30);
+}
+
+// ===== ปีของวันที่: กันพิมพ์ปี พ.ศ. ลงช่อง ค.ศ. =====
+// ระบบเก็บวันที่เป็น ค.ศ. (2026) ถ้าพิมพ์/ไฟล์เป็น พ.ศ. (2569) แล้วเก็บตรงๆ รายการจะไปอยู่ปีอนาคต ไม่โผล่ในแดชบอร์ดของปีนี้
+// ปี 2400-2700 ถือเป็น พ.ศ. แปลงเป็น ค.ศ. ให้ ; ปีที่อยู่นอก 2000-2100 หลังแปลง ถือว่าผิดปกติ ไม่รับ
+function ssNormalizeYear(dateStr) {
+  const y = Number(String(dateStr || '').slice(0, 4));
+  if (y >= 2400 && y <= 2700) return { ok: true, converted: true, date: `${y - 543}${String(dateStr).slice(4)}` };
+  if (!(y >= 2000 && y <= 2100)) return { ok: false };
+  return { ok: true, converted: false, date: dateStr };
+}
+
+// แก้รายการที่บันทึกไว้แล้วให้ปี พ.ศ. กลายเป็น ค.ศ. (ปีอื่นที่ผิดปกติเกินเดา ให้แก้เองที่ปุ่ม "แก้ไข")
+async function ssFixBuddhistYears() {
+  if (!ssReady) { showToast('ยังเชื่อมต่อฐานข้อมูลไม่เสร็จ รอสักครู่แล้วลองอีกครั้ง', 'warning'); return; }
+  const fixed = [];
+  const odd = [];
+  safetyStock.forEach(r => {
+    const fx = ssNormalizeYear(r.date);
+    if (!fx.ok) odd.push(r);
+    else if (fx.converted) fixed.push({ rec: r, date: fx.date });
+  });
+  if (!fixed.length && !odd.length) { showToast('ไม่พบรายการที่ปีผิดปกติ', 'success'); return; }
+  if (fixed.length && !confirm(`พบ ${fixed.length} รายการที่วันที่เป็นปี พ.ศ. (เช่น ${fixed[0].rec.date})\nแปลงเป็นปี ค.ศ. ให้ทั้งหมด ใช่ไหม?`)) return;
+  const changed = fixed.map(f => {
+    const idx = safetyStock.findIndex(r => r.id === f.rec.id);
+    safetyStock[idx] = { ...safetyStock[idx], date: f.date, updatedAt: new Date().toISOString() };
+    return safetyStock[idx];
+  });
+  if (changed.length) { ssSave(); await ssWriteFB(changed); ssRenderAll(); }
+  showToast(`แปลงปี ${changed.length} รายการแล้ว` + (odd.length ? ` · ยังมี ${odd.length} รายการที่ปีผิดปกติ (เช่น ${odd[0].date}) กดแก้ไขทีละรายการ` : ''), odd.length ? 'warning' : 'success');
 }
