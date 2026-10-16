@@ -8,8 +8,7 @@
 const SS_GROUPS = ['สติ๊กเกอร์', 'สายรัดชิ่ง', 'ไม้หนุนล้อ'];
 const SS_OTHER_GROUP = 'อื่นๆ'; // รายการที่ไม่รู้หมวด (เช่น เพิ่มไว้รุ่นก่อนมีหมวด)
 const SS_DEFAULT_ITEMS = [
-  { id: 'SI_default_h', group: 'สายรัดชิ่ง', sub: 'หัว', name: 'สายรัดชิ่ง (หัว)', unit: 'หัว' },
-  { id: 'SI_default_s', group: 'สายรัดชิ่ง', sub: 'สาย', name: 'สายรัดชิ่ง (สาย)', unit: 'สาย' },
+  { id: 'SI_default_sc', group: 'สายรัดชิ่ง', sub: 'สายรัดชิ่ง', name: 'สายรัดชิ่ง', unit: 'คู่' },
   { id: 'SI_default_c', group: 'ไม้หนุนล้อ', sub: 'ไม้หนุนล้อ', name: 'ไม้หนุนล้อ', unit: 'คู่' },
   { id: 'SI_default_st1', group: 'สติ๊กเกอร์', sub: 'ประกอบการเอพีฯ', name: 'สติ๊กเกอร์ ประกอบการเอพีฯ', unit: 'แผ่น' },
   { id: 'SI_default_st2', group: 'สติ๊กเกอร์', sub: 'ประกอบการอำพล', name: 'สติ๊กเกอร์ ประกอบการอำพล', unit: 'แผ่น' },
@@ -23,8 +22,8 @@ const SS_DEFAULT_ITEMS = [
 ];
 // รุ่นแรกของแอปใช้ 3 รายการรวม (สติ๊กเกอร์ / สายรัดชิ่ง / ไม้หนุนล้อ) — ย้ายมาแบบแยกประเภทแล้ว
 // รายการเก่าจะถูกเอาออกอัตโนมัติถ้ายังไม่มีประวัติรับเข้า/เบิกจ่ายอ้างถึง (ดู ssMigrateItems)
-const SS_LEGACY_ITEM_IDS = ['SI_default_1', 'SI_default_2', 'SI_default_3'];
-const SS_ITEMS_SCHEMA = 3;
+const SS_LEGACY_ITEM_IDS = ['SI_default_1', 'SI_default_2', 'SI_default_3', 'SI_default_h', 'SI_default_s']; // h/s = สายรัดชิ่งแยกหัว/สาย (เลิกใช้ เปลี่ยนเป็นหน่วย "คู่")
+const SS_ITEMS_SCHEMA = 4;
 let ssItems = SS_DEFAULT_ITEMS.map(i => ({ ...i }));
 let ssItemsFbLoaded = false;
 cacheLoad('finflow_safety_items').then(v => {
