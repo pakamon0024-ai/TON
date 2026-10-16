@@ -3131,6 +3131,7 @@
                 <input type="month" id="alc-daily-month" onchange="alcRenderDailyReport()" />
               </div>
               <button class="btn-secondary" onclick="alcExportDailyReportExcel()">📊 Export Excel</button>
+              <button class="btn-secondary" onclick="alcSaveDailyReportImage()">📸 บันทึกภาพรายงาน</button>
             </div>
             <p class="readonly-hint">แยกผลตรวจขาไป (ก่อนปฏิบัติงาน) และขากลับ (หลังปฏิบัติงาน) ต่อวัน แต่ละรอบนับ "ต่อเนื่อง" แยกกัน · % แต่ละรอบ =
               ตรวจแล้ว ÷ (พนักงานมาทำงาน − ต่อเนื่องของรอบนั้น) · % สรุปการตรวจ = ค่าเฉลี่ยของขาไปและขากลับ</p>
@@ -4719,6 +4720,26 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบจัดการ GPS/CCTV · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · GPS/CCTV REPAIR REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container รายงานตรวจแอลกอฮอล์ประจำวัน (off-screen, captured by html2canvas) -->
+  <div id="alc-daily-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title">รายงานการตรวจสอบแอลกอฮอล์ ลาน ABC</div>
+        <div class="rpt-date-text" id="alc-daily-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">% สรุปการตรวจ</div>
+        <div class="rpt-count-val" id="alc-daily-rpt-total-count">0%</div>
+      </div>
+    </div>
+    <div class="rpt-body" id="alc-daily-report-table-wrap"></div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบบันทึกการเป่าวัดแอลกอฮอล์ · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · ALCOHOL DAILY REPORT</div>
     </div>
   </div>
 

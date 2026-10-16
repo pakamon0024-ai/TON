@@ -649,13 +649,16 @@ function alcFmtSummaryPct(pct) {
 function alcRenderDailyReport() {
   const wrap = document.getElementById('alc-daily-table-wrap');
   if (!wrap) return;
-  const monthVal = alcDailyMonthValue();
+  wrap.innerHTML = alcDailyTableHtml(alcDailyMonthValue());
+}
+
+// HTML ตารางรายงานประจำวัน — ใช้ทั้งบนหน้าจอ (alcRenderDailyReport) และในภาพรายงานส่งไลน์ (alcSaveDailyReportImage)
+function alcDailyTableHtml(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
   const rows = alcDailyReportData(monthVal);
 
   if (!mdAbcStaff || mdAbcStaff.length === 0) {
-    wrap.innerHTML = '<p class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่หน้า "เพิ่มบันทึก"</p>';
-    return;
+    return '<p class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่หน้า "เพิ่มบันทึก"</p>';
   }
 
   const daysWithData = rows.filter(r => r.hasData).map(r => r.day);
@@ -720,7 +723,7 @@ function alcRenderDailyReport() {
     </tr>
   `;
 
-  wrap.innerHTML = `
+  return `
     <table class="data-table alc-daily-table">
       <caption>
         <div class="alc-daily-title">รายงานการตรวจสอบแอลกอฮอล์</div>
@@ -751,6 +754,52 @@ function alcRenderDailyReport() {
       <tbody>${bodyRows}${totalsRow}</tbody>
     </table>
   `;
+}
+
+// บันทึกภาพรายงานประจำวัน (PNG สำหรับส่งไลน์) — ใช้ #alc-daily-report-container ที่วางไว้นอกจอถาวร
+// วิธีเดียวกับรายงานความผิด GPS/แจ้งซ่อม: เติมข้อมูล -> วัดความสูงจริง -> html2canvas -> ดาวน์โหลด
+async function alcSaveDailyReportImage() {
+  const rpt = document.getElementById('alc-daily-report-container');
+  const tableWrap = document.getElementById('alc-daily-report-table-wrap');
+  if (!rpt || !tableWrap) return;
+  if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
+
+  const monthVal = alcDailyMonthValue();
+  const [y, m] = monthVal.split('-').map(Number);
+  const rows = alcDailyReportData(monthVal);
+  if (!rows.some(r => r.hasData)) { showToast('เดือนนี้ยังไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+  const { total } = alcDailyReportTotals(rows);
+
+  const now = new Date();
+  document.getElementById('alc-daily-rpt-date-text').textContent =
+    `ประจำเดือน ${ALC_MONTH_FULL_TH[m - 1]} ${y + 543} · จัดทำ: ` + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('alc-daily-rpt-total-count').textContent = `${alcFmtSummaryPct(total.summaryPct)}%`;
+  tableWrap.innerHTML = alcDailyTableHtml(monthVal);
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 60));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = `รายงานประจำวันแอลกอฮอล์_${monthVal}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-4000px';
 }
 
 function alcExportDailyReportExcel() {
