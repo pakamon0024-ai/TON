@@ -513,11 +513,12 @@ function ssImportExcel(evt) {
       const errors = [];
       const parsed = [];
       let skippedDup = 0;
-      const sigOf = r => [r.date, r.type, r.item, r.qty, r.receiver || '', r.plate || '', r.note || ''].join('|');
+      const sigOf = ssRecordSig;
       // นับจำนวนที่มีอยู่แล้วต่อ signature (ไม่ใช้ Set) — แถวที่เหมือนกันเป๊ะ 2 แถวในไฟล์เดียวกัน (เช่น เบิกจำนวนเท่ากันวันเดียวกัน) เป็นรายการจริง 2 รายการ ต้องนำเข้าทั้งคู่
       // ข้ามเฉพาะแถวที่ซ้ำกับของที่บันทึกไว้แล้วในระบบ (กรณีนำเข้าไฟล์เดิมซ้ำ)
       const existing = new Map();
       safetyStock.forEach(r => { const k = sigOf(r); existing.set(k, (existing.get(k) || 0) + 1); });
+      const occBase = new Map(existing); // จำนวนรายการเหมือนกันที่มีอยู่แล้วก่อนนำเข้า (ใช้ต่อเลขลำดับของ id)
 
       rows.slice(1).forEach((row, idx) => {
         const line = idx + 2;
@@ -564,8 +565,14 @@ function ssImportExcel(evt) {
       if (!confirm(`นำเข้า ${parsed.length} รายการ ใช่ไหม?${note}`)) { evt.target.value = ''; return; }
 
       parsed.sort((a, b) => a.date.localeCompare(b.date));
+      // id ผูกกับเนื้อหาแถว (hash ของ signature + ลำดับที่ซ้ำ) ไม่สุ่ม — นำเข้าแถวเดิมจากอีกเครื่อง/แคชเก่า/ซ้ำอีกรอบ
+      // จะได้ id เดิมและทับของเดิม ไม่เพิ่มเป็นรายการซ้ำ (id สุ่มทำให้ทุกครั้งที่นำเข้าได้รายการใหม่เสมอ)
+      const occ = new Map(occBase);
       parsed.forEach(r => {
-        r.id = 'SS_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        const sig = sigOf(r);
+        const n = (occ.get(sig) || 0) + 1;
+        occ.set(sig, n);
+        r.id = `SS_IMP_${ssHash(sig)}_${n}`;
         r.runningNo = ssNextRunningNo();
         r.createdAt = new Date().toISOString();
         safetyStock.unshift(r);
@@ -719,4 +726,41 @@ async function ssDeleteAll() {
   ssRenderAll();
   ssUpdateFormHints();
   showToast('ลบรายการเบิกจ่าย/รับเข้าทั้งหมดแล้ว', 'warning');
+}
+
+// ลายนิ้วมือของรายการ (ทุกช่องที่เป็นเนื้อหา ไม่รวม id/เลขที่) — ใช้ตรวจรายการซ้ำและสร้าง id ตอน Import
+function ssRecordSig(r) {
+  return [r.date, r.type, r.item, r.qty, r.receiver || '', r.plate || '', r.note || ''].join('|');
+}
+function ssHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+  return h.toString(36);
+}
+
+// ลบรายการซ้ำ: "เลขที่ + เนื้อหาเหมือนกันทุกช่อง" = สำเนาของรายการเดียวกัน (รายการจริงแต่ละรายการมีเลขที่ไม่ซ้ำกัน
+// ถึงเนื้อหาจะเหมือนกัน เช่น เบิก 3 คู่ 2 ครั้งในวันเดียว ก็ยังได้เลขที่คนละเลข จึงไม่ถูกลบ) เก็บชุดที่สร้างก่อนไว้ 1 รายการ
+async function ssRemoveDuplicates() {
+  if (!ssReady) { showToast('ยังเชื่อมต่อฐานข้อมูลไม่เสร็จ รอสักครู่แล้วลองอีกครั้ง', 'warning'); return; }
+  const seen = new Set();
+  const dups = [];
+  [...safetyStock].sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || '')).forEach(r => {
+    const key = `${r.runningNo}|${ssRecordSig(r)}`;
+    if (seen.has(key)) dups.push(r); else seen.add(key);
+  });
+  if (!dups.length) { showToast('ไม่พบรายการซ้ำ', 'success'); return; }
+  if (!confirm(`พบรายการซ้ำ ${dups.length} รายการ (เลขที่และเนื้อหาเหมือนกันทุกช่อง)\nลบส่วนที่ซ้ำออก เก็บไว้อย่างละ 1 รายการ ใช่ไหม?`)) return;
+
+  const ids = new Set(dups.map(r => r.id));
+  safetyStock = safetyStock.filter(r => !ids.has(r.id));
+  ssSave();
+  try {
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const updates = {};
+    ids.forEach(id => { updates[`/safetyStock/${id}`] = null; });
+    await update(ref(fbDb), updates);
+  } catch (e) { console.warn('ssRemoveDuplicates error', e); notifySyncWriteError(e.message); }
+  ssRenderAll();
+  ssUpdateFormHints();
+  showToast(`ลบรายการซ้ำ ${dups.length} รายการแล้ว`, 'success');
 }
