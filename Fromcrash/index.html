@@ -2441,6 +2441,11 @@
                   placeholder="ผู้เบิก / ทะเบียน / หมายเหตุ..." oninput="debouncedRender('ssRenderList')" /></div>
               <button class="btn-secondary" onclick="ssClearListFilters()">🔄 ล้าง</button>
               <button class="btn-secondary" onclick="ssExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="ssImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="ssDownloadTemplate()">📋 Template</button>
             </div>
             <div class="ctxt" id="ss-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
             <div class="recent-table-wrap">

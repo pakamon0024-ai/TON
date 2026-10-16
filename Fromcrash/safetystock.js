@@ -453,19 +453,124 @@ function ssRenderList() {
 }
 
 // ===== Excel Export =====
+// คอลัมน์ Export = คอลัมน์ Template/Import เดียวกัน (Export แล้วนำกลับมา Import ได้) — ช่อง "หน่วย" ตอน Import ไม่ใช้
+// เพราะหน่วยมาจากรายการสินค้าเสมอ; ไม่มีคอลัมน์เลขที่ เพราะระบบออกเลขเองตอนบันทึก
+const SS_XLSX_HEADERS = ['วันที่', 'ประเภท', 'หมวด', 'รายการย่อย', 'จำนวน', 'หน่วย', 'ผู้เบิก', 'ทะเบียน', 'หน่วยงาน', 'ลานจอด', 'หมายเหตุ'];
+const SS_XLSX_COLS = [14, 10, 14, 28, 10, 8, 18, 14, 16, 14, 30];
+
 function ssExportExcel() {
   if (!safetyStock.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
-  const rows = [
-    ['เลขที่', 'วันที่', 'ประเภท', 'รายการ', 'จำนวน', 'หน่วย', 'ผู้เบิก', 'ทะเบียน', 'หน่วยงาน', 'ลานจอด', 'หมายเหตุ'],
-    ...safetyStock.map(i => [i.runningNo, formatDMY(i.date), i.type || '', i.item || '', i.qty, i.unit || '',
-      i.receiver || '', i.plate || '', i.businessUnit || '', i.yard || '', i.note || '']),
-  ];
+  const sorted = [...safetyStock].sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.runningNo || 0) - (b.runningNo || 0));
+  const rows = [SS_XLSX_HEADERS, ...sorted.map(i => {
+    const it = ssItems.find(x => x.name === i.item);
+    return [formatDMY(i.date), i.type || '', it ? ssGroupOf(it) : ssGroupOfItemName(i.item), it ? ssSubOf(it) : (i.item || ''),
+      i.qty, i.unit || '', i.receiver || '', i.plate || '', i.businessUnit || '', i.yard || '', i.note || ''];
+  })];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [8, 14, 12, 16, 10, 8, 18, 14, 16, 14, 30].map(w => ({ wch: w }));
+  ws['!cols'] = SS_XLSX_COLS.map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Stock Safety');
   XLSX.writeFile(wb, 'StockSafety_' + new Date().toISOString().slice(0, 10) + '.xlsx');
   showToast('Export เรียบร้อย', 'success');
+}
+
+// Template: ชีทแรกเป็นตัวอย่างให้กรอก, ชีทที่สองเป็นรายการหมวด/รายการย่อยที่ใช้ได้ (ตอนนี้ในระบบ) ให้คัดลอกชื่อไปใช้
+function ssDownloadTemplate() {
+  const first = ssItems[0];
+  const sample = [
+    SS_XLSX_HEADERS,
+    ['01/10/2026', 'รับเข้า', first ? ssGroupOf(first) : 'สติ๊กเกอร์', first ? ssSubOf(first) : 'ISO', 100, first ? first.unit : 'แผ่น', '', '', '', '', 'ยอดยกมา'],
+    ['15/10/2026', 'เบิกจ่าย', first ? ssGroupOf(first) : 'สติ๊กเกอร์', first ? ssSubOf(first) : 'ISO', 5, first ? first.unit : 'แผ่น', 'สมชาย ใจดี', '70-1234', 'ABC', 'ABC', 'ตัวอย่างการเบิก'],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(sample);
+  ws['!cols'] = SS_XLSX_COLS.map(w => ({ wch: w }));
+  const list = [['หมวด', 'รายการย่อย', 'หน่วย'], ...ssGroupsInUse().flatMap(g => ssItemsOfGroup(g).map(it => [g, ssSubOf(it), it.unit]))];
+  const ws2 = XLSX.utils.aoa_to_sheet(list);
+  ws2['!cols'] = [14, 30, 10].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.utils.book_append_sheet(wb, ws2, 'รายการที่ใช้ได้');
+  XLSX.writeFile(wb, 'Template_StockSafety.xlsx');
+  showToast('ดาวน์โหลด Template เรียบร้อย', 'success');
+}
+
+// Import: ตรวจทุกแถวก่อน แถวที่ผิดจะถูกข้ามพร้อมแจ้งสาเหตุ; แถวที่ซ้ำกับของเดิมทุกช่อง (นำเข้าไฟล์เดิมซ้ำ) ข้ามเงียบๆ
+// และก่อนบันทึกจริงจะตรวจยอดรวมหลังนำเข้า — ถ้ารายการไหนจะติดลบ ไม่นำเข้าอะไรเลย (กันเบิกเกินยอดผ่านไฟล์)
+function ssImportExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+      const str = v => String(v ?? '').trim();
+      const errors = [];
+      const parsed = [];
+      let skippedDup = 0;
+      const sigOf = r => [r.date, r.type, r.item, r.qty, r.receiver || '', r.plate || '', r.note || ''].join('|');
+      const existing = new Set(safetyStock.map(sigOf));
+
+      rows.slice(1).forEach((row, idx) => {
+        const line = idx + 2;
+        if (row.every(c => str(c) === '')) return;
+        const date = normalizeImportDate(row[0]);
+        const type = str(row[1]);
+        const group = str(row[2]), sub = str(row[3]);
+        const qty = Number(row[4]);
+        if (!date) { errors.push(`แถว ${line}: วันที่ไม่ถูกต้อง`); return; }
+        if (type !== SS_TYPE_IN && type !== SS_TYPE_OUT) { errors.push(`แถว ${line}: ประเภทต้องเป็น "รับเข้า" หรือ "เบิกจ่าย"`); return; }
+        const item = ssItems.find(it => ssGroupOf(it) === group && ssSubOf(it) === sub) ||
+          ssItems.find(it => it.name === sub || it.name === `${group} ${sub}`);
+        if (!item) { errors.push(`แถว ${line}: ไม่พบรายการ "${group} / ${sub}" (ดูชื่อที่ใช้ได้ในชีท "รายการที่ใช้ได้" ของ Template)`); return; }
+        if (!Number.isInteger(qty) || qty <= 0) { errors.push(`แถว ${line}: จำนวนต้องเป็นจำนวนเต็มมากกว่า 0`); return; }
+        const receiver = str(row[6]);
+        if (type === SS_TYPE_OUT && !receiver) { errors.push(`แถว ${line}: เบิกจ่ายต้องระบุผู้เบิก`); return; }
+        const isOut = type === SS_TYPE_OUT;
+        const rec = {
+          date, type, item: item.name, qty, unit: item.unit,
+          receiver: isOut ? receiver : '', plate: isOut ? str(row[7]) : '',
+          businessUnit: isOut ? str(row[8]) : '', yard: isOut ? str(row[9]) : '', note: str(row[10]),
+        };
+        const sig = sigOf(rec);
+        if (existing.has(sig)) { skippedDup++; return; }
+        existing.add(sig);
+        parsed.push(rec);
+      });
+
+      // ตรวจยอดคงเหลือหลังนำเข้าทั้งชุด
+      const delta = {};
+      parsed.forEach(r => { delta[r.item] = (delta[r.item] || 0) + (r.type === SS_TYPE_IN ? 1 : -1) * r.qty; });
+      const negative = Object.keys(delta).filter(name => ssBalance(name) + delta[name] < 0);
+      if (negative.length) {
+        showToast(`ไม่ได้นำเข้า: ยอดคงเหลือจะติดลบ — ${negative.join(', ')} (ใส่ "รับเข้า" ยอดตั้งต้นก่อน)`, 'error');
+        evt.target.value = '';
+        return;
+      }
+      if (!parsed.length) {
+        showToast(errors.length ? `ไม่มีแถวที่นำเข้าได้ — ${errors[0]}` : `ไม่มีรายการใหม่ให้นำเข้า${skippedDup ? ` (ซ้ำของเดิม ${skippedDup} แถว)` : ''}`, 'warning');
+        evt.target.value = '';
+        return;
+      }
+      const note = (errors.length ? `\nข้าม ${errors.length} แถวที่ผิด:\n${errors.slice(0, 8).join('\n')}${errors.length > 8 ? '\n...' : ''}` : '') +
+        (skippedDup ? `\nข้าม ${skippedDup} แถวที่ซ้ำกับของเดิม` : '');
+      if (!confirm(`นำเข้า ${parsed.length} รายการ ใช่ไหม?${note}`)) { evt.target.value = ''; return; }
+
+      parsed.sort((a, b) => a.date.localeCompare(b.date));
+      parsed.forEach(r => {
+        r.id = 'SS_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        r.runningNo = ssNextRunningNo();
+        r.createdAt = new Date().toISOString();
+        safetyStock.unshift(r);
+      });
+      ssSave();
+      if (ssReady) ssWriteFB();
+      ssRenderAll();
+      showToast(`นำเข้า ${parsed.length} รายการ${errors.length ? ` (ข้าม ${errors.length} แถวที่ผิด)` : ''}`, errors.length ? 'warning' : 'success');
+    } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
+    evt.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ===== Firebase Sync =====
