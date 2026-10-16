@@ -562,7 +562,7 @@ async function grSaveReportImage() {
   document.getElementById('gr-rpt-total-count').textContent = list.length;
   tbody.innerHTML = list.map((r, i) => `
     <tr>
-      <td>${r.runningNo}</td>
+      <td>${i + 1}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.device || '-')}</td>
