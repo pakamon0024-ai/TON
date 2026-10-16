@@ -107,9 +107,9 @@ function ssRenderSummary() {
     const cards = ssItemsOfGroup(g).map(it => {
       const bal = ssBalance(it.name);
       const color = bal <= 0 ? '#ef4444' : bal <= 10 ? '#f59e0b' : '#22c55e';
-      return `<div class="stat-card" style="border-left:4px solid ${color};">
+      return `<div class="stat-card" style="border-left:4px solid ${color};cursor:pointer;" title="กดเพื่อดูประวัติรับเข้า/เบิกจ่ายของรายการนี้" onclick="ssShowItemHistory('${it.id}')">
         <div class="stat-label">${escapeHtml(ssSubOf(it))}
-          <button class="action-btn action-delete" style="float:right;padding:0 6px;" title="ลบรายการนี้" onclick="ssDeleteItem('${it.id}')">×</button></div>
+          <button class="action-btn action-delete" style="float:right;padding:0 6px;" title="ลบรายการนี้" onclick="event.stopPropagation();ssDeleteItem('${it.id}')">×</button></div>
         <div class="stat-value" style="color:${color};">${bal.toLocaleString()} <span style="font-size:0.9rem;">${escapeHtml(it.unit)}</span></div>
         <div style="font-size:0.75rem;color:var(--text-muted);">คงเหลือ${bal <= 10 ? ' (ใกล้หมด)' : ''}</div>
       </div>`;
@@ -424,7 +424,12 @@ function ssRenderList() {
   const countEl = document.getElementById('ss-list-count');
   const pagerEl = document.getElementById('ss-list-pager');
   if (!tbody) return;
-  if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
+  if (countEl) {
+    // เลือกรายการย่อยแล้วโชว์ยอดรวมรับเข้า/เบิก/คงเหลือ ไว้ตรวจว่ายอดในการ์ดมาจากไหน (รวมเฉพาะรายการที่ผ่านตัวกรองอยู่)
+    const f = document.getElementById('ss-f-item')?.value;
+    const sum = t => list.filter(r => r.type === t).reduce((s, r) => s + (Number(r.qty) || 0), 0);
+    countEl.textContent = `ทั้งหมด ${list.length} รายการ` + (f ? ` · รับเข้า ${sum(SS_TYPE_IN).toLocaleString()} · เบิกจ่าย ${sum(SS_TYPE_OUT).toLocaleString()} · คงเหลือทั้งหมด ${ssBalance(f).toLocaleString()} ${ssUnit(f)}` : '');
+  }
   if (list.length === 0) {
     tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
@@ -508,7 +513,10 @@ function ssImportExcel(evt) {
       const parsed = [];
       let skippedDup = 0;
       const sigOf = r => [r.date, r.type, r.item, r.qty, r.receiver || '', r.plate || '', r.note || ''].join('|');
-      const existing = new Set(safetyStock.map(sigOf));
+      // นับจำนวนที่มีอยู่แล้วต่อ signature (ไม่ใช้ Set) — แถวที่เหมือนกันเป๊ะ 2 แถวในไฟล์เดียวกัน (เช่น เบิกจำนวนเท่ากันวันเดียวกัน) เป็นรายการจริง 2 รายการ ต้องนำเข้าทั้งคู่
+      // ข้ามเฉพาะแถวที่ซ้ำกับของที่บันทึกไว้แล้วในระบบ (กรณีนำเข้าไฟล์เดิมซ้ำ)
+      const existing = new Map();
+      safetyStock.forEach(r => { const k = sigOf(r); existing.set(k, (existing.get(k) || 0) + 1); });
 
       rows.slice(1).forEach((row, idx) => {
         const line = idx + 2;
@@ -532,8 +540,7 @@ function ssImportExcel(evt) {
           businessUnit: isOut ? str(row[8]) : '', yard: isOut ? str(row[9]) : '', note: str(row[10]),
         };
         const sig = sigOf(rec);
-        if (existing.has(sig)) { skippedDup++; return; }
-        existing.add(sig);
+        if ((existing.get(sig) || 0) > 0) { existing.set(sig, existing.get(sig) - 1); skippedDup++; return; }
         parsed.push(rec);
       });
 
@@ -683,3 +690,15 @@ document.addEventListener('DOMContentLoaded', () => {
   ssRenderAll();
   ssInit();
 });
+
+// กดการ์ดยอดคงเหลือ -> ไปแท็บรายการทั้งหมด กรองเฉพาะรายการย่อยนั้น เพื่อไล่ดูว่ายอดมาจากรายการไหนบ้าง
+function ssShowItemHistory(itemId) {
+  const it = ssItems.find(i => i.id === itemId);
+  if (!it) return;
+  ssSwitchTab('list');
+  ['ss-f-type', 'ss-f-month', 'ss-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('ss-f-group').value = ssGroupOf(it);
+  ssFillItemSelect('ss-f-item', ssGroupOf(it), 'ทั้งหมด');
+  document.getElementById('ss-f-item').value = it.name;
+  ssRenderList();
+}
