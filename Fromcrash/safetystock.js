@@ -44,6 +44,8 @@ cacheLoad('finflow_safety_stock').then(v => {
 let ssEditingId = null;
 let ssRef = null;
 let ssReady = false;
+// id ของรายการที่ถูกลบแล้ว (เก็บที่ /safetyStock/_deleted บน Firebase) — เครื่องที่ยังถือรายการเก่าไว้ในแคชจะไม่ดันรายการที่ถูกลบกลับขึ้น server
+let ssDeleted = new Set();
 
 function ssSave() { cacheSet('finflow_safety_stock', safetyStock); }
 function ssSaveItems() { cacheSet('finflow_safety_items', ssItems); }
@@ -391,7 +393,7 @@ function ssDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   safetyStock = safetyStock.filter(i => i.id !== id);
   ssSave();
-  ssRemoveOneIfReady(id);
+  ssTombstone([id]);
   ssRenderAll();
   showToast('ลบแล้ว', 'warning');
 }
@@ -504,6 +506,8 @@ function ssDownloadTemplate() {
 function ssImportExcel(evt) {
   const file = evt.target.files[0];
   if (!file) return;
+  // ต้องรอข้อมูลจาก server มาก่อน ไม่งั้นตรวจรายการซ้ำกับข้อมูลที่ยังโหลดไม่ครบ แล้วนำเข้าซ้ำ
+  if (!ssReady) { showToast('ยังเชื่อมต่อฐานข้อมูลไม่เสร็จ รอสักครู่แล้วนำเข้าอีกครั้ง', 'warning'); evt.target.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     try {
@@ -578,7 +582,7 @@ function ssImportExcel(evt) {
         safetyStock.unshift(r);
       });
       ssSave();
-      if (ssReady) ssWriteFB();
+      ssWriteFB(parsed);
       ssRenderAll();
       showToast(`นำเข้า ${parsed.length} รายการ${errors.length ? ` (ข้าม ${errors.length} แถวที่ผิด)` : ''}`, errors.length ? 'warning' : 'success');
     } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
@@ -599,22 +603,51 @@ function ssObjToRecords(obj) {
   return Object.values(obj).filter(r => r && r.id);
 }
 // เก็บรายการที่มีเฉพาะในเครื่อง (ยัง push ไม่สำเร็จ) ไว้ ไม่ให้ข้อมูลจาก server ทับหาย แล้ว sync ขึ้นไปทันที
+// raw = snapshot.val() ของ /safetyStock ; มีคีย์พิเศษ _deleted (ป้ายรายการที่ถูกลบ) ปนอยู่กับรายการ
+// รายการที่ถูกลบแล้วแต่ยังโผล่บน server (เครื่องเก่าดันกลับขึ้นไป) จะถูกกรองทิ้งและลบออกจาก server ซ้ำให้
+function ssParseServer(raw) {
+  ssDeleted = new Set(Object.keys((raw && raw._deleted) || {}));
+  const all = ssObjToRecords(raw);
+  const resurrected = all.filter(r => ssDeleted.has(r.id));
+  if (resurrected.length) ssTombstone(resurrected.map(r => r.id));
+  return all.filter(r => !ssDeleted.has(r.id));
+}
+
 function ssApplyServer(serverRecords) {
   ssFbLoaded = true;
   const serverIds = new Set(serverRecords.map(r => r.id));
-  const localOnly = (safetyStock || []).filter(t => t && t.id && !serverIds.has(t.id));
+  // รายการที่มีเฉพาะในเครื่อง = ยังไม่เคยขึ้น server (push ไม่สำเร็จ) ให้เก็บไว้ ยกเว้นที่ถูกลบไปแล้ว
+  const localOnly = (safetyStock || []).filter(t => t && t.id && !serverIds.has(t.id) && !ssDeleted.has(t.id));
   safetyStock = serverRecords.concat(localOnly);
   ssSave();
   ssRenderAll();
   ssUpdateFormHints();
-  if (localOnly.length > 0) ssWriteFB();
+  if (localOnly.length > 0) ssWriteFB(localOnly);
 }
-async function ssWriteFB() {
+// เขียนเฉพาะรายการที่ส่งมา (ไม่ใช่ set ทับทั้ง /safetyStock เพราะจะลบป้าย _deleted ทิ้งไปด้วย) และล้างป้าย "ถูกลบ" ของ id นั้นด้วย
+async function ssWriteFB(records) {
   if (!ssRef) return;
+  const list = (records || safetyStock).filter(r => r && r.id);
+  if (!list.length) return;
   try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(ssRef, ssRecordsToObj(safetyStock));
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const updates = {};
+    list.forEach(r => { updates['/safetyStock/' + r.id] = r; updates['/safetyStock/_deleted/' + r.id] = null; ssDeleted.delete(r.id); });
+    await update(ref(fbDb), updates);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('ssWriteFB error', e); notifySyncWriteError(e.message); }
+}
+
+// ลบรายการออกจาก server และขึ้นป้าย _deleted กันเครื่องอื่นที่ยังถือรายการนี้ไว้ดันกลับขึ้นมา
+async function ssTombstone(ids) {
+  ids.forEach(id => ssDeleted.add(id));
+  if (!ssRef || !ids.length) return;
+  try {
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const updates = {};
+    ids.forEach(id => { updates['/safetyStock/' + id] = null; updates['/safetyStock/_deleted/' + id] = true; });
+    await update(ref(fbDb), updates);
+  } catch (e) { console.warn('ssTombstone error', e); notifySyncWriteError(e.message); }
 }
 
 async function ssWriteOne(record) {
@@ -627,14 +660,6 @@ async function ssWriteOne(record) {
 }
 function ssPushOneIfReady(record) { if (ssReady) ssWriteOne(record); }
 
-async function ssRemoveOne(id) {
-  if (!ssRef) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `/safetyStock/${id}`));
-  } catch (e) { console.warn('ssRemoveOne error', e); notifySyncWriteError(e.message); }
-}
-function ssRemoveOneIfReady(id) { if (ssReady) ssRemoveOne(id); }
 
 // รายการสินค้า sync ที่ /safetyStockItems (เขียนทั้งก้อน เพราะมีไม่กี่รายการ)
 let ssItemsRef = null;
@@ -679,7 +704,7 @@ async function ssInit() {
     const itemsSnap = await get(ssItemsRef);
     if (itemsSnap.exists()) ssApplyServerItems(ssObjToRecords(itemsSnap.val()));
     const snap = await get(ssRef);
-    if (snap.exists()) ssApplyServer(ssObjToRecords(snap.val()));
+    if (snap.exists()) ssApplyServer(ssParseServer(snap.val()));
     ssReady = true;
     if (!itemsSnap.exists() || itemsSnap.val()?._schema !== SS_ITEMS_SCHEMA) {
       ssMigrateItems();
@@ -687,7 +712,7 @@ async function ssInit() {
     }
     onValue(ssItemsRef, s => { if (s.exists()) ssApplyServerItems(ssObjToRecords(s.val())); });
     if (!snap.exists() && safetyStock.length > 0) await ssWriteFB();
-    onValue(ssRef, s => { if (s.exists()) ssApplyServer(ssObjToRecords(s.val())); });
+    onValue(ssRef, s => { if (s.exists()) ssApplyServer(ssParseServer(s.val())); });
   } catch (e) { console.warn('ssInit error', e); notifySyncLoadError(e.message); }
 }
 
@@ -717,12 +742,16 @@ async function ssDeleteAll() {
   if (!safetyStock.length) { showToast('ไม่มีรายการให้ลบ', 'warning'); return; }
   if (!ssReady) { showToast('ยังเชื่อมต่อฐานข้อมูลไม่เสร็จ รอสักครู่แล้วลองอีกครั้ง (กันข้อมูลบน server ไหลกลับมา)', 'warning'); return; }
   if (!mdConfirmDeleteAll(`เบิกจ่าย Stock Safety (รับเข้า/เบิกจ่าย ${safetyStock.length} รายการ)`)) return;
+  const ids = safetyStock.map(r => r.id);
   safetyStock = [];
   ssSave();
+  // รวมรายการที่อยู่บน server ด้วย (อาจมีที่เครื่องนี้ยังไม่เห็น เช่นถูกเครื่องอื่นดันขึ้นไป) แล้วขึ้นป้าย "ถูกลบ" ทั้งหมด
   try {
-    const { remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ssRef);
-  } catch (e) { console.warn('ssDeleteAll error', e); notifySyncWriteError(e.message); }
+    const { get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const snap = await get(ssRef);
+    if (snap.exists()) Object.keys(snap.val()).filter(k => k !== '_deleted').forEach(k => ids.push(k));
+  } catch (e) { console.warn('ssDeleteAll read error', e); }
+  await ssTombstone([...new Set(ids)]);
   ssRenderAll();
   ssUpdateFormHints();
   showToast('ลบรายการเบิกจ่าย/รับเข้าทั้งหมดแล้ว', 'warning');
@@ -754,12 +783,7 @@ async function ssRemoveDuplicates() {
   const ids = new Set(dups.map(r => r.id));
   safetyStock = safetyStock.filter(r => !ids.has(r.id));
   ssSave();
-  try {
-    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    const updates = {};
-    ids.forEach(id => { updates[`/safetyStock/${id}`] = null; });
-    await update(ref(fbDb), updates);
-  } catch (e) { console.warn('ssRemoveDuplicates error', e); notifySyncWriteError(e.message); }
+  await ssTombstone([...ids]);
   ssRenderAll();
   ssUpdateFormHints();
   showToast(`ลบรายการซ้ำ ${dups.length} รายการแล้ว`, 'success');
