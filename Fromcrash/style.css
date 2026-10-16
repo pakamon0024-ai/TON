@@ -1565,3 +1565,23 @@ body {
 #alc-daily-report-container .alc-daily-table td.alc-daily-col-emp { background: rgba(67, 233, 123, 0.14); }
 #alc-daily-report-container .alc-daily-table td.alc-daily-col-out { background: rgba(47, 111, 214, 0.12); }
 #alc-daily-report-container .alc-daily-table td.alc-daily-col-ret { background: rgba(15, 155, 142, 0.12); }
+
+/* ขยายตัวอักษรในภาพรายงานแอลกอฮอล์ให้อ่านออกตอนส่งไลน์ (ไลน์ย่อภาพให้พอดีจอมือถือ ตัวอักษรที่สัดส่วนกับความกว้างภาพเล็กไปจะมองไม่เห็น)
+   เป้าหมาย: ตัวเลขในตาราง ~34px บนภาพกว้าง ~1600px (เดิม ~21px บน 1500px) */
+#alc-daily-report-container { width: fit-content; min-width: 1500px; }
+#alc-daily-report-container .rpt-header { padding: 32px 44px; }
+#alc-daily-report-container .rpt-org { font-size: 20px; }
+#alc-daily-report-container .rpt-title { font-size: 48px; }
+#alc-daily-report-container .rpt-date-text { font-size: 26px; }
+#alc-daily-report-container .rpt-count-label { font-size: 22px; }
+#alc-daily-report-container .rpt-count-val { font-size: 64px; }
+#alc-daily-report-container .rpt-body { padding: 26px 32px 0; }
+#alc-daily-report-container .rpt-footer-note { font-size: 18px; }
+#alc-daily-report-container .rpt-footer-brand { font-size: 20px; }
+#alc-daily-report-container .alc-daily-table { width: auto; min-width: 100%; font-size: 2.1rem; }
+#alc-daily-report-container .alc-daily-table th,
+#alc-daily-report-container .alc-daily-table td { padding: 12px 14px; }
+#alc-daily-report-container .alc-daily-table td { font-size: 2.1rem; font-weight: 700; }
+#alc-daily-report-container .alc-daily-table th { font-size: 1.5rem; line-height: 1.35; }
+#alc-daily-report-container .alc-daily-table th.alc-daily-grp-summary { white-space: normal; min-width: 230px; }
+#alc-daily-report-container .alc-daily-pct { font-size: 1.9rem; min-width: 96px; padding: 4px 12px; border-radius: 8px; }
