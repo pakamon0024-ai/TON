@@ -116,19 +116,21 @@ function ssRenderSummary() {
   wrap.innerHTML = ssGroupsInUse().map(g => {
     const cards = ssItemsOfGroup(g).map(it => {
       const bal = ssBalance(it.name);
-      const color = bal <= 0 ? '#ef4444' : bal <= 10 ? '#f59e0b' : '#22c55e';
-      return `<div class="stat-card" style="border-left:4px solid ${color};cursor:pointer;" title="กดเพื่อดูประวัติรับเข้า/เบิกจ่ายของรายการนี้" onclick="ssShowItemHistory('${it.id}')">
-        <div class="stat-label">${escapeHtml(ssSubOf(it))}
-          <button class="action-btn action-delete" style="float:right;padding:0 6px;" title="ลบรายการนี้" onclick="event.stopPropagation();ssDeleteItem('${it.id}')">×</button></div>
-        <div class="stat-value" style="color:${color};">${bal.toLocaleString()} <span style="font-size:0.9rem;">${escapeHtml(it.unit)}</span></div>
-        <div style="font-size:0.75rem;color:var(--text-muted);">คงเหลือ${bal <= 10 ? ' (ใกล้หมด)' : ''}</div>
+      // สถานะตามยอดคงเหลือ: หมด (<=0) / ใกล้หมด (<=10) / พร้อมใช้ — สีขอบบนและป้ายสถานะเปลี่ยนตาม
+      const state = bal <= 0 ? 'out' : bal <= 10 ? 'low' : 'ok';
+      const label = { out: 'หมดสต็อก', low: 'ใกล้หมด', ok: 'พร้อมใช้' }[state];
+      return `<div class="ss-card ss-${state}" title="กดเพื่อดูประวัติรับเข้า/เบิกจ่ายของรายการนี้" onclick="ssShowItemHistory('${it.id}')">
+        <div class="ss-card-name">${escapeHtml(ssSubOf(it))}</div>
+        <div class="ss-card-qty"><span class="ss-card-num">${bal.toLocaleString()}</span><span class="ss-card-unit">${escapeHtml(it.unit)}</span></div>
+        <div class="ss-card-status">${label}</div>
       </div>`;
     }).join('');
     const addBtn = g === SS_OTHER_GROUP ? '' :
-      `<button class="btn-secondary" style="margin-left:10px;" onclick="ssAddItem('${escapeHtml(g)}')">➕ เพิ่มรายการย่อย</button>`;
-    return `<div style="margin-bottom:20px;">
-      <div class="fieldset-title" style="display:flex;align-items:center;">${escapeHtml(g)}${addBtn}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">${cards || '<div class="empty-state">ยังไม่มีรายการย่อย</div>'}</div>
+      `<button class="btn-secondary ss-add-btn" onclick="ssAddItem('${escapeHtml(g)}')">➕ เพิ่มรายการย่อย</button>`;
+    const icon = { 'สติ๊กเกอร์': '🏷️', 'สายรัดชิ่ง': '🔗', 'ไม้หนุนล้อ': '🛞' }[g] || '📦';
+    return `<div class="ss-group">
+      <div class="ss-group-head"><span class="ss-group-title">${icon} ${escapeHtml(g)}</span>${addBtn}</div>
+      <div class="ss-card-grid">${cards || '<div class="empty-state">ยังไม่มีรายการย่อย</div>'}</div>
     </div>`;
   }).join('');
 
