@@ -852,7 +852,7 @@ function ssDashFillItems() {
 
 function ssDashOnGroupChange() { ssDashFillItems(); ssRenderDashboard(); }
 
-function ssDashBar(canvasId, key, labels, datasets, rotation) {
+function ssDashBar(canvasId, key, labels, datasets, rotation, showZero) {
   ssDestroyChart(key);
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
@@ -866,7 +866,7 @@ function ssDashBar(canvasId, key, labels, datasets, rotation) {
         datalabels: {
           display: true, anchor: 'end', align: 'end', color: '#1a2540',
           font: { family: "'Kanit','Sarabun',sans-serif", size: 12, weight: '700' },
-          formatter: v => v > 0 ? v.toLocaleString() : '',
+          formatter: v => (v > 0 || (showZero && v === 0)) ? v.toLocaleString() : '',
         },
       },
       scales: {
@@ -886,6 +886,18 @@ function ssRenderDashboard() {
   const names = new Set(itemName ? [itemName] : ssItemsOfGroup(group).map(i => i.name));
   const unit = itemName ? ssUnit(itemName) : (ssItemsOfGroup(group)[0]?.unit || '');
   const inGroup = safetyStock.filter(r => names.has(r.item));
+
+  // กราฟสต็อกคงเหลือแยกแต่ละรายการย่อยในหมวด (ยอดปัจจุบัน ไม่ขึ้นกับปี/เดือนที่เลือก) สีแท่งตามสถานะเดียวกับการ์ด:
+  // เขียว = พร้อมใช้ (>10), เหลือง = ใกล้หมด (1-10), แดง = หมด (0)
+  const stockItems = ssItemsOfGroup(group);
+  const stockVals = stockItems.map(it => ssBalance(it.name));
+  const stockColor = v => v <= 0 ? 'rgba(239,68,68,0.88)' : v <= 10 ? 'rgba(245,158,11,0.9)' : 'rgba(34,197,94,0.85)';
+  const stockUnit = stockItems[0]?.unit || '';
+  ssDashBar('ss-chart-stock', 'stock', stockItems.map(it => ssSubOf(it)), [
+    { label: `คงเหลือ (${stockUnit})`, data: stockVals, backgroundColor: stockVals.map(stockColor), borderRadius: 5 },
+  ], stockItems.length > 4 ? 30 : 0, true);
+  const stockTotalEl = document.getElementById('ss-chart-stock-total');
+  if (stockTotalEl) stockTotalEl.textContent = `รวม ${stockVals.reduce((s, v) => s + v, 0).toLocaleString()} ${stockUnit}`;
 
   // กราฟรายเดือน: ทั้งปีที่เลือก รับเข้า vs เบิกจ่าย
   const monthIn = new Array(12).fill(0), monthOut = new Array(12).fill(0);
