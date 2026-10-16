@@ -3,6 +3,12 @@
 // เพื่อไม่ให้ตัวเลขเพี้ยนเวลาแก้ไข/ลบรายการย้อนหลัง
 // เก็บ local ที่ key 'finflow_safety_stock' และ sync กับ Firebase ที่ /safetyStock (โครงสร้างเหมือน breakdown.js)
 
+// ย้ายที่เก็บเป็น /safetyStockV2 + แคช key ใหม่: เครื่อง/แท็บที่ยังรันโค้ดรุ่นเก่า (ซึ่งเขียนทับทั้ง /safetyStock และไม่รู้จักป้ายลบ) จะเขียนไปที่เดิมโดยไม่กระทบข้อมูลชุดนี้
+// ทำให้ "ลบแล้วกลับมา" จากเครื่องเก่าเกิดขึ้นไม่ได้ ข้อมูลชุดเก่าที่ /safetyStock ไม่ถูกอ่านอีก
+const SS_FB_PATH = '/safetyStockV2';
+const SS_CACHE_KEY = 'finflow_safety_stock_v2';
+const SS_VERSION = 'v2';
+
 // รายการสินค้า (เพิ่ม/ลบเองได้ในหน้าเว็บ) — 3 รายการตั้งต้นใช้ id คงที่ เพื่อไม่ให้เครื่องต่างๆ สร้างซ้ำกัน
 // หมวดหลัก 3 หมวด — เลือกหมวดแล้วค่อยเลือกรายการย่อย (item.group / item.sub)
 const SS_GROUPS = ['สติ๊กเกอร์', 'สายรัดชิ่ง', 'ไม้หนุนล้อ'];
@@ -36,7 +42,7 @@ const SS_TYPE_IN = 'รับเข้า';
 
 let safetyStock = [];
 let ssFbLoaded = false; // ถ้า Firebase ส่งข้อมูลมาแล้ว แคชในเครื่องจะไม่ทับข้อมูลจริง
-cacheLoad('finflow_safety_stock').then(v => {
+cacheLoad(SS_CACHE_KEY).then(v => {
   if (ssFbLoaded || !Array.isArray(v)) return;
   safetyStock = v;
   if (document.readyState !== 'loading') ssRenderAll();
@@ -47,7 +53,7 @@ let ssReady = false;
 // id ของรายการที่ถูกลบแล้ว (เก็บที่ /safetyStock/_deleted บน Firebase) — เครื่องที่ยังถือรายการเก่าไว้ในแคชจะไม่ดันรายการที่ถูกลบกลับขึ้น server
 let ssDeleted = new Set();
 
-function ssSave() { cacheSet('finflow_safety_stock', safetyStock); }
+function ssSave() { cacheSet(SS_CACHE_KEY, safetyStock); }
 function ssSaveItems() { cacheSet('finflow_safety_items', ssItems); }
 // หมวด/ชื่อย่อยของรายการ — รายการเก่าที่ยังไม่มีฟิลด์ group จะเดาจากชื่อที่ขึ้นต้นด้วยชื่อหมวด
 function ssGroupOf(it) {
@@ -91,6 +97,7 @@ function ssSwitchTab(tab) {
 }
 
 function ssOnPageShown() {
+  const ver = document.getElementById('ss-version'); if (ver) ver.textContent = `· ซิงก์ ${SS_VERSION}`; // ป้ายบอกเวอร์ชันโค้ดที่เครื่องนี้ใช้อยู่ (ถ้าไม่ขึ้น = ยังใช้โค้ดเก่า ให้ Ctrl+Shift+R)
   if (typeof mdApplyAdminOnlyVisibility === 'function') mdApplyAdminOnlyVisibility(); // ปุ่ม "ลบทั้งหมด" เห็นเฉพาะแอดมิน
   ssRefreshItemSelects();
   ssRefreshLookupDropdowns();
@@ -632,7 +639,7 @@ async function ssWriteFB(records) {
   try {
     const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     const updates = {};
-    list.forEach(r => { updates['/safetyStock/' + r.id] = r; updates['/safetyStock/_deleted/' + r.id] = null; ssDeleted.delete(r.id); });
+    list.forEach(r => { updates[SS_FB_PATH + '/' + r.id] = r; updates[SS_FB_PATH + '/_deleted/' + r.id] = null; ssDeleted.delete(r.id); });
     await update(ref(fbDb), updates);
     notifySyncWriteSuccess();
   } catch (e) { console.warn('ssWriteFB error', e); notifySyncWriteError(e.message); }
@@ -645,7 +652,7 @@ async function ssTombstone(ids) {
   try {
     const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     const updates = {};
-    ids.forEach(id => { updates['/safetyStock/' + id] = null; updates['/safetyStock/_deleted/' + id] = true; });
+    ids.forEach(id => { updates[SS_FB_PATH + '/' + id] = null; updates[SS_FB_PATH + '/_deleted/' + id] = true; });
     await update(ref(fbDb), updates);
   } catch (e) { console.warn('ssTombstone error', e); notifySyncWriteError(e.message); }
 }
@@ -654,7 +661,7 @@ async function ssWriteOne(record) {
   if (!ssRef || !record?.id) return;
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(ref(fbDb, `/safetyStock/${record.id}`), record);
+    await set(ref(fbDb, `${SS_FB_PATH}/${record.id}`), record);
     notifySyncWriteSuccess();
   } catch (e) { console.warn('ssWriteOne error', e); notifySyncWriteError(e.message); }
 }
@@ -699,7 +706,7 @@ async function ssInit() {
   await ssWaitForFirebase();
   try {
     const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    ssRef = ref(fbDb, '/safetyStock');
+    ssRef = ref(fbDb, SS_FB_PATH);
     ssItemsRef = ref(fbDb, '/safetyStockItems');
     const itemsSnap = await get(ssItemsRef);
     if (itemsSnap.exists()) ssApplyServerItems(ssObjToRecords(itemsSnap.val()));
