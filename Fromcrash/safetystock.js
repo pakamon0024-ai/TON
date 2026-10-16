@@ -89,6 +89,7 @@ function ssSwitchTab(tab) {
 }
 
 function ssOnPageShown() {
+  if (typeof mdApplyAdminOnlyVisibility === 'function') mdApplyAdminOnlyVisibility(); // ปุ่ม "ลบทั้งหมด" เห็นเฉพาะแอดมิน
   ssRefreshItemSelects();
   ssRefreshLookupDropdowns();
   ssRenderAll();
@@ -701,4 +702,21 @@ function ssShowItemHistory(itemId) {
   ssFillItemSelect('ss-f-item', ssGroupOf(it), 'ทั้งหมด');
   document.getElementById('ss-f-item').value = it.name;
   ssRenderList();
+}
+
+// ลบรายการรับเข้า/เบิกจ่ายทั้งหมด (เฉพาะแอดมิน + ใส่ PIN) — ไม่แตะรายการสินค้า (หมวด/รายการย่อย) ยอดทุกรายการจะกลับเป็น 0
+// ต้องรอเชื่อม Firebase เสร็จก่อน ไม่งั้นลบแค่ในเครื่อง แล้วข้อมูลบน server จะไหลกลับมาทับตอนเชื่อมต่อได้
+async function ssDeleteAll() {
+  if (!safetyStock.length) { showToast('ไม่มีรายการให้ลบ', 'warning'); return; }
+  if (!ssReady) { showToast('ยังเชื่อมต่อฐานข้อมูลไม่เสร็จ รอสักครู่แล้วลองอีกครั้ง (กันข้อมูลบน server ไหลกลับมา)', 'warning'); return; }
+  if (!mdConfirmDeleteAll(`เบิกจ่าย Stock Safety (รับเข้า/เบิกจ่าย ${safetyStock.length} รายการ)`)) return;
+  safetyStock = [];
+  ssSave();
+  try {
+    const { remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await remove(ssRef);
+  } catch (e) { console.warn('ssDeleteAll error', e); notifySyncWriteError(e.message); }
+  ssRenderAll();
+  ssUpdateFormHints();
+  showToast('ลบรายการเบิกจ่าย/รับเข้าทั้งหมดแล้ว', 'warning');
 }
