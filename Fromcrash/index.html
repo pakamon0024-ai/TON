@@ -3131,6 +3131,14 @@
                 <label>เดือน</label>
                 <input type="month" id="alc-daily-month" onchange="alcRenderDailyReport()" />
               </div>
+              <div class="filter-group">
+                <label>ตั้งแต่วันที่</label>
+                <select id="alc-daily-from" onchange="alcRenderDailyReport()"></select>
+              </div>
+              <div class="filter-group">
+                <label>ถึงวันที่</label>
+                <select id="alc-daily-to" onchange="alcRenderDailyReport()"></select>
+              </div>
               <button class="btn-secondary" onclick="alcExportDailyReportExcel()">📊 Export Excel</button>
               <button class="btn-secondary" onclick="alcSaveDailyReportImage()">📸 บันทึกภาพรายงาน</button>
             </div>

@@ -560,6 +560,31 @@ function alcDailyMonthValue() {
   return document.getElementById('alc-daily-month')?.value || new Date().toISOString().substring(0, 7);
 }
 
+// ช่วงวันที่ในเดือนที่เลือกแสดงในรายงานประจำวัน (หน้าจอ / ภาพส่งไลน์ / Excel ใช้ช่วงเดียวกัน)
+// select จากวัน/ถึงวัน ถูกเติมตามจำนวนวันของเดือน; เปลี่ยนเดือนแล้วรีเซ็ตเป็นทั้งเดือน
+function alcDailyEnsureRangeSelects() {
+  const fromEl = document.getElementById('alc-daily-from');
+  const toEl = document.getElementById('alc-daily-to');
+  if (!fromEl || !toEl) return;
+  const monthVal = alcDailyMonthValue();
+  if (fromEl.dataset.month === monthVal && fromEl.options.length) return;
+  const [y, m] = monthVal.split('-').map(Number);
+  const n = new Date(y, m, 0).getDate();
+  const opts = Array.from({ length: n }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+  fromEl.innerHTML = opts; toEl.innerHTML = opts;
+  fromEl.value = '1'; toEl.value = String(n);
+  fromEl.dataset.month = monthVal; toEl.dataset.month = monthVal;
+}
+
+function alcDailyRowsInRange(monthVal) {
+  alcDailyEnsureRangeSelects();
+  const all = alcDailyReportData(monthVal);
+  let from = Number(document.getElementById('alc-daily-from')?.value) || 1;
+  let to = Number(document.getElementById('alc-daily-to')?.value) || all.length;
+  if (from > to) [from, to] = [to, from]; // เลือกกลับด้านก็ใช้ได้ ไม่ต้องแจ้งผิด
+  return { rows: all.filter(r => r.day >= from && r.day <= to), from, to };
+}
+
 function alcDailyReportData(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
@@ -655,7 +680,7 @@ function alcRenderDailyReport() {
 // HTML ตารางรายงานประจำวัน — ใช้ทั้งบนหน้าจอ (alcRenderDailyReport) และในภาพรายงานส่งไลน์ (alcSaveDailyReportImage)
 function alcDailyTableHtml(monthVal) {
   const [y, m] = monthVal.split('-').map(Number);
-  const rows = alcDailyReportData(monthVal);
+  const { rows } = alcDailyRowsInRange(monthVal);
 
   if (!mdAbcStaff || mdAbcStaff.length === 0) {
     return '<p class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่หน้า "เพิ่มบันทึก"</p>';
@@ -766,13 +791,13 @@ async function alcSaveDailyReportImage() {
 
   const monthVal = alcDailyMonthValue();
   const [y, m] = monthVal.split('-').map(Number);
-  const rows = alcDailyReportData(monthVal);
-  if (!rows.some(r => r.hasData)) { showToast('เดือนนี้ยังไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+  const { rows, from, to } = alcDailyRowsInRange(monthVal);
+  if (!rows.some(r => r.hasData)) { showToast('ช่วงวันที่ที่เลือกยังไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
   const { total } = alcDailyReportTotals(rows);
 
   const now = new Date();
   document.getElementById('alc-daily-rpt-date-text').textContent =
-    `ประจำเดือน ${ALC_MONTH_FULL_TH[m - 1]} ${y + 543} · จัดทำ: ` + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    `ประจำวันที่ ${from} – ${to} ${ALC_MONTH_FULL_TH[m - 1]} ${y + 543} · จัดทำ: ` + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('alc-daily-rpt-total-count').textContent = `${alcFmtSummaryPct(total.summaryPct)}%`;
   tableWrap.innerHTML = alcDailyTableHtml(monthVal);
 
@@ -805,7 +830,7 @@ async function alcSaveDailyReportImage() {
 function alcExportDailyReportExcel() {
   const monthVal = alcDailyMonthValue();
   const [y, m] = monthVal.split('-').map(Number);
-  const rows = alcDailyReportData(monthVal);
+  const { rows, from, to } = alcDailyRowsInRange(monthVal);
   if (!mdAbcStaff || mdAbcStaff.length === 0) { showToast('ยังไม่มีรายชื่อพนักงานลาน ABC', 'warning'); return; }
 
   const header1 = ['วันที่', 'พนักงาน', '', '', '', 'ขาไป (ก่อนปฏิบัติงาน)', '', '', 'ขากลับ (หลังปฏิบัติงาน)', '', '', '', '% สรุปการตรวจ (เฉลี่ยทั้งไปและกลับ)'];
@@ -816,7 +841,7 @@ function alcExportDailyReportExcel() {
 
   const { total, avg } = alcDailyReportTotals(rows);
   const sheetRows = [
-    [`รายงานการตรวจสอบแอลกอฮอล์ ประจำวันที่ ${ALC_MONTH_FULL_TH[m - 1]} ${y}`],
+    [`รายงานการตรวจสอบแอลกอฮอล์ ประจำวันที่ ${from} – ${to} ${ALC_MONTH_FULL_TH[m - 1]} ${y}`],
     header1, header2,
     ...rows.map(toRow),
     ['รวม', total.totalStaff, total.atWork, total.continuous, total.leaveAbsent, total.out.checked, `${total.out.pct}%`, total.out.failed, total.continuousReturn, total.ret.checked, `${total.ret.pct}%`, total.ret.failed, `${alcFmtSummaryPct(total.summaryPct)}%`],
