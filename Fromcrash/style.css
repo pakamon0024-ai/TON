@@ -1626,3 +1626,11 @@ body {
 .ss-kpi { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; }
 .ss-kpi-label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
 .ss-kpi-val { font-size: 1.6rem; font-weight: 800; font-family: 'Kanit', 'Sarabun', sans-serif; }
+
+/* สรุปเป่าแอลกอฮอล์รายเดือน: ล็อกหัวตารางเวลาเลื่อนลง (ใช้ .tk-table-wrap ที่ให้ scroll ในกล่อง + sticky thead)
+   หัววันหยุดเดิมเป็นสีโปร่งใส เลื่อนแล้วจะเห็นแถวด้านล่างทะลุขึ้นมา — กำหนดพื้นทึบทับ (ซ้อนสีส้มอ่อนบนพื้นทึบ) */
+.alc-summary-table thead th { background-color: var(--bg-secondary); z-index: 2; }
+.alc-summary-table thead th.alc-sum-weekend {
+  background-color: var(--bg-secondary);
+  background-image: linear-gradient(rgba(255, 140, 0, 0.18), rgba(255, 140, 0, 0.18));
+}

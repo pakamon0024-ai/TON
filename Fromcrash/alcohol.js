@@ -441,10 +441,17 @@ function alcRenderSummary() {
   const wrap = document.getElementById('alc-summary-table-wrap');
   if (!wrap) return;
   const monthVal = alcSummaryMonthValue();
-  const { y, m, days, rows } = alcSummaryDataForMonth(monthVal);
-
-  if (rows.length === 0) {
+  const data = alcSummaryDataForMonth(monthVal);
+  const { y, m, days } = data;
+  if (data.rows.length === 0) {
     wrap.innerHTML = '<p class="empty-state">ยังไม่มีรายชื่อพนักงานลาน ABC — เพิ่มได้ที่หน้า "เพิ่มบันทึก"</p>';
+    return;
+  }
+  // ค้นหาตามชื่อ (กรองเฉพาะที่แสดงบนหน้าจอ; Export Excel ยังออกครบทุกคน)
+  const term = (document.getElementById('alc-summary-search')?.value || '').trim().toLowerCase();
+  const rows = term ? data.rows.filter(r => (r.emp.name || '').toLowerCase().includes(term)) : data.rows;
+  if (rows.length === 0) {
+    wrap.innerHTML = `<p class="empty-state">ไม่พบพนักงานชื่อ "${escapeHtml(term)}"</p>`;
     return;
   }
 
@@ -454,7 +461,9 @@ function alcRenderSummary() {
     return `<th class="alc-sum-day${weekend ? ' alc-sum-weekend' : ''}"><div>${d}</div><div class="alc-sum-dow">${ALC_DOW_SHORT_TH[dow]}</div></th>`;
   }).join('');
 
-  const bodyRows = rows.map(({ emp, byDay, maxLevel }, i) => {
+  const bodyRows = rows.map((row, idx) => {
+    const { emp, byDay, maxLevel } = row;
+    const i = data.rows.indexOf(row); // ลำดับเดิมในรายชื่อทั้งหมด ไม่รันใหม่ตอนค้นหา
     const countCells = days.map(d => {
       const rec = byDay[d];
       if (!rec) return '<td class="alc-sum-cell"></td>';

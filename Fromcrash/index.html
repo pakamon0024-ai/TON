@@ -3170,12 +3170,14 @@
                 <label>เดือน</label>
                 <input type="month" id="alc-summary-month" onchange="alcRenderSummary()" />
               </div>
+              <div class="filter-group"><label>ค้นหาชื่อ</label><input type="text" class="fc" id="alc-summary-search"
+                  placeholder="พิมพ์ชื่อพนักงาน..." oninput="debouncedRender('alcRenderSummary')" /></div>
               <button class="btn-secondary" onclick="alcExportSummaryExcel()">📊 Export Excel</button>
               <button class="btn-secondary" onclick="alcDownloadTemplate()">📄 Template Excel</button>
               <label class="btn-secondary" style="cursor:pointer;">📥 Import Excel<input type="file" accept=".xlsx,.xls"
                   style="display:none" onchange="alcImportExcel(event)"></label>
             </div>
-            <div class="recent-table-wrap" id="alc-summary-table-wrap" style="margin-top:10px;"></div>
+            <div class="recent-table-wrap tk-table-wrap" id="alc-summary-table-wrap" style="margin-top:10px;"></div>
           </div>
 
           <!-- DAILY REPORT SUBPAGE: รายงานตัวประจำวัน (จำนวนพนักงาน/มาทำงาน/ตรวจแล้ว/% ฯลฯ ต่อวัน) -->
