@@ -623,12 +623,15 @@ function alcDailyReportData(monthVal) {
       return !res || res === ALC_RESULT_OPTIONS[0];
     });
     const failList = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน');
-    const failed = failList.length + notBlownList.length;
     // ชื่อคนในแต่ละกลุ่ม ไว้โชว์เป็นข้อความตอนเอาเมาส์ชี้ช่อง "ไม่ผ่าน" (ตรวจว่าตัวเลขมาจากใคร)
     const failNames = failList.map(r => r.employee), notBlownNames = notBlownList.map(r => r.employee);
     const base = atWork - continuous;
     const pct = base > 0 ? Math.round(checked / base * 100) : 0;
-    return { checked, failed, pct, failNames, notBlownNames };
+    // จำนวน "ไม่ได้เป่า" = ต้องเป่า − เป่าแล้ว (นิยามเดียวกับ % ด้านซ้าย ไม่พึ่งการเดาจากสถานะในแต่ละบันทึก — คนที่ไม่มีบันทึกเลยก็นับ)
+    // แล้วบวกคนที่เป่าแล้วไม่ผ่านจริง; รายชื่อ notBlownNames เป็นเฉพาะที่ระบบเห็นว่าสถานะยังไม่เป่า (อาจน้อยกว่าถ้าบางคนไม่มีบันทึก)
+    const notBlownCount = Math.max(0, base - checked);
+    const failed = failList.length + notBlownCount;
+    return { checked, failed, pct, failNames, notBlownNames, notBlownCount };
   };
 
   return Array.from({ length: daysInMonth }, (_, i) => {
@@ -678,8 +681,9 @@ function alcDailyReportData(monthVal) {
 function alcFailTitle(stat) {
   const f = stat.failNames || [], n = stat.notBlownNames || [];
   if (!f.length && !n.length) return '';
+  const nc = stat.notBlownCount ?? n.length;
   return `เป่าไม่ผ่าน ${f.length} คน${f.length ? ': ' + f.join(', ') : ''}
-ไม่ได้เป่า ${n.length} คน${n.length ? ': ' + n.join(', ') : ''}`;
+ไม่ได้เป่า ${nc} คน (ต้องเป่า − เป่าแล้ว)${n.length ? ': ' + n.join(', ') : ''}`;
 }
 
 // รวม/เฉลี่ยของทุกวันที่มีข้อมูลในเดือนนั้น (แถวท้ายตาราง)
