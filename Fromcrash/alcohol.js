@@ -614,7 +614,15 @@ function alcDailyReportData(monthVal) {
   // % = ตรวจ(คน) / (มาทำงาน - ต่อเนื่อง) — ไม่นับพนักงานที่วิ่งต่อเนื่องเข้าฐานคำนวนเลย เพราะไม่ได้อยู่ในรอบตรวจนี้ตั้งแต่ต้น
   const roundStats = (dayRecords, getResult, atWork, continuous) => {
     const checked = dayRecords.filter(r => getResult(r) === 'ผ่าน' || getResult(r) === 'ไม่ผ่าน').length;
-    const failed = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน').length;
+    // ไม่ผ่าน(คน) = เป่าแล้วไม่ผ่าน + มาทำงานแต่ไม่ได้เป่ารอบนี้ (ยังไม่เป่า/ว่าง) — คนขาด/ลา/ลาออกไม่ใช่คนมาทำงาน ไม่นับ
+    // ส่วน "ต่อเนื่อง" ไม่ต้องเป่ารอบนี้อยู่แล้ว ไม่นับเช่นกัน (ไม่ตรงเงื่อนไข "ยังไม่เป่า")
+    const notBlown = dayRecords.filter(r => {
+      const outRes = r.resultOut || r.result;
+      if (outRes === 'ขาด/ลา' || outRes === 'ลาออก') return false;
+      const res = getResult(r);
+      return !res || res === ALC_RESULT_OPTIONS[0];
+    }).length;
+    const failed = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน').length + notBlown;
     const base = atWork - continuous;
     const pct = base > 0 ? Math.round(checked / base * 100) : 0;
     return { checked, failed, pct };
