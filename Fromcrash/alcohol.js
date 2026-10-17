@@ -616,16 +616,19 @@ function alcDailyReportData(monthVal) {
     const checked = dayRecords.filter(r => getResult(r) === 'ผ่าน' || getResult(r) === 'ไม่ผ่าน').length;
     // ไม่ผ่าน(คน) = เป่าแล้วไม่ผ่าน + มาทำงานแต่ไม่ได้เป่ารอบนี้ (ยังไม่เป่า/ว่าง) — คนขาด/ลา/ลาออกไม่ใช่คนมาทำงาน ไม่นับ
     // ส่วน "ต่อเนื่อง" ไม่ต้องเป่ารอบนี้อยู่แล้ว ไม่นับเช่นกัน (ไม่ตรงเงื่อนไข "ยังไม่เป่า")
-    const notBlown = dayRecords.filter(r => {
+    const notBlownList = dayRecords.filter(r => {
       const outRes = r.resultOut || r.result;
       if (outRes === 'ขาด/ลา' || outRes === 'ลาออก') return false;
       const res = getResult(r);
       return !res || res === ALC_RESULT_OPTIONS[0];
-    }).length;
-    const failed = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน').length + notBlown;
+    });
+    const failList = dayRecords.filter(r => getResult(r) === 'ไม่ผ่าน');
+    const failed = failList.length + notBlownList.length;
+    // ชื่อคนในแต่ละกลุ่ม ไว้โชว์เป็นข้อความตอนเอาเมาส์ชี้ช่อง "ไม่ผ่าน" (ตรวจว่าตัวเลขมาจากใคร)
+    const failNames = failList.map(r => r.employee), notBlownNames = notBlownList.map(r => r.employee);
     const base = atWork - continuous;
     const pct = base > 0 ? Math.round(checked / base * 100) : 0;
-    return { checked, failed, pct };
+    return { checked, failed, pct, failNames, notBlownNames };
   };
 
   return Array.from({ length: daysInMonth }, (_, i) => {
@@ -660,6 +663,14 @@ function alcDailyReportData(monthVal) {
       totalStaff, atWork, continuous, continuousReturn, leaveAbsent, out, ret, summaryPct,
     };
   });
+}
+
+// ข้อความ tooltip ของช่อง "ไม่ผ่าน (คน)": แยกว่าเป่าไม่ผ่านกี่คน/ไม่ได้เป่ากี่คน พร้อมชื่อ
+function alcFailTitle(stat) {
+  const f = stat.failNames || [], n = stat.notBlownNames || [];
+  if (!f.length && !n.length) return '';
+  return `เป่าไม่ผ่าน ${f.length} คน${f.length ? ': ' + f.join(', ') : ''}
+ไม่ได้เป่า ${n.length} คน${n.length ? ': ' + n.join(', ') : ''}`;
 }
 
 // รวม/เฉลี่ยของทุกวันที่มีข้อมูลในเดือนนั้น (แถวท้ายตาราง)
@@ -728,11 +739,11 @@ function alcDailyTableHtml(monthVal) {
         <td class="alc-daily-col-emp">${r.leaveAbsent}</td>
         <td class="alc-daily-col-out">${r.out.checked}</td>
         <td class="alc-daily-col-out"><span class="alc-daily-pct alc-daily-pct-out">${r.out.pct}%</span></td>
-        <td class="alc-daily-col-out">${r.out.failed}</td>
+        <td class="alc-daily-col-out" title="${escapeHtml(alcFailTitle(r.out))}">${r.out.failed}</td>
         <td class="alc-daily-col-ret">${r.continuousReturn}</td>
         <td class="alc-daily-col-ret">${r.ret.checked}</td>
         <td class="alc-daily-col-ret"><span class="alc-daily-pct alc-daily-pct-ret">${r.ret.pct}%</span></td>
-        <td class="alc-daily-col-ret">${r.ret.failed}</td>
+        <td class="alc-daily-col-ret" title="${escapeHtml(alcFailTitle(r.ret))}">${r.ret.failed}</td>
         <td class="alc-daily-col-summary">${alcFmtSummaryPct(r.summaryPct)}%</td>
       </tr>
     `;
