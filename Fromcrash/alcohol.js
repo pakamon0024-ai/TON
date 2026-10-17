@@ -514,6 +514,10 @@ function alcSummaryCountCell(rec) {
   const out = rec.resultOut || rec.result || ALC_RESULT_OPTIONS[0];
   const ret = rec.resultReturn || ALC_RESULT_OPTIONS[0];
   if (out === ret && out !== 'ผ่าน' && out !== ALC_RESULT_OPTIONS[0]) return out;
+  // เป่าไม่ผ่านแค่รอบเดียว (อีกรอบผ่านหรืออย่างอื่น) ต้องโชว์ว่าไม่ผ่านรอบไหน ห้ามไปรวมเป็น "เป่าครบ"
+  // (alcLegCompliant นับ "ไม่ผ่าน" ว่าเป่าแล้ว ซึ่งถูกสำหรับสูตร % รายวัน แต่ทำให้ช่องสรุปรายเดือนดูเหมือนผ่านหมด)
+  if (out === 'ไม่ผ่าน') return 'ไม่ผ่านขาไป';
+  if (ret === 'ไม่ผ่าน') return 'ไม่ผ่านขากลับ';
   const outOk = alcLegCompliant(out);
   const retOk = alcLegCompliant(ret);
   if (outOk && retOk) return 'เป่าครบ';
