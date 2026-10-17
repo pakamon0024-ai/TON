@@ -635,7 +635,16 @@ function alcDailyReportData(monthVal) {
     const day = i + 1;
     const dateStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dow = new Date(y, m - 1, day).getDay();
-    const dayRecords = alcTests.filter(t => t.date === dateStr && activeNamesForMonth.has(t.employee));
+    // พนักงาน 1 คนต่อวันนับเป็น 1 รายการเท่านั้น: ถ้าข้อมูลมีบันทึกซ้ำของคนเดียวกันวันเดียวกัน (เช่นซ้ำจากการซิงก์/นำเข้า)
+    // ให้ใช้อันที่แก้ไขล่าสุดอันเดียว ไม่งั้นทุกคอลัมน์ (ตรวจ/ไม่ผ่าน/ไม่ได้เป่า) จะนับเกินจำนวนคนจริง
+    const latestByEmp = new Map();
+    alcTests.forEach(t => {
+      if (t.date !== dateStr || !activeNamesForMonth.has(t.employee)) return;
+      const prev = latestByEmp.get(t.employee);
+      const stamp = x => x.updatedAt || x.createdAt || '';
+      if (!prev || stamp(t) >= stamp(prev)) latestByEmp.set(t.employee, t);
+    });
+    const dayRecords = [...latestByEmp.values()];
     // จำนวนพนักงานทั้งหมดนับตามวันนั้น: คนที่เพิ่มเข้าทีหลังไม่ถูกนับย้อนหลังในวันก่อนที่เพิ่ม
     const fullStaff = activeStaffForMonth.filter(s => !s.addedDate || s.addedDate <= dateStr).length;
 
