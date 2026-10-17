@@ -1634,3 +1634,10 @@ body {
   background-color: var(--bg-secondary);
   background-image: linear-gradient(rgba(255, 140, 0, 0.18), rgba(255, 140, 0, 0.18));
 }
+
+/* ล็อกคอลัมน์ No. และ ชื่อพนักงาน ไว้ซ้ายตอนเลื่อนดูวันที่ทางขวา (พื้นทึบกันตัวเลขวันทะลุ; เงาด้านขวาแทนเส้นกรอบที่หายตอนเลื่อน เพราะ border-collapse) */
+.alc-summary-table .alc-sum-no { position: sticky; left: 0; z-index: 1; width: 40px; min-width: 40px; background: var(--bg-card); }
+.alc-summary-table td.alc-sum-name { position: sticky; left: 40px; z-index: 1; min-width: 130px; background: var(--bg-card); box-shadow: 2px 0 0 var(--border); }
+.alc-summary-table thead th.alc-sum-no, .alc-summary-table thead th.alc-sum-name-h { position: sticky; z-index: 4; background: var(--bg-secondary); }
+.alc-summary-table thead th.alc-sum-no { left: 0; }
+.alc-summary-table thead th.alc-sum-name-h { left: 40px; min-width: 130px; box-shadow: 2px 0 0 var(--border); }

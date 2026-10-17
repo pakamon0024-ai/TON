@@ -481,7 +481,7 @@ function alcRenderSummary() {
     const pct = alcSummaryCompletePercent(byDay, days);
     return `
       <tr>
-        <td rowspan="2">${i + 1}</td>
+        <td rowspan="2" class="alc-sum-no">${i + 1}</td>
         <td rowspan="2" class="alc-sum-name">${escapeHtml(emp.name)}</td>
         <td rowspan="2">${escapeHtml(emp.businessUnit || '-')}</td>
         <td class="alc-sum-label">จำนวนตรวจ</td>
@@ -500,7 +500,7 @@ function alcRenderSummary() {
     <table class="data-table alc-summary-table">
       <thead>
         <tr>
-          <th>No.</th><th>ชื่อพนักงาน</th><th>หน่วยงาน</th><th>รายการ</th><th>MAX</th><th>% เป่าครบ</th>
+          <th class="alc-sum-no">No.</th><th class="alc-sum-name-h">ชื่อพนักงาน</th><th>หน่วยงาน</th><th>รายการ</th><th>MAX</th><th>% เป่าครบ</th>
           ${dayHeaders}
         </tr>
       </thead>
