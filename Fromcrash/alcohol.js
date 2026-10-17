@@ -627,11 +627,8 @@ function alcDailyReportData(monthVal) {
     // ชื่อคนในแต่ละกลุ่ม ไว้โชว์เป็นข้อความตอนเอาเมาส์ชี้ช่อง "ไม่ผ่าน" (ตรวจว่าตัวเลขมาจากใคร)
     const failNames = failList.map(r => r.employee), notBlownNames = notBlownList.map(r => r.employee);
     const base = atWork - continuous;
-    // % = คนที่ "ผ่าน" ÷ ฐาน — คนที่เป่าไม่ผ่านหรือไม่ได้เป่าไม่นับเป็นผ่าน (เดิมใช้ ตรวจ ÷ ฐาน ซึ่งนับคนเป่าไม่ผ่านเป็นตรวจแล้ว
-    // ทำให้วันที่มีคนไม่ผ่านยังขึ้น 100%)
-    const passed = dayRecords.filter(r => getResult(r) === 'ผ่าน').length;
-    const pct = base > 0 ? Math.round(passed / base * 100) : 0;
-    return { checked, passed, failed, pct, failNames, notBlownNames };
+    const pct = base > 0 ? Math.round(checked / base * 100) : 0;
+    return { checked, failed, pct, failNames, notBlownNames };
   };
 
   return Array.from({ length: daysInMonth }, (_, i) => {
@@ -694,11 +691,11 @@ function alcDailyReportTotals(rows) {
   const sumRet = key => withData.reduce((s, r) => s + r.ret[key], 0);
 
   const totalStaff = sum('totalStaff'), atWork = sum('atWork'), continuous = sum('continuous'), continuousReturn = sum('continuousReturn'), leaveAbsent = sum('leaveAbsent');
-  const outChecked = sumOut('checked'), outFailed = sumOut('failed'), outPassed = sumOut('passed');
-  const retChecked = sumRet('checked'), retFailed = sumRet('failed'), retPassed = sumRet('passed');
+  const outChecked = sumOut('checked'), outFailed = sumOut('failed');
+  const retChecked = sumRet('checked'), retFailed = sumRet('failed');
   const outBase = atWork - continuous, retBase = atWork - continuousReturn;
-  const outPct = outBase > 0 ? Math.round(outPassed / outBase * 100) : 0;
-  const retPct = retBase > 0 ? Math.round(retPassed / retBase * 100) : 0;
+  const outPct = outBase > 0 ? Math.round(outChecked / outBase * 100) : 0;
+  const retPct = retBase > 0 ? Math.round(retChecked / retBase * 100) : 0;
   // เก็บทศนิยม 2 ตำแหน่งเหมือนกับ summaryPct ต่อวัน ไม่ปัดเป็นจำนวนเต็ม (ดูเหตุผลที่ alcDailyReportData)
   const summaryPct = Math.round((outPct + retPct) / 2 * 100) / 100;
 
