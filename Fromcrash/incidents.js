@@ -442,9 +442,22 @@ function incRenderDashboard() {
   const data = incFilteredForDashboard();
   // รวมจาก "บริษัทจ่ายจริง" + "เรียกเก็บจากพนักงาน" + "ประกันจ่าย" ของแต่ละเคสสดๆ ตรงนี้ (ไม่พึ่งค่า i.total ที่บันทึกไว้)
   // เพื่อให้เคสเก่าที่บันทึกไว้ก่อนเปลี่ยนสูตรคำนวณ ก็ยังรวมยอดถูกต้องในแดชบอร์ดโดยไม่ต้องแก้ไขทีละเคส
-  const totalCost = data.reduce((s, i) => s + (i.companyPaid || 0) + (i.chargedToEmployee || 0) + (i.insurancePaid || 0), 0);
+  // การ์ด "ค่าเสียหายสะสม" และ "จำนวนเหตุการณ์ทั้งหมด": เลือกเดือนแล้วนับสะสมตั้งแต่ ม.ค. ถึงเดือนนั้นของปีนั้น (ตัวกรองอื่นยังมีผล)
+  // ไม่เลือกเดือน = ตามข้อมูลที่กรองอยู่ทั้งหมดเหมือนเดิม ; การ์ดอื่น (พนักงาน/รถที่เกิดเหตุบ่อย) ยังนับเฉพาะเดือนที่เลือก
+  const monthSel = document.getElementById('inc-f-month')?.value || '';
+  let kpiData = data, rangeText = '';
+  if (/^d{4}-d{2}$/.test(monthSel)) {
+    const ms = incMonthSeries();
+    kpiData = incFilteredForDashboard(true).filter(i => {
+      const d = new Date(i.incidentDate);
+      return !isNaN(d) && d.getFullYear() === ms.year && d.getMonth() < ms.upto;
+    });
+    rangeText = ms.upto === 1 ? `(${MONTH_LABELS_TH[0]} ${ms.year})` : `(${MONTH_LABELS_TH[0]}–${MONTH_LABELS_TH[ms.upto - 1]} ${ms.year})`;
+  }
+  const totalCost = kpiData.reduce((s, i) => s + (i.companyPaid || 0) + (i.chargedToEmployee || 0) + (i.insurancePaid || 0), 0);
   document.getElementById('inc-kpi-total').textContent = formatMoney(totalCost);
-  document.getElementById('inc-kpi-count').textContent = data.length;
+  document.getElementById('inc-kpi-count').textContent = kpiData.length;
+  ['inc-kpi-total-range', 'inc-kpi-count-range'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = rangeText; });
 
   const empCount = {}; data.forEach(i => { if (i.employeeName) empCount[i.employeeName] = (empCount[i.employeeName]||0)+1; });
   const topEmp = Object.entries(empCount).sort((a,b)=>b[1]-a[1])[0];
