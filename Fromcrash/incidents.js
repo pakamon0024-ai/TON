@@ -394,8 +394,8 @@ function incRenderList() {
 }
 
 // ===== Dashboard =====
-function incFilteredForDashboard() {
-  const month = document.getElementById('inc-f-month')?.value;
+function incFilteredForDashboard(ignoreMonth) {
+  const month = ignoreMonth ? '' : document.getElementById('inc-f-month')?.value;
   const damageType = document.getElementById('inc-f-damagetype')?.value;
   const fault = document.getElementById('inc-f-fault')?.value;
   const yard = document.getElementById('inc-f-yard')?.value;
@@ -412,6 +412,21 @@ function incFilteredForDashboard() {
     if (pattern && i.incidentPattern !== pattern) return false;
     return true;
   });
+}
+
+// ข้อมูลกราฟ "สถิติรายเดือน": เลือกเดือนไหน แสดงตั้งแต่ ม.ค. ถึงเดือนนั้นของปีนั้น (เช่น เลือก ก.ย. = ม.ค.–ก.ย.)
+// ไม่เลือกเดือน = ทั้งปีปัจจุบัน ตัวกรองอื่น (ประเภท/ลานจอด/ฯลฯ) ยังมีผล แต่ตัวกรองเดือนไม่ตัดข้อมูลของเดือนก่อนหน้าทิ้ง
+function incMonthSeries() {
+  const month = document.getElementById('inc-f-month')?.value || '';
+  let year = new Date().getFullYear(), upto = 12;
+  if (/^\d{4}-\d{2}$/.test(month)) { year = Number(month.slice(0, 4)); upto = Number(month.slice(5, 7)); }
+  const counts = new Array(12).fill(0);
+  incFilteredForDashboard(true).forEach(i => {
+    if (!i.incidentDate) return;
+    const d = new Date(i.incidentDate);
+    if (!isNaN(d) && d.getFullYear() === year && d.getMonth() < upto) counts[d.getMonth()]++;
+  });
+  return { year, upto, counts: counts.slice(0, upto), labels: MONTH_LABELS_TH.slice(0, upto), lastYear: INC_LAST_YEAR_MONTHLY.slice(0, upto) };
 }
 
 function incClearDashFilters() {
@@ -440,20 +455,16 @@ function incRenderDashboard() {
   document.getElementById('inc-kpi-top-veh').textContent = topVeh ? `${topVeh[0]} (${topVeh[1]} ครั้ง)` : '-';
 
   // นับเฉพาะปีปัจจุบัน (แท่ง) ไม่ปนกับข้อมูลปีอื่นที่อาจมีอยู่ในระบบ — ปีที่แล้วใช้ตัวเลขอ้างอิงคงที่ (เส้น)
-  const curYear = new Date().getFullYear();
-  const monthCount = new Array(12).fill(0);
-  data.forEach(i => {
-    if (!i.incidentDate) return;
-    const d = new Date(i.incidentDate);
-    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
-  });
+  const ms = incMonthSeries();
+  const curYear = ms.year;
+  const monthCount = ms.counts;
   incDestroyChart('month');
   incCharts.month = new Chart(document.getElementById('inc-chart-month'), {
     data: {
-      labels: MONTH_LABELS_TH,
+      labels: ms.labels,
       datasets: [
         { type: 'bar', label: `จำนวนเหตุ ${curYear}`, data: monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5, order: 2 },
-        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
+        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: ms.lastYear, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
       ],
     },
     options: { responsive: true, maintainAspectRatio: false, layout: INC_CHART_LAYOUT, plugins: { legend: { display: true, position: 'top', labels: { color: '#3d4f6d', font: INC_CHART_FONT, boxWidth: 14 } }, datalabels: INC_DL_OPTS }, scales: { y: { beginAtZero: true, grace: '15%', grid: INC_CHART_GRID, ticks: { ...INC_CHART_TICK, precision: 0 } }, x: { grid: { display: false }, ticks: INC_CHART_TICK } } }
@@ -662,13 +673,8 @@ function incDestroyReportChart(id) {
 }
 
 function incBuildChartData(data) {
-  const curYear = new Date().getFullYear();
-  const monthCount = new Array(12).fill(0);
-  data.forEach(i => {
-    if (!i.incidentDate) return;
-    const d = new Date(i.incidentDate);
-    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
-  });
+  const ms = incMonthSeries();
+  const monthCount = ms.counts;
   const patternCount = {}; data.forEach(i => { if (i.incidentPattern) patternCount[i.incidentPattern] = (patternCount[i.incidentPattern]||0)+1; });
   const patternSorted = Object.entries(patternCount).sort((a,b)=>b[1]-a[1]);
   const buCount = {}; data.forEach(i => { if (i.businessUnit) buCount[i.businessUnit] = (buCount[i.businessUnit]||0)+1; });
@@ -677,7 +683,7 @@ function incBuildChartData(data) {
   const yardSorted = Object.entries(yardCount).sort((a,b)=>b[1]-a[1]);
   const areaCount = {}; data.forEach(i => { const a = incNormalizeArea(i.area); if (a) areaCount[a] = (areaCount[a]||0)+1; });
   const areaSorted = Object.entries(areaCount).sort((a,b)=>b[1]-a[1]);
-  return { monthCount, patternSorted, buSorted, yardSorted, areaSorted };
+  return { monthCount, monthSeries: ms, patternSorted, buSorted, yardSorted, areaSorted };
 }
 
 function incRenderReportCharts(chartData) {
@@ -689,15 +695,16 @@ function incRenderReportCharts(chartData) {
     responsive: true, maintainAspectRatio: false, animation: false,
     plugins: { legend: { display: false }, datalabels: rptDL }, ...extra
   });
-  const curYear = new Date().getFullYear();
+  const ms = chartData.monthSeries;
+  const curYear = ms.year;
 
   incDestroyReportChart('month');
   incReportCharts.month = new Chart(document.getElementById('rpt-chart-month'), {
     data: {
-      labels: MONTH_LABELS_TH,
+      labels: ms.labels,
       datasets: [
         { type: 'bar', label: `จำนวนเหตุ ${curYear}`, data: chartData.monthCount, backgroundColor: INC_CHART_COLORS.month.bg, borderColor: INC_CHART_COLORS.month.border, borderWidth: 0, borderRadius: 5, order: 2 },
-        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: INC_LAST_YEAR_MONTHLY, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
+        { type: 'line', label: `จำนวนเหตุ ${curYear - 1}`, data: ms.lastYear, borderColor: '#ff9f1c', backgroundColor: '#ff9f1c', borderWidth: 2, borderDash: [6, 4], pointBackgroundColor: '#ff9f1c', pointRadius: 3, tension: 0.3, fill: false, order: 1, datalabels: { display: false } },
       ],
     },
     options: rptOpts({
