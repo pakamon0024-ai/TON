@@ -446,7 +446,7 @@ function incRenderDashboard() {
   // ไม่เลือกเดือน = ตามข้อมูลที่กรองอยู่ทั้งหมดเหมือนเดิม ; การ์ดอื่น (พนักงาน/รถที่เกิดเหตุบ่อย) ยังนับเฉพาะเดือนที่เลือก
   const monthSel = document.getElementById('inc-f-month')?.value || '';
   let kpiData = data, rangeText = '';
-  if (/^d{4}-d{2}$/.test(monthSel)) {
+  if (/^\d{4}-\d{2}$/.test(monthSel)) {
     const ms = incMonthSeries();
     kpiData = incFilteredForDashboard(true).filter(i => {
       const d = new Date(i.incidentDate);
