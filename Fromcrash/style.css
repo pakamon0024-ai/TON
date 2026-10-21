@@ -1641,3 +1641,48 @@ body {
 .alc-summary-table thead th.alc-sum-no, .alc-summary-table thead th.alc-sum-name-h { position: sticky; z-index: 4; background: var(--bg-secondary); }
 .alc-summary-table thead th.alc-sum-no { left: 0; }
 .alc-summary-table thead th.alc-sum-name-h { left: 40px; min-width: 130px; box-shadow: 2px 0 0 var(--border); }
+
+/* ===== สถานะการซ่อมทรัพย์สิน ===== */
+.rs-kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 14px 0; }
+.rs-kpi { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 16px; }
+.rs-kpi-label { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 4px; }
+.rs-kpi-val { font-size: 1.7rem; font-weight: 800; font-family: 'Kanit', 'Sarabun', sans-serif; }
+
+.rs-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 20px 14px; margin-bottom: 14px; box-shadow: 0 2px 10px rgba(20, 30, 60, 0.05); }
+.rs-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.rs-card-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 1rem; }
+.rs-card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.rs-no { color: var(--text-muted); font-weight: 700; }
+.rs-type { padding: 2px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.rs-type-ins { background: rgba(59, 130, 246, 0.14); color: #2563eb; }
+.rs-type-own { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+.rs-status { padding: 2px 12px; border-radius: 999px; font-size: 0.78rem; font-weight: 700; }
+.rs-st-pending { background: rgba(127, 127, 127, 0.16); color: var(--text-secondary); }
+.rs-st-going { background: rgba(245, 158, 11, 0.16); color: #b45309; }
+.rs-st-done { background: rgba(34, 197, 94, 0.16); color: #15803d; }
+.rs-next-btn { background: rgba(108, 99, 255, 0.12); color: #5b50e6; border: 1px solid rgba(108, 99, 255, 0.35); }
+.rs-card-meta { font-size: 0.8rem; color: var(--text-muted); margin: 6px 0 14px; line-height: 1.6; }
+.rs-card-detail { font-size: 0.85rem; margin-top: 10px; line-height: 1.6; }
+
+/* ไทม์ไลน์: วงกลมเรียงเป็นเส้น แต่ละขั้นมีชื่อและวันที่ใต้วงกลม เส้นเชื่อมเป็นสีเขียวเมื่อขั้นนั้นเสร็จแล้ว */
+.rs-steps { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; }
+.rs-step { position: relative; text-align: center; padding: 0 6px; }
+.rs-step::before { content: ''; position: absolute; top: 15px; left: -50%; right: 50%; height: 3px; background: var(--border); z-index: 0; }
+.rs-step:first-child::before { display: none; }
+.rs-step-done::before { background: #22c55e; }
+.rs-dot {
+  position: relative; z-index: 1; width: 32px; height: 32px; margin: 0 auto 6px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.9rem;
+  background: var(--bg-card); border: 3px solid var(--border); color: var(--text-muted);
+}
+.rs-step-done .rs-dot { background: #22c55e; border-color: #22c55e; color: #fff; }
+.rs-step-next .rs-dot { border-color: #f59e0b; color: #b45309; }
+.rs-step-label { font-size: 0.82rem; font-weight: 600; line-height: 1.35; }
+.rs-step-todo .rs-step-label { color: var(--text-muted); font-weight: 500; }
+.rs-step-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+@media (max-width: 640px) {
+  .rs-steps { grid-auto-flow: row; gap: 10px; }
+  .rs-step { display: flex; align-items: center; gap: 10px; text-align: left; padding: 0; }
+  .rs-step::before { display: none; }
+  .rs-dot { margin: 0; flex: none; }
+}

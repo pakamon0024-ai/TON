@@ -137,6 +137,10 @@
           <span class="nav-icon">📝</span>
           <span>MEMO แจ้งผู้บริหาร</span>
         </a>
+        <a href="#" class="nav-item" data-page="repairstatus" onclick="showPage('repairstatus')">
+          <span class="nav-icon">🛠️</span>
+          <span>สถานะการซ่อมทรัพย์สิน</span>
+        </a>
         <a href="#" class="nav-item" data-page="tickets" onclick="showPage('tickets')">
           <span class="nav-icon">🎫</span>
           <span>บันทึกใบสั่ง</span>
@@ -2684,6 +2688,143 @@
         </div>
       </div>
 
+      <!-- REPAIR STATUS PAGE (สถานะการซ่อมทรัพย์สิน: ประกันซ่อม / ลูกค้าซ่อมเอง + ไทม์ไลน์) -->
+      <div class="page" id="page-repairstatus">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🛠️</div>
+            <div>
+              <h2>สถานะการซ่อมทรัพย์สิน</h2>
+              <p>ติดตามไทม์ไลน์การจัดซ่อม แยก "ประกันซ่อม" และ "ลูกค้าซ่อมเอง"</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="rs-tab-dashboard" onclick="rsSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="rs-tab-list" onclick="rsSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="rs-tab-add" onclick="rsSwitchTab('add')">➕ เพิ่มรายการ</button>
+          </div>
+
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="rs-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group"><label>ปี (พ.ศ.)</label><select id="rs-dash-year" onchange="rsRenderDashboard()"></select></div>
+              <div class="filter-group"><label>รูปแบบ</label>
+                <select id="rs-dash-type" onchange="rsRenderDashboard()">
+                  <option value="">ทั้งหมด</option><option value="ประกันซ่อม">ประกันซ่อม</option><option value="ลูกค้าซ่อมเอง">ลูกค้าซ่อมเอง</option>
+                </select></div>
+              <div class="filter-group"><label>ลานจอด</label><select id="rs-dash-yard" onchange="rsRenderDashboard()"></select></div>
+            </div>
+            <div class="rs-kpi-row">
+              <div class="rs-kpi"><div class="rs-kpi-label">รายการทั้งหมด</div><div class="rs-kpi-val" id="rs-kpi-total">0</div></div>
+              <div class="rs-kpi"><div class="rs-kpi-label">ประกันซ่อม</div><div class="rs-kpi-val" id="rs-kpi-ins" style="color:#3b82f6;">0</div></div>
+              <div class="rs-kpi"><div class="rs-kpi-label">ลูกค้าซ่อมเอง</div><div class="rs-kpi-val" id="rs-kpi-own" style="color:#f59e0b;">0</div></div>
+              <div class="rs-kpi"><div class="rs-kpi-label">กำลังดำเนินการ</div><div class="rs-kpi-val" id="rs-kpi-open" style="color:#ef4444;">0</div></div>
+              <div class="rs-kpi"><div class="rs-kpi-label">ซ่อมเสร็จแล้ว</div><div class="rs-kpi-val" id="rs-kpi-done" style="color:#22c55e;">0</div></div>
+              <div class="rs-kpi"><div class="rs-kpi-label">เวลาเฉลี่ย แจ้ง → เสร็จ</div><div class="rs-kpi-val" id="rs-kpi-avg">-</div></div>
+            </div>
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนรายการรายเดือน</span></div>
+                <div class="chart-box"><canvas id="rs-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>สถานะปัจจุบัน (ขั้นตอนล่าสุด)</span></div>
+                <div class="chart-box"><canvas id="rs-chart-status"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>ตามลานจอด</span></div>
+                <div class="chart-box"><canvas id="rs-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>ตามหน่วยงาน</span></div>
+                <div class="chart-box"><canvas id="rs-chart-bu"></canvas></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage" id="rs-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group"><label>รูปแบบ</label>
+                <select id="rs-f-type" onchange="rsRenderList()">
+                  <option value="">ทั้งหมด</option><option value="ประกันซ่อม">ประกันซ่อม</option><option value="ลูกค้าซ่อมเอง">ลูกค้าซ่อมเอง</option>
+                </select></div>
+              <div class="filter-group"><label>สถานะ</label>
+                <select id="rs-f-status" onchange="rsRenderList()">
+                  <option value="">ทั้งหมด</option><option value="open">กำลังดำเนินการ</option><option value="done">ซ่อมเสร็จแล้ว</option>
+                </select></div>
+              <div class="filter-group"><label>ลานจอด</label><select id="rs-f-yard" onchange="rsRenderList()"></select></div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="rs-f-search"
+                  placeholder="ทรัพย์สิน / ทะเบียน / ลูกค้า / เลขเคลม..." oninput="debouncedRender('rsRenderList')" /></div>
+              <button class="btn-secondary" onclick="rsClearFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="rsExportExcel()">📥 Export</button>
+            </div>
+            <div class="ctxt" id="rs-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+            <div id="rs-list-body"></div>
+            <div id="rs-list-pager"></div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="rs-subpage-add">
+            <div class="edit-banner" id="rs-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการ <strong id="rs-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="rsCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลการซ่อม</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>วันที่แจ้ง <span class="req">*</span></label><input type="date" id="rs-date" /></div>
+                <div class="form-group"><label>รูปแบบการซ่อม <span class="req">*</span></label>
+                  <select id="rs-type" onchange="rsOnTypeChange()">
+                    <option value="">-- เลือก --</option>
+                    <option value="ประกันซ่อม">🛡️ ประกันซ่อม</option>
+                    <option value="ลูกค้าซ่อมเอง">👤 ลูกค้าซ่อมเอง</option>
+                  </select></div>
+                <div class="form-group"><label>ทรัพย์สินที่ซ่อม <span class="req">*</span></label><input type="text" id="rs-asset" placeholder="เช่น หัวลาก, ตู้คอนเทนเนอร์, ประตูโกดัง" /></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียนรถ (ถ้ามี)</label>
+                  <input type="text" id="rs-plate" list="rs-plate-list" oninput="rsLookupVehicle()" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="rs-plate-list"></datalist></div>
+                <div class="form-group"><label>ลูกค้า</label>
+                  <input type="text" id="rs-customer" list="rs-customer-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="rs-customer-list"></datalist></div>
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="rs-yard" list="rs-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="rs-yard-list"></datalist></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="rs-bu" list="rs-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="rs-bu-list"></datalist></div>
+                <div class="form-group rs-ins-only"><label>บริษัทประกัน</label>
+                  <input type="text" id="rs-insurer" list="rs-insurer-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="rs-insurer-list"></datalist></div>
+                <div class="form-group rs-ins-only"><label>เลขที่เคลม</label><input type="text" id="rs-claimno" /></div>
+                <div class="form-group rs-own-only"><label>ราคาที่เสนอ (บาท)</label><input type="number" id="rs-quote" min="0" step="0.01" /></div>
+                <div class="form-group"><label>ค่าซ่อมจริง (บาท)</label><input type="number" id="rs-cost" min="0" step="0.01" /></div>
+              </div>
+
+              <div class="fieldset-title" style="margin-top:14px;">ไทม์ไลน์การซ่อม <span style="font-weight:400;opacity:.65;font-size:0.8rem;">(ใส่วันที่ของขั้นที่ทำแล้ว ขั้นที่ยังไม่ถึงปล่อยว่าง)</span></div>
+              <div class="form-row-3" id="rs-step-inputs"></div>
+
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดความเสียหาย</label>
+                  <textarea class="fta" id="rs-detail" rows="3" placeholder="อธิบายความเสียหาย / สิ่งที่ต้องซ่อม"></textarea></div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label><input type="text" id="rs-note" /></div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="rsClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="rsSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- TICKETS PAGE (บันทึกใบสั่ง) -->
       <div class="page" id="page-tickets">
         <div class="form-section">
@@ -4868,6 +5009,7 @@
   <script src="issues.js"></script>
   <script src="breakdown.js"></script>
   <script src="safetystock.js"></script>
+  <script src="repairstatus.js"></script>
   <script src="memo.js"></script>
   <script src="tickets.js"></script>
   <script src="probation.js"></script>
