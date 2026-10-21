@@ -18,7 +18,7 @@ function grSave() { safeLocalStorageSet('finflow_gpscctv_repairs', JSON.stringif
 
 // ===== Sub-tabs (4 แท็บ ใช้ตัวสลับร่วมกัน) =====
 function gcSwitchTab(tab) {
-  ['list', 'add', 'replist', 'repadd', 'camdb', 'gpsdb', 'bzdb'].forEach(t => {
+  ['list', 'add', 'replist', 'repadd', 'ready', 'camdb', 'gpsdb', 'bzdb'].forEach(t => {
     document.getElementById(`gc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`gc-subpage-${t}`).classList.toggle('active', t === tab);
   });
@@ -26,6 +26,7 @@ function gcSwitchTab(tab) {
   if (tab === 'add' && !gcEditingId) gcClearForm();
   if (tab === 'replist') grRenderList();
   if (tab === 'repadd' && !grEditingId) grClearForm();
+  if (tab === 'ready' && typeof gcrRender === 'function') gcrRender();
   if (tab === 'camdb') ddbRenderList('cam');
   if (tab === 'gpsdb') ddbRenderList('gps');
   if (tab === 'bzdb') ddbRenderList('bz');

@@ -3609,6 +3609,7 @@
             <button class="subtab" id="gc-tab-add" onclick="gcSwitchTab('add')">➕ เพิ่มบันทึกติดตั้ง/ถอด</button>
             <button class="subtab" id="gc-tab-replist" onclick="gcSwitchTab('replist')">🔧 รายการแจ้งซ่อม</button>
             <button class="subtab" id="gc-tab-repadd" onclick="gcSwitchTab('repadd')">➕ เพิ่มแจ้งซ่อม</button>
+            <button class="subtab" id="gc-tab-ready" onclick="gcSwitchTab('ready')">✅ ความพร้อม GPS &amp; CCTV</button>
             <button class="subtab" id="gc-tab-camdb" onclick="gcSwitchTab('camdb')">🎥 ฐานข้อมูลกล้อง</button>
             <button class="subtab" id="gc-tab-gpsdb" onclick="gcSwitchTab('gpsdb')">📡 ฐานข้อมูล GPS</button>
             <button class="subtab" id="gc-tab-bzdb" onclick="gcSwitchTab('bzdb')">🍃 ฐานข้อมูลเครื่องเป่าแอลกอฮอล์</button>
@@ -3826,6 +3827,23 @@
           </div>
 
           <!-- DEVICE DATABASE: กล้อง / GPS / เครื่องเป่าแอลกอฮอล์ (โครงสร้างเดียวกันทั้ง 3 หัวข้อ) -->
+          <!-- READINESS SUBPAGE: ความพร้อมใช้งาน GPS & CCTV รายวัน -->
+          <div class="subpage" id="gc-subpage-ready">
+            <div class="filter-bar">
+              <div class="filter-group"><label>เดือน</label><input type="month" id="gcr-month" onchange="gcrRender()" /></div>
+              <button class="btn-secondary" onclick="gcrExportExcel()">📥 Export</button>
+            </div>
+            <p class="readonly-hint">% พร้อม = (ทั้งหมด − เสีย) ÷ ทั้งหมด · ทั้งหมด = จำนวนรถในฐานข้อมูล GPS / กล้อง ณ วันนั้น · เสีย = รถที่มีรายการแจ้งซ่อมยังไม่เสร็จในวันนั้น
+              (นับจากวันที่แจ้ง ถึงวันที่ซ่อมเสร็จ) · วันที่ไม่มีรายการเสีย = 100%</p>
+            <div id="gcr-warn" style="display:none;margin:8px 0;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,0.14);color:#b45309;font-size:0.88rem;"></div>
+            <div id="gcr-cards" class="gcr-cards"></div>
+            <div class="chart-card" style="margin:14px 0;">
+              <div class="chart-title"><span>% ความพร้อมรายวัน</span></div>
+              <div class="chart-box"><canvas id="gcr-chart"></canvas></div>
+            </div>
+            <div class="recent-table-wrap tk-table-wrap" id="gcr-table-wrap"></div>
+          </div>
+
           <div class="subpage" id="gc-subpage-camdb">
             <div class="form-card">
               <div class="fieldset-title">เพิ่ม/แก้ไข ฐานข้อมูลกล้อง</div>
@@ -5016,6 +5034,7 @@
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
   <script src="gpscctv.js"></script>
+  <script src="gcready.js"></script>
   <script src="gpsviolation.js"></script>
   <script src="fuelrate.js"></script>
   <script src="backup.js"></script>
