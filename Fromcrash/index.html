@@ -2444,6 +2444,7 @@
                   <option value="10">ตุลาคม</option><option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
                 </select>
               </div>
+              <button class="btn-secondary" onclick="ssSaveDashboardImage()">📸 บันทึกภาพรายงาน</button>
             </div>
             <div id="ss-dash-warn" style="display:none;margin:10px 0;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,0.14);color:#b45309;font-size:0.88rem;"></div>
             <div class="ss-kpi-row">
@@ -4944,6 +4945,43 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบจัดการ GPS/CCTV · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · GPS/CCTV REPAIR REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container แดชบอร์ด Stock Safety (off-screen, captured by html2canvas) -->
+  <div id="ss-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title" id="ss-rpt-title">รายงาน Stock Safety</div>
+        <div class="rpt-date-text" id="ss-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">คงเหลือปัจจุบัน (ทั้งหมวด)</div>
+        <div class="rpt-count-val" id="ss-rpt-kpi-bal" style="font-size:44px;">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <div class="ssr-kpis">
+        <div class="ssr-kpi"><div class="ssr-kpi-label">รับเข้า · <span id="ss-rpt-kpi-period"></span></div><div class="ssr-kpi-val" id="ss-rpt-kpi-in" style="color:#16a34a;">0</div></div>
+        <div class="ssr-kpi"><div class="ssr-kpi-label">เบิกจ่าย · ช่วงเดียวกัน</div><div class="ssr-kpi-val" id="ss-rpt-kpi-out" style="color:#ea580c;">0</div></div>
+      </div>
+      <div class="ssr-card">
+        <div class="ssr-title"><span>สต็อกคงเหลือแยกตามรายการ (ปัจจุบัน)</span><span id="ss-rpt-chart-stock-total"></span></div>
+        <div class="ssr-box"><canvas id="ss-rpt-chart-stock"></canvas></div>
+      </div>
+      <div class="ssr-card">
+        <div class="ssr-title"><span>รับเข้า / เบิกจ่าย รายเดือน</span></div>
+        <div class="ssr-box"><canvas id="ss-rpt-chart-month"></canvas></div>
+      </div>
+      <div class="ssr-row">
+        <div class="ssr-card"><div class="ssr-title"><span>เบิกจ่ายตามหน่วยงาน</span></div><div class="ssr-box"><canvas id="ss-rpt-chart-unit"></canvas></div></div>
+        <div class="ssr-card"><div class="ssr-title"><span>เบิกจ่ายตามลานจอด</span></div><div class="ssr-box"><canvas id="ss-rpt-chart-yard"></canvas></div></div>
+      </div>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบเบิกจ่าย Stock Safety · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · STOCK SAFETY REPORT</div>
     </div>
   </div>
 

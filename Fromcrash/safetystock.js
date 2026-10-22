@@ -852,7 +852,8 @@ function ssDashFillItems() {
 
 function ssDashOnGroupChange() { ssDashFillItems(); ssRenderDashboard(); }
 
-function ssDashBar(canvasId, key, labels, datasets, rotation, showZero) {
+function ssDashBar(canvasId, key, labels, datasets, rotation, showZero, fs) {
+  fs = fs || 1; // ตัวคูณขนาดตัวอักษร (ภาพรายงานใช้ >1 ให้อ่านออกในไลน์)
   ssDestroyChart(key);
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
@@ -860,24 +861,26 @@ function ssDashBar(canvasId, key, labels, datasets, rotation, showZero) {
     type: 'bar',
     data: { labels, datasets },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false, animation: fs > 1 ? false : undefined,
       plugins: {
-        legend: { display: datasets.length > 1, labels: { font: { family: "'Kanit','Sarabun',sans-serif", size: 13 } } },
+        legend: { display: datasets.length > 1, labels: { font: { family: "'Kanit','Sarabun',sans-serif", size: 13 * fs } } },
         datalabels: {
           display: true, anchor: 'end', align: 'end', color: '#1a2540',
-          font: { family: "'Kanit','Sarabun',sans-serif", size: 12, weight: '700' },
+          font: { family: "'Kanit','Sarabun',sans-serif", size: 12 * fs, weight: '700' },
           formatter: v => (v > 0 || (showZero && v === 0)) ? v.toLocaleString() : '',
         },
       },
       scales: {
-        y: { beginAtZero: true, grace: '15%', grid: { color: 'rgba(10,31,56,0.07)' }, ticks: { color: '#3d4f6d', precision: 0 } },
-        x: { grid: { display: false }, ticks: { color: '#3d4f6d', autoSkip: false, minRotation: rotation || 0, maxRotation: rotation || 0 } },
+        y: { beginAtZero: true, grace: '15%', grid: { color: 'rgba(10,31,56,0.07)' }, ticks: { color: '#3d4f6d', precision: 0, font: { size: 12 * fs } } },
+        x: { grid: { display: false }, ticks: { color: '#3d4f6d', autoSkip: false, minRotation: rotation || 0, maxRotation: rotation || 0, font: { size: 12 * fs } } },
       },
     },
   });
 }
 
-function ssRenderDashboard() {
+// pfx = คำนำหน้า id ของกราฟ/การ์ด ('ss' = หน้าจอ, 'ss-rpt' = ภาพรายงาน) ; fs = ตัวคูณขนาดตัวอักษรของกราฟ
+function ssRenderDashboard(pfx, fs) {
+  pfx = pfx || 'ss';
   const year = document.getElementById('ss-dash-year')?.value;
   const group = document.getElementById('ss-dash-group')?.value;
   if (!year || !group) return;
@@ -893,10 +896,10 @@ function ssRenderDashboard() {
   const stockVals = stockItems.map(it => ssBalance(it.name));
   const stockColor = v => v <= 0 ? 'rgba(239,68,68,0.88)' : v <= 10 ? 'rgba(245,158,11,0.9)' : 'rgba(34,197,94,0.85)';
   const stockUnit = stockItems[0]?.unit || '';
-  ssDashBar('ss-chart-stock', 'stock', stockItems.map(it => ssSubOf(it)), [
+  ssDashBar(`${pfx}-chart-stock`, `${pfx}:stock`, stockItems.map(it => ssSubOf(it)), [
     { label: `คงเหลือ (${stockUnit})`, data: stockVals, backgroundColor: stockVals.map(stockColor), borderRadius: 5 },
-  ], stockItems.length > 4 ? 30 : 0, true);
-  const stockTotalEl = document.getElementById('ss-chart-stock-total');
+  ], stockItems.length > 4 ? 30 : 0, true, fs);
+  const stockTotalEl = document.getElementById(`${pfx}-chart-stock-total`);
   if (stockTotalEl) stockTotalEl.textContent = `รวม ${stockVals.reduce((s, v) => s + v, 0).toLocaleString()} ${stockUnit}`;
 
   // กราฟรายเดือน: ทั้งปีที่เลือก รับเข้า vs เบิกจ่าย
@@ -907,10 +910,10 @@ function ssRenderDashboard() {
     if (mi < 0 || mi > 11) return;
     (r.type === SS_TYPE_IN ? monthIn : monthOut)[mi] += Number(r.qty) || 0;
   });
-  ssDashBar('ss-chart-month', 'month', SS_MONTHS_TH, [
+  ssDashBar(`${pfx}-chart-month`, `${pfx}:month`, SS_MONTHS_TH, [
     { label: `รับเข้า (${unit})`, data: monthIn, backgroundColor: SS_DASH_COLORS.in.bg, borderRadius: 5 },
     { label: `เบิกจ่าย (${unit})`, data: monthOut, backgroundColor: SS_DASH_COLORS.out.bg, borderRadius: 5 },
-  ]);
+  ], 0, false, fs);
 
   // ช่วงที่ใช้กับ KPI / หน่วยงาน / ลานจอด: ทั้งปี หรือเดือนที่เลือก
   const prefix = month ? `${year}-${month}` : `${year}-`;
@@ -923,14 +926,14 @@ function ssRenderDashboard() {
   // รายการที่ปีอยู่นอก 2000-2100 (เช่น ปี พ.ศ. ที่บันทึกลงช่อง ค.ศ.) ไม่ถูกนับในกราฟ แต่ยังนับในยอดคงเหลือ — เตือนให้แก้
   const badYear = safetyStock.filter(r => !/^(20\d\d|2100)/.test(r.date || '')).length;
   const warnEl = document.getElementById('ss-dash-warn');
-  if (warnEl) {
+  if (warnEl && pfx === 'ss') {
     warnEl.style.display = badYear ? '' : 'none';
     warnEl.textContent = badYear ? `⚠️ มี ${badYear} รายการที่ปีของวันที่ผิดปกติ (เช่นปี พ.ศ.) จึงไม่แสดงในกราฟ — ไปที่แท็บ "รายการทั้งหมด" กดปุ่ม 📅 แก้ปี พ.ศ.` : '';
   }
-  setText('ss-kpi-in', `${totalIn.toLocaleString()} ${unit}`);
-  setText('ss-kpi-out', `${totalOut.toLocaleString()} ${unit}`);
-  setText('ss-kpi-bal', `${[...names].reduce((s, n) => s + ssBalance(n), 0).toLocaleString()} ${unit}`);
-  setText('ss-kpi-period', month ? `${SS_MONTHS_TH[Number(month) - 1]} ${Number(year) + 543}` : `ทั้งปี ${Number(year) + 543}`);
+  setText(`${pfx}-kpi-in`, `${totalIn.toLocaleString()} ${unit}`);
+  setText(`${pfx}-kpi-out`, `${totalOut.toLocaleString()} ${unit}`);
+  setText(`${pfx}-kpi-bal`, `${[...names].reduce((s, n) => s + ssBalance(n), 0).toLocaleString()} ${unit}`);
+  setText(`${pfx}-kpi-period`, month ? `${SS_MONTHS_TH[Number(month) - 1]} ${Number(year) + 543}` : `ทั้งปี ${Number(year) + 543}`);
 
   // เบิกจ่ายตามหน่วยงาน / ลานจอด (เรียงมากไปน้อย; ไม่ได้ระบุ = "ไม่ระบุ")
   const countBy = field => {
@@ -939,9 +942,9 @@ function ssRenderDashboard() {
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
   };
   const bu = countBy('businessUnit');
-  ssDashBar('ss-chart-unit', 'unit', bu.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: bu.map(e => e[1]), backgroundColor: SS_DASH_COLORS.unit.bg, borderRadius: 5 }], 30);
+  ssDashBar(`${pfx}-chart-unit`, `${pfx}:unit`, bu.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: bu.map(e => e[1]), backgroundColor: SS_DASH_COLORS.unit.bg, borderRadius: 5 }], 30, false, fs);
   const yd = countBy('yard');
-  ssDashBar('ss-chart-yard', 'yard', yd.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: yd.map(e => e[1]), backgroundColor: SS_DASH_COLORS.yard.bg, borderRadius: 5 }], 30);
+  ssDashBar(`${pfx}-chart-yard`, `${pfx}:yard`, yd.map(e => e[0]), [{ label: `เบิกจ่าย (${unit})`, data: yd.map(e => e[1]), backgroundColor: SS_DASH_COLORS.yard.bg, borderRadius: 5 }], 30, false, fs);
 }
 
 // ===== ปีของวันที่: กันพิมพ์ปี พ.ศ. ลงช่อง ค.ศ. =====
@@ -973,4 +976,47 @@ async function ssFixBuddhistYears() {
   });
   if (changed.length) { ssSave(); await ssWriteFB(changed); ssRenderAll(); }
   showToast(`แปลงปี ${changed.length} รายการแล้ว` + (odd.length ? ` · ยังมี ${odd.length} รายการที่ปีผิดปกติ (เช่น ${odd[0].date}) กดแก้ไขทีละรายการ` : ''), odd.length ? 'warning' : 'success');
+}
+
+// บันทึกภาพรายงานแดชบอร์ด (PNG ส่งไลน์) — ใช้ #ss-report-container ที่วางไว้นอกจอถาวร
+// วาดกราฟใหม่ในกล่องนี้ด้วยตัวอักษรใหญ่ (ไม่แคปกราฟบนหน้าจอ เพราะเล็กและความละเอียดต่ำ) ใช้ตัวกรองเดียวกับที่เลือกอยู่บนแดชบอร์ด
+async function ssSaveDashboardImage() {
+  const rpt = document.getElementById('ss-report-container');
+  const year = document.getElementById('ss-dash-year')?.value;
+  const group = document.getElementById('ss-dash-group')?.value;
+  if (!rpt || !year || !group) { showToast('เลือกปีและหมวดในแดชบอร์ดก่อน', 'warning'); return; }
+  const itemName = document.getElementById('ss-dash-item')?.value || '';
+  const month = document.getElementById('ss-dash-month')?.value || '';
+  const it = ssItems.find(i => i.name === itemName);
+  const now = new Date();
+  document.getElementById('ss-rpt-title').textContent = 'รายงาน Stock Safety · ' + group + (it ? ' · ' + ssSubOf(it) : '');
+  document.getElementById('ss-rpt-date-text').textContent =
+    (month ? SS_MONTHS_TH[Number(month) - 1] + ' ' : 'ทั้งปี ') + (Number(year) + 543) +
+    ' · จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 60));
+  ssRenderDashboard('ss-rpt', 1.7);
+  await new Promise(r => setTimeout(r, 200));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = 'รายงานStockSafety_' + group + (month ? '_' + year + '-' + month : '_' + year) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-4000px';
+  ['stock', 'month', 'unit', 'yard'].forEach(k => ssDestroyChart('ss-rpt:' + k));
 }

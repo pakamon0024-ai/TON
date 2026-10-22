@@ -1701,3 +1701,25 @@ body {
 .gcr-table td.gcr-bad { color: #b91c1c; background: rgba(239, 68, 68, 0.14); }
 .gcr-table tr.gcr-future td { color: var(--text-muted); background: var(--bg-hover); }
 .gcr-table tr.gcr-avg td { border-top: 2px solid var(--text-primary); font-weight: 700; }
+
+/* ===== ภาพรายงานแดชบอร์ด Stock Safety (บันทึกส่งไลน์) — พื้นขาว/ตัวอักษรเข้มกำหนดเอง ไม่พึ่งตัวแปรสีของธีม ===== */
+#ss-report-container {
+  position: fixed; left: -4000px; top: 0; z-index: 9998; width: 1400px; height: auto; overflow: hidden;
+  background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif; color: #1a2540;
+}
+#ss-report-container .rpt-header { padding: 30px 44px; }
+#ss-report-container .rpt-title { font-size: 44px; }
+#ss-report-container .rpt-date-text { font-size: 24px; }
+#ss-report-container .rpt-count-label { font-size: 20px; }
+#ss-report-container .rpt-body { padding: 24px 32px 0; }
+#ss-report-container .rpt-footer-note { font-size: 17px; }
+#ss-report-container .rpt-footer-brand { font-size: 18px; }
+.ssr-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px; }
+.ssr-kpi { background: #fff; border-radius: 16px; padding: 18px 26px; border: 1px solid #dde3ee; }
+.ssr-kpi-label { font-size: 20px; color: #5a6a85; }
+.ssr-kpi-val { font-size: 42px; font-weight: 800; line-height: 1.15; }
+.ssr-card { background: #fff; border-radius: 16px; padding: 18px 24px 22px; border: 1px solid #dde3ee; margin-bottom: 18px; }
+.ssr-row { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.ssr-row .ssr-card { margin-bottom: 0; }
+.ssr-title { display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; color: #1a2540; margin-bottom: 10px; }
+.ssr-box { position: relative; height: 440px; }
