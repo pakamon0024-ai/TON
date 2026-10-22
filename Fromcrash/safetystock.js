@@ -116,29 +116,65 @@ function ssRenderAll() {
 }
 
 // ===== Summary =====
+// ตัวกรองสถานะของหน้ายอดคงเหลือ: '' = ทั้งหมด, 'low' = ใกล้หมด, 'out' = หมดสต็อก (ใช้ไล่ดูของที่ต้องสั่งเพิ่ม)
+let ssSummaryFilter = '';
+function ssSetSummaryFilter(f) { ssSummaryFilter = (ssSummaryFilter === f ? '' : f); ssRenderSummary(); }
+
+// สถานะตามยอดคงเหลือ: หมด (<=0) / ใกล้หมด (<=10) / พร้อมใช้
+function ssStateOf(bal) { return bal <= 0 ? 'out' : bal <= 10 ? 'low' : 'ok'; }
+const SS_STATE_LABEL = { out: 'หมดสต็อก', low: 'ใกล้หมด', ok: 'พร้อมใช้' };
+const SS_GROUP_ICON = { 'สติ๊กเกอร์': '🏷️', 'สายรัดชิ่ง': '🔗', 'ไม้หนุนล้อ': '🛞', 'ถังดับเพลิง': '🧯', 'กรวย': '🚧', 'หมวก Safety': '⛑️', 'แถบสะท้อนแสง': '🦺' };
+
 function ssRenderSummary() {
   const wrap = document.getElementById('ss-balance-cards');
   if (!wrap) return;
-  wrap.innerHTML = ssGroupsInUse().map(g => {
-    const cards = ssItemsOfGroup(g).map(it => {
-      const bal = ssBalance(it.name);
-      // สถานะตามยอดคงเหลือ: หมด (<=0) / ใกล้หมด (<=10) / พร้อมใช้ — สีขอบบนและป้ายสถานะเปลี่ยนตาม
-      const state = bal <= 0 ? 'out' : bal <= 10 ? 'low' : 'ok';
-      const label = { out: 'หมดสต็อก', low: 'ใกล้หมด', ok: 'พร้อมใช้' }[state];
-      return `<div class="ss-card ss-${state}" title="กดเพื่อดูประวัติรับเข้า/เบิกจ่ายของรายการนี้" onclick="ssShowItemHistory('${it.id}')">
-        <div class="ss-card-name">${escapeHtml(ssSubOf(it))}</div>
-        <div class="ss-card-qty"><span class="ss-card-num">${bal.toLocaleString()}</span><span class="ss-card-unit">${escapeHtml(it.unit)}</span></div>
-        <div class="ss-card-status">${label}</div>
-      </div>`;
-    }).join('');
-    const addBtn = g === SS_OTHER_GROUP ? '' :
-      `<button class="btn-secondary ss-add-btn" onclick="ssAddItem('${escapeHtml(g)}')">➕ เพิ่มรายการย่อย</button>`;
-    const icon = { 'สติ๊กเกอร์': '🏷️', 'สายรัดชิ่ง': '🔗', 'ไม้หนุนล้อ': '🛞', 'ถังดับเพลิง': '🧯', 'กรวย': '🚧', 'หมวก Safety': '⛑️', 'แถบสะท้อนแสง': '🦺' }[g] || '📦';
-    return `<div class="ss-group">
-      <div class="ss-group-head"><span class="ss-group-title">${icon} ${escapeHtml(g)}</span>${addBtn}</div>
-      <div class="ss-card-grid">${cards || '<div class="empty-state">ยังไม่มีรายการย่อย</div>'}</div>
-    </div>`;
+
+  // นับสถานะทั้งระบบ ไว้แสดงแถบสรุปด้านบน
+  const rowsByGroup = ssGroupsInUse().map(g => ({
+    g, items: ssItemsOfGroup(g).map(it => { const bal = ssBalance(it.name); return { it, bal, state: ssStateOf(bal) }; }),
+  }));
+  const all = rowsByGroup.flatMap(x => x.items);
+  const cnt = s => all.filter(x => x.state === s).length;
+  const pill = (key, label, n, cls) =>
+    `<button type="button" class="ss-pill ${cls}${ssSummaryFilter === key ? ' active' : ''}" onclick="ssSetSummaryFilter('${key}')"><span class="ss-pill-n">${n}</span><span class="ss-pill-l">${label}</span></button>`;
+  const strip = `<div class="ss-strip">
+    <div class="ss-strip-total"><div class="ss-strip-n">${all.length}</div><div class="ss-strip-l">รายการทั้งหมด · ${rowsByGroup.length} หมวด</div></div>
+    <div class="ss-pills">
+      ${pill('', 'ทั้งหมด', all.length, 'ss-pill-all')}
+      ${pill('ok', 'พร้อมใช้', cnt('ok'), 'ss-pill-ok')}
+      ${pill('low', 'ใกล้หมด', cnt('low'), 'ss-pill-low')}
+      ${pill('out', 'หมดสต็อก', cnt('out'), 'ss-pill-out')}
+    </div>
+  </div>`;
+
+  const panels = rowsByGroup.map(({ g, items }) => {
+    const shown = ssSummaryFilter ? items.filter(x => x.state === ssSummaryFilter) : items;
+    if (ssSummaryFilter && !shown.length) return ''; // กรองแล้วหมวดไหนไม่มีรายการที่ตรงให้ซ่อนทั้งหมวด
+    const worst = items.some(x => x.state === 'out') ? 'out' : items.some(x => x.state === 'low') ? 'low' : 'ok';
+    const units = [...new Set(items.map(x => x.it.unit))];
+    const total = items.reduce((s, x) => s + x.bal, 0);
+    const totalText = units.length === 1 && items.length > 1 ? `รวม <b>${total.toLocaleString()}</b> ${escapeHtml(units[0])}` : '';
+    const nOut = items.filter(x => x.state === 'out').length, nLow = items.filter(x => x.state === 'low').length;
+    const chips = (nOut ? `<span class="ss-chip ss-chip-out">หมด ${nOut}</span>` : '') + (nLow ? `<span class="ss-chip ss-chip-low">ใกล้หมด ${nLow}</span>` : '');
+    const rows = shown.map(({ it, bal, state }) => `
+      <div class="ss-row ss-row-${state}" title="กดเพื่อดูประวัติรับเข้า/เบิกจ่ายของรายการนี้" onclick="ssShowItemHistory('${it.id}')">
+        <span class="ss-dot"></span>
+        <span class="ss-row-name">${escapeHtml(ssSubOf(it))}</span>
+        <span class="ss-row-qty"><b>${bal.toLocaleString()}</b> <span class="ss-row-unit">${escapeHtml(it.unit)}</span></span>
+        <span class="ss-row-tag">${SS_STATE_LABEL[state]}</span>
+      </div>`).join('');
+    const addBtn = g === SS_OTHER_GROUP ? '' : `<button class="ss-add-link" onclick="ssAddItem('${escapeHtml(g)}')">➕ เพิ่มรายการย่อย</button>`;
+    return `<section class="ss-panel ss-panel-${worst}">
+      <header class="ss-panel-head">
+        <div class="ss-panel-title"><span class="ss-panel-icon">${SS_GROUP_ICON[g] || '📦'}</span>${escapeHtml(g)}</div>
+        <div class="ss-panel-meta">${totalText}${chips}</div>
+      </header>
+      <div class="ss-panel-body">${rows || '<div class="empty-state">ยังไม่มีรายการย่อย</div>'}</div>
+      <footer class="ss-panel-foot">${addBtn}</footer>
+    </section>`;
   }).join('');
+
+  wrap.innerHTML = strip + `<div class="ss-panels">${panels || '<div class="empty-state">ไม่มีรายการที่ตรงกับตัวกรอง</div>'}</div>`;
 
   // สรุปเบิกจ่ายรายเดือน (ปีปัจจุบัน) เฉพาะหมวดที่เลือก
   const sel = document.getElementById('ss-month-group');
