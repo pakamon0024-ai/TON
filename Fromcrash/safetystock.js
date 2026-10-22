@@ -11,7 +11,7 @@ const SS_VERSION = 'v2';
 
 // รายการสินค้า (เพิ่ม/ลบเองได้ในหน้าเว็บ) — 3 รายการตั้งต้นใช้ id คงที่ เพื่อไม่ให้เครื่องต่างๆ สร้างซ้ำกัน
 // หมวดหลัก 3 หมวด — เลือกหมวดแล้วค่อยเลือกรายการย่อย (item.group / item.sub)
-const SS_GROUPS = ['สติ๊กเกอร์', 'สายรัดชิ่ง', 'ไม้หนุนล้อ'];
+const SS_GROUPS = ['สติ๊กเกอร์', 'สายรัดชิ่ง', 'ไม้หนุนล้อ', 'ถังดับเพลิง', 'กรวย', 'หมวก Safety', 'แถบสะท้อนแสง'];
 const SS_OTHER_GROUP = 'อื่นๆ'; // รายการที่ไม่รู้หมวด (เช่น เพิ่มไว้รุ่นก่อนมีหมวด)
 const SS_DEFAULT_ITEMS = [
   { id: 'SI_default_sc', group: 'สายรัดชิ่ง', sub: 'สายรัดชิ่ง', name: 'สายรัดชิ่ง', unit: 'คู่' },
@@ -25,11 +25,15 @@ const SS_DEFAULT_ITEMS = [
   { id: 'SI_default_st7', group: 'สติ๊กเกอร์', sub: 'อย่าลืมล็อกกลอนประตูตู้', name: 'สติ๊กเกอร์ อย่าลืมล็อกกลอนประตูตู้', unit: 'แผ่น' },
   { id: 'SI_default_st8', group: 'สติ๊กเกอร์', sub: 'Q-Mark', name: 'สติ๊กเกอร์ Q-Mark', unit: 'แผ่น' },
   { id: 'SI_default_st9', group: 'สติ๊กเกอร์', sub: 'ISO', name: 'สติ๊กเกอร์ ISO', unit: 'แผ่น' },
+  { id: 'SI_default_fx', group: 'ถังดับเพลิง', sub: 'ถังดับเพลิง', name: 'ถังดับเพลิง', unit: 'ถัง' },
+  { id: 'SI_default_cone', group: 'กรวย', sub: 'กรวย', name: 'กรวย', unit: 'อัน' },
+  { id: 'SI_default_hat', group: 'หมวก Safety', sub: 'หมวก Safety', name: 'หมวก Safety', unit: 'ใบ' },
+  { id: 'SI_default_tape', group: 'แถบสะท้อนแสง', sub: 'แถบสะท้อนแสง', name: 'แถบสะท้อนแสง', unit: 'ม้วน' },
 ];
 // รุ่นแรกของแอปใช้ 3 รายการรวม (สติ๊กเกอร์ / สายรัดชิ่ง / ไม้หนุนล้อ) — ย้ายมาแบบแยกประเภทแล้ว
 // รายการเก่าจะถูกเอาออกอัตโนมัติถ้ายังไม่มีประวัติรับเข้า/เบิกจ่ายอ้างถึง (ดู ssMigrateItems)
 const SS_LEGACY_ITEM_IDS = ['SI_default_1', 'SI_default_2', 'SI_default_3', 'SI_default_h', 'SI_default_s']; // h/s = สายรัดชิ่งแยกหัว/สาย (เลิกใช้ เปลี่ยนเป็นหน่วย "คู่")
-const SS_ITEMS_SCHEMA = 4;
+const SS_ITEMS_SCHEMA = 5; // 5 = เพิ่มหมวด ถังดับเพลิง/กรวย/หมวก Safety/แถบสะท้อนแสง (migrate เติมรายการตั้งต้นที่ยังไม่มี)
 let ssItems = SS_DEFAULT_ITEMS.map(i => ({ ...i }));
 let ssItemsFbLoaded = false;
 cacheLoad('finflow_safety_items').then(v => {
@@ -129,7 +133,7 @@ function ssRenderSummary() {
     }).join('');
     const addBtn = g === SS_OTHER_GROUP ? '' :
       `<button class="btn-secondary ss-add-btn" onclick="ssAddItem('${escapeHtml(g)}')">➕ เพิ่มรายการย่อย</button>`;
-    const icon = { 'สติ๊กเกอร์': '🏷️', 'สายรัดชิ่ง': '🔗', 'ไม้หนุนล้อ': '🛞' }[g] || '📦';
+    const icon = { 'สติ๊กเกอร์': '🏷️', 'สายรัดชิ่ง': '🔗', 'ไม้หนุนล้อ': '🛞', 'ถังดับเพลิง': '🧯', 'กรวย': '🚧', 'หมวก Safety': '⛑️', 'แถบสะท้อนแสง': '🦺' }[g] || '📦';
     return `<div class="ss-group">
       <div class="ss-group-head"><span class="ss-group-title">${icon} ${escapeHtml(g)}</span>${addBtn}</div>
       <div class="ss-card-grid">${cards || '<div class="empty-state">ยังไม่มีรายการย่อย</div>'}</div>
@@ -915,6 +919,21 @@ function ssRenderDashboard(pfx, fs) {
     { label: `เบิกจ่าย (${unit})`, data: monthOut, backgroundColor: SS_DASH_COLORS.out.bg, borderRadius: 5 },
   ], 0, false, fs);
 
+  // กราฟรายปี: รับเข้า vs เบิกจ่ายของทุกปีที่มีข้อมูล (ไม่ขึ้นกับตัวกรองปี/เดือน) ใช้เทียบแนวโน้มเบิกจ่ายระหว่างปี
+  const byYear = {};
+  inGroup.forEach(r => {
+    const y = (r.date || '').slice(0, 4);
+    if (!/^(20\d\d|2100)$/.test(y)) return;
+    byYear[y] = byYear[y] || { in: 0, out: 0 };
+    byYear[y][r.type === SS_TYPE_IN ? 'in' : 'out'] += Number(r.qty) || 0;
+  });
+  const yearKeys = Object.keys(byYear).sort();
+  if (!yearKeys.length) yearKeys.push(String(year));
+  ssDashBar(`${pfx}-chart-year`, `${pfx}:year`, yearKeys.map(y => String(Number(y) + 543)), [
+    { label: `รับเข้า (${unit})`, data: yearKeys.map(y => (byYear[y] || { in: 0 }).in), backgroundColor: SS_DASH_COLORS.in.bg, borderRadius: 5 },
+    { label: `เบิกจ่าย (${unit})`, data: yearKeys.map(y => (byYear[y] || { out: 0 }).out), backgroundColor: SS_DASH_COLORS.out.bg, borderRadius: 5 },
+  ], 0, false, fs);
+
   // ช่วงที่ใช้กับ KPI / หน่วยงาน / ลานจอด: ทั้งปี หรือเดือนที่เลือก
   const prefix = month ? `${year}-${month}` : `${year}-`;
   const period = inGroup.filter(r => (r.date || '').startsWith(prefix));
@@ -1018,5 +1037,5 @@ async function ssSaveDashboardImage() {
   }
   window.scrollTo(0, savedScroll);
   rpt.style.left = '-4000px';
-  ['stock', 'month', 'unit', 'yard'].forEach(k => ssDestroyChart('ss-rpt:' + k));
+  ['stock', 'year', 'month', 'unit', 'yard'].forEach(k => ssDestroyChart('ss-rpt:' + k));
 }
