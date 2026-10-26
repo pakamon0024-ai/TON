@@ -1918,10 +1918,12 @@
             </div>
 
             <div id="dm-cards" class="dm-cards"></div>
+            <!-- แถวละ 1 กราฟยาวเต็มความกว้าง: Accident, Part damage; ตามด้วยลานจอด + หน่วยงาน (ปีนี้) -->
             <div class="chart-grid">
-              <div class="chart-card"><div class="chart-title"><span>Accident</span></div><div class="chart-box"><canvas id="dm-chart-acc"></canvas></div></div>
-              <div class="chart-card"><div class="chart-title"><span>Part damage</span></div><div class="chart-box"><canvas id="dm-chart-part"></canvas></div></div>
-              <div class="chart-card" style="grid-column:1/-1;"><div class="chart-title"><span>รวมทั้งหมด</span></div><div class="chart-box"><canvas id="dm-chart-all"></canvas></div></div>
+              <div class="chart-card" style="grid-column:1/-1;"><div class="chart-title"><span>Accident · เทียบรายเดือน</span></div><div class="chart-box"><canvas id="dm-chart-acc"></canvas></div></div>
+              <div class="chart-card" style="grid-column:1/-1;"><div class="chart-title"><span>Part damage · เทียบรายเดือน</span></div><div class="chart-box"><canvas id="dm-chart-part"></canvas></div></div>
+              <div class="chart-card"><div class="chart-title"><span>มูลค่าความเสียหาย ตามลานจอด (ปีนี้)</span></div><div class="chart-box"><canvas id="dm-chart-yard"></canvas></div></div>
+              <div class="chart-card"><div class="chart-title"><span>มูลค่าความเสียหาย ตามหน่วยงาน (ปีนี้)</span></div><div class="chart-box"><canvas id="dm-chart-bu"></canvas></div></div>
             </div>
             <div class="recent-table-wrap tk-table-wrap" id="dm-table-wrap" style="margin-top:14px;"></div>
           </div>

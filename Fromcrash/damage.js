@@ -138,8 +138,8 @@ function dmRender() {
   }).join('');
   wrap.innerHTML = `<table class="data-table dm-table">${thead}<tbody>${rows}<tr class="dm-total"><td>รวมถึงเดือนปัจจุบัน</td>${totals}</tr></tbody></table>`;
 
-  // กราฟ: แยก Accident / Part damage / รวม — แท่งคู่ ปีที่แล้ว vs ปีนี้
-  DM_TYPES.concat([{ key: 'all', label: 'รวมทั้งหมด', color: '#6c63ff' }]).forEach(t => {
+  // กราฟรายเดือน: แยก Accident / Part damage (ไม่มีกราฟรวม) — แท่งคู่ ปีที่แล้ว vs ปีนี้
+  DM_TYPES.forEach(t => {
     const canvas = document.getElementById(`dm-chart-${t.key}`);
     if (!canvas || typeof Chart === 'undefined') return;
     if (dmCharts[t.key]) { dmCharts[t.key].destroy(); delete dmCharts[t.key]; }
@@ -161,6 +161,48 @@ function dmRender() {
           tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y === null ? '-' : (s.metric === 'amt' ? '฿' : '') + Number(c.parsed.y).toLocaleString() + (s.metric === 'amt' ? '' : ' ครั้ง')}` } },
         },
         scales: { y: { beginAtZero: true, grace: '12%', ticks: { precision: 0, callback: v => s.metric === 'amt' && v >= 1000 ? (v / 1000) + 'k' : v } }, x: { grid: { display: false } } },
+      },
+    });
+  });
+
+  dmRenderBreakdowns(s.thisY);
+}
+
+// กราฟแยกตามลานจอด / หน่วยงาน ของปีนี้ (มูลค่าความเสียหาย แยก Accident กับ Part damage; เรียงยอดรวมมากไปน้อย)
+// ไม่มียอดปีที่แล้วแยกตามลาน/หน่วยงาน จึงแสดงเฉพาะปีนี้
+function dmRenderBreakdowns(year) {
+  const agg = field => {
+    const map = {};
+    incidents.forEach(i => {
+      const d = new Date(i.incidentDate);
+      if (isNaN(d) || d.getFullYear() !== year) return;
+      const k = (i[field] || '').trim() || 'ไม่ระบุ';
+      const t = DM_TYPES.find(x => x.damageType === (i.damageType || 'Accident'));
+      if (!t) return;
+      map[k] = map[k] || { acc: 0, part: 0 };
+      map[k][t.key] += (i.companyPaid || 0) + (i.chargedToEmployee || 0) + (i.insurancePaid || 0);
+    });
+    return Object.entries(map).sort((a, b) => (b[1].acc + b[1].part) - (a[1].acc + a[1].part));
+  };
+  [['yard', 'yard'], ['bu', 'businessUnit']].forEach(([key, field]) => {
+    const canvas = document.getElementById(`dm-chart-${key}`);
+    if (!canvas || typeof Chart === 'undefined') return;
+    if (dmCharts[key]) { dmCharts[key].destroy(); delete dmCharts[key]; }
+    const list = agg(field);
+    dmCharts[key] = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels: list.map(e => e[0]),
+        datasets: DM_TYPES.map(t => ({ label: t.label, data: list.map(e => e[1][t.key]), backgroundColor: t.color, borderRadius: 4 })),
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', labels: { font: { family: "'Kanit','Sarabun',sans-serif", size: 12 } } },
+          datalabels: { display: ctx => (ctx.dataset.data[ctx.dataIndex] || 0) > 0, anchor: 'end', align: 'end', color: '#1a2540', font: { size: 10, weight: '700' }, formatter: v => v >= 1000 ? Math.round(v / 1000) + 'k' : v },
+          tooltip: { callbacks: { label: c => `${c.dataset.label}: ฿${Number(c.parsed.y).toLocaleString()}` } },
+        },
+        scales: { y: { beginAtZero: true, grace: '12%', ticks: { callback: v => v >= 1000 ? (v / 1000) + 'k' : v } }, x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 30, minRotation: 0 } } },
       },
     });
   });
