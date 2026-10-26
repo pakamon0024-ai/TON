@@ -1895,23 +1895,17 @@
             <div class="filter-bar">
               <div class="filter-group"><label>ปีนี้ (ดึงจากบันทึก)</label><select id="dm-year" onchange="dmRender()"></select></div>
               <div class="filter-group"><label>ปีที่แล้ว (ยอดที่กรอกเอง)</label><select id="dm-base-year" onchange="dmRender()"></select></div>
-              <div class="filter-group"><label>แสดงเป็น</label>
-                <select id="dm-metric" onchange="dmRender()">
-                  <option value="amt">มูลค่าความเสียหาย (บาท)</option>
-                  <option value="cnt">จำนวนครั้ง</option>
-                </select></div>
               <button class="btn-secondary" onclick="dmToggleEditor()">✏️ กรอกยอดปีที่แล้ว</button>
             </div>
             <div id="dm-warn" style="display:none;margin:8px 0;padding:10px 14px;border-radius:10px;background:rgba(59,130,246,0.12);color:#1d4ed8;font-size:0.88rem;"></div>
 
             <div id="dm-editor" class="form-card" style="display:none;margin:12px 0;">
               <div class="fieldset-title">กรอกยอดความเสียหายรายเดือน ปี <span id="dm-editor-year"></span> (ปีที่แล้ว)</div>
-              <p class="readonly-hint">ใส่มูลค่า (บาท) และจำนวนครั้งของแต่ละเดือน แยก Accident กับ Part damage · เว้นว่าง = 0 · เปลี่ยนปีที่จะกรอกได้ที่ช่อง "ปีที่แล้ว" ด้านบน</p>
+              <p class="readonly-hint">ใส่มูลค่าความเสียหาย (บาท) ของแต่ละเดือน แยก Accident กับ Part damage · เว้นว่าง = 0 · เปลี่ยนปีที่จะกรอกได้ที่ช่อง "ปีที่แล้ว" ด้านบน</p>
               <div class="recent-table-wrap">
                 <table class="data-table dm-edit-table">
                   <thead>
-                    <tr><th rowspan="2">เดือน</th><th colspan="2" style="background:#ef4444;color:#fff;">Accident</th><th colspan="2" style="background:#f59e0b;color:#fff;">Part damage</th></tr>
-                    <tr><th>มูลค่า (บาท)</th><th>จำนวน (ครั้ง)</th><th>มูลค่า (บาท)</th><th>จำนวน (ครั้ง)</th></tr>
+                    <tr><th>เดือน</th><th style="background:#ef4444;color:#fff;">Accident (บาท)</th><th style="background:#f59e0b;color:#fff;">Part damage (บาท)</th></tr>
                   </thead>
                   <tbody id="dm-editor-body"></tbody>
                 </table>

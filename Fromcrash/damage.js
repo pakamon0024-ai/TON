@@ -25,7 +25,7 @@ function dmNum(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 // ปีเปรียบเทียบ = ปีที่เลือก (ปีนี้) ; ปีที่แล้ว = ปีก่อนหน้า (แก้ได้ที่ช่อง "ปีที่แล้ว (ยอดที่กรอกเอง)")
 function dmThisYear() { return Number(document.getElementById('dm-year')?.value) || new Date().getFullYear(); }
 function dmBaseYear() { return Number(document.getElementById('dm-base-year')?.value) || (dmThisYear() - 1); }
-function dmMetric() { return document.getElementById('dm-metric')?.value === 'cnt' ? 'cnt' : 'amt'; }
+function dmMetric() { return 'amt'; } // เหลือเฉพาะมูลค่าความเสียหาย (บาท) ไม่มีจำนวนครั้งแล้ว
 
 function dmOnShown() {
   const yearEl = document.getElementById('dm-year');
@@ -120,7 +120,7 @@ function dmRender() {
   const heads = [...DM_TYPES.map(t => ({ key: t.key, label: t.label, color: t.color })), { key: 'all', label: 'รวม', color: '#6c63ff' }];
   const thead = `<thead>
     <tr><th rowspan="2">เดือน</th>${heads.map(h => `<th colspan="3" style="background:${h.color};color:#fff;">${h.label}</th>`).join('')}</tr>
-    <tr>${heads.map(() => `<th>${s.baseY}</th><th>${s.thisY}</th><th>เทียบ</th>`).join('')}</tr>
+    <tr>${heads.map(() => `<th>${s.baseY}</th><th>${s.thisY}</th><th>% เทียบ ${s.baseY}</th>`).join('')}</tr>
   </thead>`;
   const rows = DM_MONTHS.map((m, i) => {
     const future = i > upto;
@@ -139,7 +139,6 @@ function dmRender() {
   wrap.innerHTML = `<table class="data-table dm-table">${thead}<tbody>${rows}<tr class="dm-total"><td>รวมถึงเดือนปัจจุบัน</td>${totals}</tr></tbody></table>`;
 
   // กราฟ: แยก Accident / Part damage / รวม — แท่งคู่ ปีที่แล้ว vs ปีนี้
-  const unit = s.metric === 'amt' ? '฿' : 'ครั้ง';
   DM_TYPES.concat([{ key: 'all', label: 'รวมทั้งหมด', color: '#6c63ff' }]).forEach(t => {
     const canvas = document.getElementById(`dm-chart-${t.key}`);
     if (!canvas || typeof Chart === 'undefined') return;
@@ -184,8 +183,8 @@ function dmBuildEditor() {
   document.getElementById('dm-editor-body').innerHTML = DM_MONTHS.map((m, i) => `
     <tr>
       <td>${m}</td>
-      <td>${inp(`dm-e-acc-amt-${i}`, data.acc.amt[i], '0.01')}</td><td>${inp(`dm-e-acc-cnt-${i}`, data.acc.cnt[i], '1')}</td>
-      <td>${inp(`dm-e-part-amt-${i}`, data.part.amt[i], '0.01')}</td><td>${inp(`dm-e-part-cnt-${i}`, data.part.cnt[i], '1')}</td>
+      <td>${inp(`dm-e-acc-amt-${i}`, data.acc.amt[i], '0.01')}</td>
+      <td>${inp(`dm-e-part-amt-${i}`, data.part.amt[i], '0.01')}</td>
     </tr>`).join('');
 }
 
@@ -194,9 +193,7 @@ function dmSaveEditor() {
   const data = dmEmptyYear();
   for (let i = 0; i < 12; i++) {
     data.acc.amt[i] = dmNum(document.getElementById(`dm-e-acc-amt-${i}`).value);
-    data.acc.cnt[i] = Math.round(dmNum(document.getElementById(`dm-e-acc-cnt-${i}`).value));
     data.part.amt[i] = dmNum(document.getElementById(`dm-e-part-amt-${i}`).value);
-    data.part.cnt[i] = Math.round(dmNum(document.getElementById(`dm-e-part-cnt-${i}`).value));
   }
   data.updatedAt = new Date().toISOString();
   dmBaseline[y] = data;
