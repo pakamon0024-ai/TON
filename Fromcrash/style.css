@@ -1766,3 +1766,18 @@ body {
 .ss-add-link { background: none; border: none; color: var(--accent-primary, #6c63ff); cursor: pointer; font-family: inherit; font-size: 0.82rem; padding: 4px 2px; }
 .ss-add-link:hover { text-decoration: underline; }
 @media (max-width: 520px) { .ss-row { grid-template-columns: 12px 1fr auto; } .ss-row-tag { display: none; } }
+
+/* ===== ความเสียหาย: เทียบปีที่แล้ว vs ปีนี้ ===== */
+.dm-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 12px 0; }
+.dm-card { border: 1px solid var(--border); border-top: 5px solid var(--c); border-radius: 16px; padding: 14px 18px; background: var(--bg-card); }
+.dm-card-title { font-weight: 700; color: var(--text-secondary); }
+.dm-card-val { font-size: 1.9rem; font-weight: 800; color: var(--c); line-height: 1.15; font-family: 'Kanit', 'Sarabun', sans-serif; }
+.dm-card-sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+.dm-delta { font-weight: 700; margin-left: 4px; }
+.dm-table th, .dm-table td { text-align: center; white-space: nowrap; font-size: 0.85rem; padding: 6px 8px; }
+.dm-table td.dm-up, .dm-delta.dm-up { color: #dc2626; }
+.dm-table td.dm-down, .dm-delta.dm-down { color: #16a34a; }
+.dm-table tr.dm-future td { color: var(--text-muted); }
+.dm-table tr.dm-total td { border-top: 2px solid var(--text-primary); font-weight: 700; }
+.dm-edit-table th, .dm-edit-table td { text-align: center; }
+.dm-edit-table input { width: 130px; text-align: right; }

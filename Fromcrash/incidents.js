@@ -45,7 +45,7 @@ function incNormalizeArea(val) {
 
 // ===== Sub-tabs =====
 function incSwitchTab(tab) {
-  ['dashboard','list','add','trouble'].forEach(t => {
+  ['dashboard','list','add','damage','trouble'].forEach(t => {
     document.getElementById(`inc-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`inc-subpage-${t}`).classList.toggle('active', t === tab);
   });
@@ -57,6 +57,7 @@ function incSwitchTab(tab) {
   if (tab === 'dashboard') incRenderDashboard();
   if (tab === 'list') incRenderList();
   if (tab === 'add' && !incEditingId) incClearForm();
+  if (tab === 'damage' && typeof dmOnShown === 'function') dmOnShown();
   if (tab === 'trouble') incRenderTroubleReport();
 }
 
@@ -929,7 +930,7 @@ function ghNextRunningNo() {
 // ===== Sub-tabs =====
 function ghSwitchTab(tab) {
   // gh-* อยู่ในแถบ subtabs เดียวกับ inc-* (dashboard/list/add/trouble) — ต้องปิดฝั่ง inc ไว้เสมอเวลาสลับมาแท็บนี้
-  ['dashboard', 'list', 'add', 'trouble'].forEach(t => {
+  ['dashboard', 'list', 'add', 'damage', 'trouble'].forEach(t => {
     document.getElementById(`inc-tab-${t}`)?.classList.remove('active');
     document.getElementById(`inc-subpage-${t}`)?.classList.remove('active');
   });
