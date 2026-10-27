@@ -912,6 +912,8 @@ let ghRecords = JSON.parse(localStorage.getItem('finflow_garage_history') || '[]
 let ghEditingId = null;
 let ghRef = null;
 let ghReady = false;
+// id ที่ถูกลบแล้ว (ป้าย _deleted ที่ /garageHistory/_deleted) — กันเครื่องที่ค้างแคชเก่าดันรายการที่ลบแล้วกลับขึ้น server
+let ghDeleted = new Set();
 let ghCharts = {};
 let ghSortField = null; // null = ใช้ลำดับ default (วันที่เข้าอู่ใหม่สุดก่อน)
 let ghSortDir = 1;
@@ -1132,7 +1134,7 @@ function ghDeleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   ghRecords = ghRecords.filter(r => r.id !== id);
   ghSave();
-  ghRemoveOneIfReady(id);
+  ghTombstone([id]);
   ghRenderList();
   showToast('ลบแล้ว', 'warning');
 }
@@ -1140,9 +1142,10 @@ function ghDeleteRecord(id) {
 function ghDeleteAllRecords() {
   if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
   if (!confirmDeleteWithPin(`ลบประวัติการนำรถเข้าอู่ทั้งหมด ${ghRecords.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  const ids = ghRecords.map(r => r.id);
   ghRecords = [];
   ghSave();
-  ghPushIfReady();
+  ghDeleteAllOnServer(ids);
   ghRenderList();
   showToast('ลบทั้งหมดเรียบร้อย', 'success');
 }
@@ -1300,7 +1303,7 @@ function ghImportExcel(evt) {
           added++;
         }
       });
-      ghSave(); ghPushIfReady(); ghRenderList();
+      ghSave(); ghPushIfReady(ghRecords); ghRenderList();
       const msg = [updated ? `แก้ไข ${updated} รายการ` : '', added ? `เพิ่มใหม่ ${added} รายการ` : ''].filter(Boolean).join(', ');
       showToast(msg || 'ไม่มีข้อมูลใหม่', 'success');
     } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
@@ -1322,23 +1325,62 @@ function ghObjToRecords(obj) {
 }
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
+// raw = snapshot.val() ของ /garageHistory ; คีย์ _deleted = ป้ายรายการที่ถูกลบ (ปนอยู่กับรายการ)
+// รายการที่ถูกลบแล้วแต่ยังโผล่บน server (เครื่องเก่าดันกลับขึ้นไป) จะถูกกรองทิ้งและลบออกจาก server ซ้ำให้
+function ghParseServer(raw) {
+  ghDeleted = new Set(Object.keys((raw && raw._deleted) || {}));
+  const all = ghObjToRecords(raw);
+  const resurrected = all.filter(r => ghDeleted.has(r.id));
+  if (resurrected.length) ghTombstone(resurrected.map(r => r.id));
+  return all.filter(r => !ghDeleted.has(r.id));
+}
 function ghApplyServer(serverRecords) {
   const serverIds = new Set(serverRecords.map(r => r.id));
-  const localOnly = (ghRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
+  // มีเฉพาะในเครื่อง = ยังไม่เคยขึ้น server (push ไม่สำเร็จ) เก็บไว้ ยกเว้นที่ถูกลบไปแล้ว
+  const localOnly = (ghRecords || []).filter(t => t && t.id && !serverIds.has(t.id) && !ghDeleted.has(t.id));
   ghRecords = serverRecords.concat(localOnly);
   ghSave();
   ghRenderList();
   if (document.getElementById('gh-subpage-dashboard')?.classList.contains('active')) ghRenderDashboard();
-  if (localOnly.length > 0) ghWriteFB();
+  if (localOnly.length > 0) ghWriteFB(localOnly);
 }
-async function ghWriteFB() {
+// เขียนเฉพาะรายการที่ส่งมา (ไม่ set ทับทั้ง /garageHistory เพราะจะลบป้าย _deleted ทิ้งไปด้วย) และล้างป้ายลบของ id นั้น
+async function ghWriteFB(records) {
   if (!ghRef) return;
+  const list = (records || ghRecords).filter(r => r && r.id);
+  if (!list.length) return;
   try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(ghRef, ghRecordsToObj(ghRecords));
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const updates = {};
+    list.forEach(r => { updates['/garageHistory/' + r.id] = r; updates['/garageHistory/_deleted/' + r.id] = null; ghDeleted.delete(r.id); });
+    await update(ref(fbDb), updates);
+    notifySyncWriteSuccess();
   } catch (e) { console.warn('ghWriteFB error', e); notifySyncWriteError(e.message); }
 }
-function ghPushIfReady() { if (ghReady) ghWriteFB(); }
+function ghPushIfReady(records) { if (ghReady) ghWriteFB(records); }
+// ลบออกจาก server + ขึ้นป้าย _deleted
+async function ghTombstone(ids) {
+  ids.forEach(id => ghDeleted.add(id));
+  if (!ghRef || !ids.length) return;
+  try {
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const updates = {};
+    ids.forEach(id => { updates['/garageHistory/' + id] = null; updates['/garageHistory/_deleted/' + id] = true; });
+    await update(ref(fbDb), updates);
+  } catch (e) { console.warn('ghTombstone error', e); notifySyncWriteError(e.message); }
+}
+// ลบทั้งหมด: รวมรายการที่อยู่บน server ที่เครื่องนี้อาจยังไม่เห็นด้วย
+async function ghDeleteAllOnServer(localIds) {
+  const ids = [...localIds];
+  if (ghRef) {
+    try {
+      const { get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+      const snap = await get(ghRef);
+      if (snap.exists()) Object.keys(snap.val()).filter(k => k !== '_deleted').forEach(k => ids.push(k));
+    } catch (e) { console.warn('ghDeleteAll read error', e); }
+  }
+  await ghTombstone([...new Set(ids)]);
+}
 
 async function ghWriteOne(record) {
   if (!ghRef || !record?.id) return;
@@ -1350,14 +1392,6 @@ async function ghWriteOne(record) {
 }
 function ghPushOneIfReady(record) { if (ghReady) ghWriteOne(record); }
 
-async function ghRemoveOne(id) {
-  if (!ghRef) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `/garageHistory/${id}`));
-  } catch (e) { console.warn('ghRemoveOne error', e); notifySyncWriteError(e.message); }
-}
-function ghRemoveOneIfReady(id) { if (ghReady) ghRemoveOne(id); }
 
 async function ghInit() {
   await incWaitForFirebase();
@@ -1365,9 +1399,9 @@ async function ghInit() {
     const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     ghRef = ref(fbDb, '/garageHistory');
     const snap = await get(ghRef);
-    if (snap.exists()) ghApplyServer(ghObjToRecords(snap.val()));
+    if (snap.exists()) ghApplyServer(ghParseServer(snap.val()));
     ghReady = true;
     if (!snap.exists() && ghRecords.length > 0) await ghWriteFB();
-    onValue(ghRef, s => { if (s.exists()) ghApplyServer(ghObjToRecords(s.val())); });
+    onValue(ghRef, s => { if (s.exists()) ghApplyServer(ghParseServer(s.val())); });
   } catch (e) { console.warn('ghInit error', e); notifySyncLoadError(e.message); }
 }
