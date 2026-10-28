@@ -1,6 +1,7 @@
 // ===== สถานะการซ่อมทรัพย์สิน (ไทม์ไลน์การจัดซ่อม) =====
 // 2 แบบ:  ประกันซ่อม  : ช่างประกันเข้าดูความเสียหาย -> ช่างเตรียมอุปกรณ์จัดซ่อม -> นัดหมายเข้าซ่อม -> ซ่อมเสร็จแล้ว
 //         ลูกค้าซ่อมเอง: เสนอราคา -> กำลังซ่อม -> ซ่อมเสร็จแล้ว
+// ขั้นแรกของทั้งสองแบบ = "วันที่เกิดเหตุ" (ดึงจากช่องวันที่เกิดเหตุของรายการ r.reportDate ไม่เก็บซ้ำใน steps)
 // แต่ละขั้นเก็บ "วันที่ทำขั้นนั้น" ถ้ามีวันที่ = ขั้นนั้นเกิดขึ้นแล้ว; สถานะปัจจุบัน = ขั้นล่าสุดที่มีวันที่
 // เก็บ local ที่ 'finflow_repair_status' และ sync ที่ Firebase /repairStatus (รูปแบบเดียวกับ Stock Safety:
 // เขียนทีละรายการ + ป้าย _deleted กันเครื่องที่ค้างข้อมูลเก่าดันรายการที่ลบแล้วกลับขึ้นมา)
@@ -9,12 +10,14 @@ const RS_TYPE_INS = 'ประกันซ่อม';
 const RS_TYPE_OWN = 'ลูกค้าซ่อมเอง';
 const RS_STEPS = {
   [RS_TYPE_INS]: [
+    { key: 'incident', label: 'วันที่เกิดเหตุ' },
     { key: 'survey', label: 'ช่างประกันเข้าดูความเสียหาย' },
     { key: 'prep', label: 'ช่างเตรียมอุปกรณ์จัดซ่อม' },
     { key: 'appoint', label: 'นัดหมายเข้าซ่อม' },
     { key: 'done', label: 'ซ่อมเสร็จแล้ว' },
   ],
   [RS_TYPE_OWN]: [
+    { key: 'incident', label: 'วันที่เกิดเหตุ' },
     { key: 'quote', label: 'เสนอราคา' },
     { key: 'repairing', label: 'กำลังซ่อม' },
     { key: 'done', label: 'ซ่อมเสร็จแล้ว' },
@@ -45,11 +48,15 @@ function rsTodayISO() {
 }
 
 // ===== สถานะ / ไทม์ไลน์ =====
-// index ของขั้นล่าสุดที่มีวันที่ (-1 = ยังไม่เริ่ม)
+// วันที่ของขั้นหนึ่ง: ขั้น "เกิดเหตุ" = วันที่เกิดเหตุของรายการ, ขั้นอื่น = วันที่ที่กรอกไว้ใน steps
+function rsStepDate(r, key) {
+  return key === 'incident' ? (r.reportDate || '') : ((r.steps && r.steps[key]) || '');
+}
+// index ของขั้นล่าสุดที่มีวันที่ (ขั้นเกิดเหตุมีวันที่เสมอ = 0 ขึ้นไป; -1 เฉพาะรายการที่ไม่มีวันที่เกิดเหตุ)
 function rsProgressIdx(r) {
   const steps = RS_STEPS[r.type] || [];
   let idx = -1;
-  steps.forEach((s, i) => { if (r.steps && r.steps[s.key]) idx = i; });
+  steps.forEach((s, i) => { if (rsStepDate(r, s.key)) idx = i; });
   return idx;
 }
 function rsIsDone(r) {
@@ -58,15 +65,15 @@ function rsIsDone(r) {
 }
 function rsStatusLabel(r) {
   const idx = rsProgressIdx(r);
-  if (idx < 0) return RS_PENDING_LABEL;
+  if (idx <= 0) return RS_PENDING_LABEL; // มีแค่วันที่เกิดเหตุ ยังไม่เริ่มขั้นถัดไป = รอดำเนินการ
   return RS_STEPS[r.type][idx].label;
 }
 function rsStatusClass(r) {
   if (rsIsDone(r)) return 'rs-st-done';
-  return rsProgressIdx(r) < 0 ? 'rs-st-pending' : 'rs-st-going';
+  return rsProgressIdx(r) <= 0 ? 'rs-st-pending' : 'rs-st-going';
 }
 function rsDaysToFinish(r) {
-  if (!rsIsDone(r) || !r.reportDate || !r.steps?.done) return null;
+  if (!rsIsDone(r) || !r.reportDate || !r.steps?.done) return null; // นับจากวันที่เกิดเหตุถึงวันที่ซ่อมเสร็จ
   const a = new Date(r.reportDate), b = new Date(r.steps.done);
   if (isNaN(a) || isNaN(b)) return null;
   return Math.max(0, Math.round((b - a) / 86400000));
@@ -76,7 +83,7 @@ function rsStepperHtml(r) {
   const steps = RS_STEPS[r.type] || [];
   const cur = rsProgressIdx(r);
   return `<div class="rs-steps rs-steps-${steps.length}">` + steps.map((s, i) => {
-    const date = r.steps && r.steps[s.key];
+    const date = rsStepDate(r, s.key);
     const state = i <= cur && date ? 'done' : (i === cur + 1 ? 'next' : 'todo');
     return `<div class="rs-step rs-step-${state}">
       <div class="rs-dot">${state === 'done' ? '✓' : i + 1}</div>
@@ -122,6 +129,7 @@ function rsFillSelect(id, list, placeholder) {
 }
 function rsRefreshLookups() {
   rsFillDatalist('rs-plate-list', (typeof mdVehicles !== 'undefined' ? mdVehicles : []).map(v => v.plate).filter(Boolean));
+  rsFillDatalist('rs-employee-list', (typeof mdDrivers !== 'undefined' ? mdDrivers : []).map(d => d.name).filter(Boolean));
   rsFillDatalist('rs-customer-list', (typeof mdCustomers !== 'undefined' ? mdCustomers : []).map(c => c.name).filter(Boolean));
   rsFillDatalist('rs-yard-list', typeof mdYards !== 'undefined' ? mdYards : []);
   rsFillDatalist('rs-bu-list', typeof mdBusinessUnits !== 'undefined' ? mdBusinessUnits : []);
@@ -143,10 +151,10 @@ function rsLookupVehicle() {
 function rsOnTypeChange(existingSteps) {
   const type = document.getElementById('rs-type').value;
   const wrap = document.getElementById('rs-step-inputs');
-  const steps = RS_STEPS[type] || [];
+  const steps = (RS_STEPS[type] || []).filter(s => s.key !== 'incident'); // วันที่เกิดเหตุอยู่ที่ช่องหลักด้านบน
   const prev = existingSteps || rsReadStepInputs();
   wrap.innerHTML = steps.map((s, i) => `
-    <div class="form-group"><label>${i + 1}. ${escapeHtml(s.label)} <span style="font-weight:400;opacity:.6;">(วันที่)</span></label>
+    <div class="form-group"><label>${i + 2}. ${escapeHtml(s.label)} <span style="font-weight:400;opacity:.6;">(วันที่)</span></label>
       <input type="date" id="rs-step-${s.key}" value="${prev[s.key] || ''}" /></div>
   `).join('');
   const isIns = type === RS_TYPE_INS;
@@ -157,7 +165,7 @@ function rsOnTypeChange(existingSteps) {
 
 function rsReadStepInputs() {
   const out = {};
-  Object.values(RS_STEPS).flat().forEach(s => {
+  Object.values(RS_STEPS).flat().filter(s => s.key !== 'incident').forEach(s => {
     const el = document.getElementById(`rs-step-${s.key}`);
     if (el && el.value) out[s.key] = el.value;
   });
@@ -169,10 +177,10 @@ function rsReadForm() {
   const type = document.getElementById('rs-type').value;
   const stepsAll = rsReadStepInputs();
   const steps = {};
-  (RS_STEPS[type] || []).forEach(s => { if (stepsAll[s.key]) steps[s.key] = stepsAll[s.key]; });
+  (RS_STEPS[type] || []).filter(s => s.key !== 'incident').forEach(s => { if (stepsAll[s.key]) steps[s.key] = stepsAll[s.key]; });
   return {
     reportDate: document.getElementById('rs-date').value, type,
-    asset: v('rs-asset'), plate: v('rs-plate'), customer: v('rs-customer'),
+    asset: v('rs-asset'), plate: v('rs-plate'), employee: v('rs-employee'), customer: v('rs-customer'),
     yard: v('rs-yard'), businessUnit: v('rs-bu'),
     insurer: type === RS_TYPE_INS ? v('rs-insurer') : '',
     claimNo: type === RS_TYPE_INS ? v('rs-claimno') : '',
@@ -184,18 +192,19 @@ function rsReadForm() {
 
 function rsSaveCase() {
   const r = rsReadForm();
-  if (!r.reportDate) { showToast('กรุณาระบุวันที่แจ้ง', 'warning'); return; }
+  if (!r.reportDate) { showToast('กรุณาระบุวันที่เกิดเหตุ', 'warning'); return; }
   if (!r.type) { showToast('กรุณาเลือกรูปแบบการซ่อม', 'warning'); return; }
   if (!r.asset) { showToast('กรุณาระบุทรัพย์สินที่ซ่อม', 'warning'); return; }
   // ขั้นที่ทำแล้วต้องไม่ย้อนลำดับ: ถ้ามีวันที่ขั้นหลัง ขั้นก่อนหน้าต้องมีวันที่ด้วย (ไทม์ไลน์จะไม่มีช่องว่างกลางทาง)
   const steps = RS_STEPS[r.type];
+  const dateOf = s => rsStepDate(r, s.key); // ขั้นเกิดเหตุ = r.reportDate
   let lastIdx = -1;
-  steps.forEach((s, i) => { if (r.steps[s.key]) lastIdx = i; });
-  const missing = steps.slice(0, lastIdx).filter(s => !r.steps[s.key]);
+  steps.forEach((s, i) => { if (dateOf(s)) lastIdx = i; });
+  const missing = steps.slice(0, lastIdx).filter(s => !dateOf(s));
   if (missing.length) { showToast(`ใส่วันที่ขั้น "${missing[0].label}" ก่อน (มีวันที่ขั้นหลังแล้ว)`, 'warning'); return; }
-  // วันที่ของแต่ละขั้นต้องไม่ก่อนขั้นก่อนหน้า
+  // วันที่ของแต่ละขั้นต้องไม่ก่อนขั้นก่อนหน้า (รวมวันที่เกิดเหตุ)
   for (let i = 1; i <= lastIdx; i++) {
-    if (r.steps[steps[i].key] < r.steps[steps[i - 1].key]) { showToast(`วันที่ "${steps[i].label}" ต้องไม่ก่อน "${steps[i - 1].label}"`, 'warning'); return; }
+    if (dateOf(steps[i]) < dateOf(steps[i - 1])) { showToast(`วันที่ "${steps[i].label}" ต้องไม่ก่อน "${steps[i - 1].label}"`, 'warning'); return; }
   }
 
   let saved;
@@ -208,7 +217,7 @@ function rsSaveCase() {
     repairRecords.unshift(saved);
     showToast('บันทึกแล้ว', 'success');
     if (typeof sendTelegramNotification === 'function') {
-      sendTelegramNotification(`🛠️ <b>แจ้งซ่อมทรัพย์สิน (${escapeHtml(r.type)})</b>\nเลขที่: ${saved.runningNo}\nทรัพย์สิน: ${escapeHtml(r.asset)}\nทะเบียน: ${escapeHtml(r.plate)}\nลูกค้า: ${escapeHtml(r.customer)}\nรายละเอียด: ${escapeHtml(r.detail)}`);
+      sendTelegramNotification(`🛠️ <b>แจ้งซ่อมทรัพย์สิน (${escapeHtml(r.type)})</b>\nเลขที่: ${saved.runningNo}\nทรัพย์สิน: ${escapeHtml(r.asset)}\nทะเบียน: ${escapeHtml(r.plate)}\nพนักงาน: ${escapeHtml(r.employee)}\nลูกค้า: ${escapeHtml(r.customer)}\nรายละเอียด: ${escapeHtml(r.detail)}`);
     }
   }
   rsSave();
@@ -226,7 +235,7 @@ function rsClearForm() {
   document.getElementById('rs-edit-banner').style.display = 'none';
   document.getElementById('rs-date').value = rsTodayISO();
   document.getElementById('rs-type').value = '';
-  ['rs-asset', 'rs-plate', 'rs-customer', 'rs-yard', 'rs-bu', 'rs-insurer', 'rs-claimno', 'rs-quote', 'rs-cost', 'rs-detail', 'rs-note'].forEach(id => { document.getElementById(id).value = ''; });
+  ['rs-asset', 'rs-plate', 'rs-employee', 'rs-customer', 'rs-yard', 'rs-bu', 'rs-insurer', 'rs-claimno', 'rs-quote', 'rs-cost', 'rs-detail', 'rs-note'].forEach(id => { document.getElementById(id).value = ''; });
   rsOnTypeChange({});
 }
 
@@ -240,7 +249,7 @@ function rsEditCase(id) {
   document.getElementById('rs-date').value = r.reportDate || '';
   document.getElementById('rs-type').value = r.type || '';
   const set = (el, v) => { document.getElementById(el).value = v || ''; };
-  set('rs-asset', r.asset); set('rs-plate', r.plate); set('rs-customer', r.customer);
+  set('rs-asset', r.asset); set('rs-plate', r.plate); set('rs-employee', r.employee); set('rs-customer', r.customer);
   set('rs-yard', r.yard); set('rs-bu', r.businessUnit); set('rs-insurer', r.insurer); set('rs-claimno', r.claimNo);
   set('rs-quote', r.quoteAmount || ''); set('rs-cost', r.repairCost || ''); set('rs-detail', r.detail); set('rs-note', r.note);
   rsOnTypeChange(r.steps || {});
@@ -288,7 +297,7 @@ function rsFiltered() {
     if (status === 'open' && rsIsDone(r)) return false;
     if (status === 'done' && !rsIsDone(r)) return false;
     if (yard && r.yard !== yard) return false;
-    if (search && !`${r.asset} ${r.plate} ${r.customer} ${r.detail} ${r.insurer} ${r.claimNo} ${r.businessUnit}`.toLowerCase().includes(search)) return false;
+    if (search && !`${r.asset} ${r.plate} ${r.employee || ''} ${r.customer} ${r.detail} ${r.insurer} ${r.claimNo} ${r.businessUnit}`.toLowerCase().includes(search)) return false;
     return true;
   }).sort((a, b) => (b.reportDate || '').localeCompare(a.reportDate || '') || (b.runningNo || 0) - (a.runningNo || 0));
 }
@@ -318,7 +327,8 @@ function rsRenderList() {
     const next = steps[rsProgressIdx(r) + 1];
     const days = rsDaysToFinish(r);
     const meta = [
-      `แจ้งเมื่อ ${formatDate(r.reportDate)}`,
+      `เกิดเหตุ ${formatDate(r.reportDate)}`,
+      r.employee && `พนักงาน <b>${escapeHtml(r.employee)}</b>`,
       r.plate && `ทะเบียน ${escapeHtml(r.plate)}`,
       r.customer && `ลูกค้า ${escapeHtml(r.customer)}`,
       r.yard && `ลาน ${escapeHtml(r.yard)}`,
@@ -354,16 +364,16 @@ function rsRenderList() {
 // ===== Excel Export =====
 function rsExportExcel() {
   if (!repairRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
-  const header = ['เลขที่', 'วันที่แจ้ง', 'รูปแบบ', 'ทรัพย์สิน', 'ทะเบียน', 'ลูกค้า', 'ลานจอด', 'หน่วยงาน', 'บริษัทประกัน', 'เลขเคลม', 'เสนอราคา', 'ค่าซ่อม',
+  const header = ['เลขที่', 'วันที่เกิดเหตุ', 'รูปแบบ', 'ทรัพย์สิน', 'ทะเบียน', 'ชื่อพนักงาน', 'ลูกค้า', 'ลานจอด', 'หน่วยงาน', 'บริษัทประกัน', 'เลขเคลม', 'เสนอราคา', 'ค่าซ่อม',
     'ช่างประกันเข้าดู', 'ช่างเตรียมอุปกรณ์', 'นัดหมายเข้าซ่อม', 'เสนอราคา(วันที่)', 'กำลังซ่อม', 'ซ่อมเสร็จ', 'สถานะปัจจุบัน', 'รายละเอียด', 'หมายเหตุ'];
   const d = (r, k) => (r.steps && r.steps[k]) ? formatDMY(r.steps[k]) : '';
   const rows = [header, ...[...repairRecords].sort((a, b) => (a.runningNo || 0) - (b.runningNo || 0)).map(r => [
-    r.runningNo, formatDMY(r.reportDate), r.type, r.asset || '', r.plate || '', r.customer || '', r.yard || '', r.businessUnit || '', r.insurer || '', r.claimNo || '',
+    r.runningNo, formatDMY(r.reportDate), r.type, r.asset || '', r.plate || '', r.employee || '', r.customer || '', r.yard || '', r.businessUnit || '', r.insurer || '', r.claimNo || '',
     r.quoteAmount || '', r.repairCost || '', d(r, 'survey'), d(r, 'prep'), d(r, 'appoint'), d(r, 'quote'), d(r, 'repairing'), d(r, 'done'),
     rsStatusLabel(r), r.detail || '', r.note || '',
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = header.map((h, i) => ({ wch: i === 19 ? 36 : 14 }));
+  ws['!cols'] = header.map((h, i) => ({ wch: i === 20 ? 36 : 14 }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'สถานะการซ่อม');
   XLSX.writeFile(wb, 'สถานะการซ่อมทรัพย์สิน_' + new Date().toISOString().slice(0, 10) + '.xlsx');
@@ -439,7 +449,7 @@ function rsRenderDashboard() {
   ]);
 
   // สถานะปัจจุบัน: แยกตามขั้น แต่ละประเภทมีขั้นของตัวเอง ใช้ชื่อขั้นเป็นแกน
-  const labels = [RS_PENDING_LABEL, ...new Set(Object.values(RS_STEPS).flat().map(s => s.label))];
+  const labels = [RS_PENDING_LABEL, ...new Set(Object.values(RS_STEPS).flat().filter(s => s.key !== 'incident').map(s => s.label))];
   const countStatus = t => labels.map(l => data.filter(r => r.type === t && rsStatusLabel(r) === l).length);
   rsBar('rs-chart-status', 'status', labels, [
     { label: RS_TYPE_INS, data: countStatus(RS_TYPE_INS), backgroundColor: RS_COLORS.ins.bg, borderRadius: 5 },
@@ -453,6 +463,8 @@ function rsRenderDashboard() {
   };
   const y = countBy('yard');
   rsBar('rs-chart-yard', 'yard', y.map(e => e[0]), [{ label: 'จำนวนรายการ', data: y.map(e => e[1]), backgroundColor: RS_COLORS.yard.bg, borderRadius: 5 }], 30);
+  const emp = countBy('employee').slice(0, 15);
+  rsBar('rs-chart-emp', 'emp', emp.map(e => e[0]), [{ label: 'จำนวนรายการ', data: emp.map(e => e[1]), backgroundColor: RS_COLORS.own.bg, borderRadius: 5 }], 30);
   const b = countBy('businessUnit');
   rsBar('rs-chart-bu', 'bu', b.map(e => e[0]), [{ label: 'จำนวนรายการ', data: b.map(e => e[1]), backgroundColor: RS_COLORS.bu.bg, borderRadius: 5 }], 30);
 }
