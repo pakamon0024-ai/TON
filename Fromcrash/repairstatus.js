@@ -85,7 +85,7 @@ function rsStepperHtml(r) {
   return `<div class="rs-steps rs-steps-${steps.length}">` + steps.map((s, i) => {
     const date = rsStepDate(r, s.key);
     const state = i <= cur && date ? 'done' : (i === cur + 1 ? 'next' : 'todo');
-    return `<div class="rs-step rs-step-${state}">
+    return `<div class="rs-step rs-step-${state}" onclick="rsStepClick('${r.id}','${s.key}')" title="คลิกเพื่อ${date ? 'แก้ไข' : 'ใส่'}วันที่ขั้นนี้">
       <div class="rs-dot">${state === 'done' ? '✓' : i + 1}</div>
       <div class="rs-step-label">${escapeHtml(s.label)}</div>
       <div class="rs-step-date">${date ? formatDate(date) : '-'}</div>
@@ -286,6 +286,99 @@ function rsAdvance(id) {
   }
 }
 
+// ===== คลิกวงกลมในไทม์ไลน์เพื่อใส่/แก้/ล้างวันที่ของขั้นนั้น =====
+let rsPopCtx = null;
+
+// ตรวจว่าตั้งวันที่ (หรือล้างวันที่ date = '') ของขั้น key แล้วไทม์ไลน์ยังเรียงถูกต้องไหม; คืนข้อความผิดพลาด ('' = ผ่าน)
+function rsValidateStepChange(r, key, date) {
+  const steps = RS_STEPS[r.type] || [];
+  const i = steps.findIndex(s => s.key === key);
+  if (i < 0) return 'ไม่พบขั้นตอนนี้';
+  const get = k => (k === key ? date : rsStepDate(r, k));
+  if (date) {
+    for (let j = 0; j < i; j++) if (!get(steps[j].key)) return `ใส่วันที่ขั้น "${steps[j].label}" ก่อน`;
+    if (i > 0 && date < get(steps[i - 1].key)) return `วันที่ต้องไม่ก่อนขั้น "${steps[i - 1].label}" (${formatDate(get(steps[i - 1].key))})`;
+    for (let j = i + 1; j < steps.length; j++) {
+      const d = get(steps[j].key);
+      if (d && d < date) return `วันที่ต้องไม่หลังขั้น "${steps[j].label}" (${formatDate(d)})`;
+    }
+    return '';
+  }
+  if (key === 'incident') return 'วันที่เกิดเหตุต้องมีเสมอ (แก้เป็นวันอื่นได้)';
+  for (let j = i + 1; j < steps.length; j++) if (get(steps[j].key)) return `ล้างวันที่ขั้น "${steps[j].label}" ก่อน`;
+  return '';
+}
+
+function rsEnsurePop() {
+  let pop = document.getElementById('rs-step-pop');
+  if (pop) return pop;
+  pop = document.createElement('div');
+  pop.id = 'rs-step-pop';
+  pop.className = 'rs-pop-overlay';
+  pop.innerHTML = `<div class="rs-pop" onclick="event.stopPropagation()">
+    <div class="rs-pop-title"></div>
+    <div class="rs-pop-sub"></div>
+    <input type="date" id="rs-pop-date" />
+    <div class="rs-pop-actions">
+      <button class="btn-secondary" id="rs-pop-clear" onclick="rsPopClear()">🗑️ ล้างวันที่</button>
+      <button class="btn-secondary" onclick="rsPopClose()">ยกเลิก</button>
+      <button class="btn-primary" onclick="rsPopSave()">💾 บันทึก</button>
+    </div>
+  </div>`;
+  pop.addEventListener('click', rsPopClose);
+  document.body.appendChild(pop);
+  return pop;
+}
+
+function rsStepClick(id, key) {
+  const r = repairRecords.find(x => x.id === id);
+  if (!r) return;
+  const step = (RS_STEPS[r.type] || []).find(s => s.key === key);
+  if (!step) return;
+  const cur = rsStepDate(r, key);
+  rsPopCtx = { id, key };
+  const pop = rsEnsurePop();
+  pop.querySelector('.rs-pop-title').textContent = step.label;
+  pop.querySelector('.rs-pop-sub').textContent = `${r.asset}${r.employee ? ' · ' + r.employee : ''}${r.plate ? ' · ' + r.plate : ''}`;
+  document.getElementById('rs-pop-date').value = cur || rsTodayISO();
+  document.getElementById('rs-pop-clear').style.display = key === 'incident' || !cur ? 'none' : '';
+  pop.style.display = 'flex';
+}
+function rsPopClose() { const pop = document.getElementById('rs-step-pop'); if (pop) pop.style.display = 'none'; rsPopCtx = null; }
+function rsPopSave() {
+  if (!rsPopCtx) return;
+  const date = document.getElementById('rs-pop-date').value;
+  if (!date) { showToast('เลือกวันที่ก่อน', 'warning'); return; }
+  rsApplyStepDate(rsPopCtx.id, rsPopCtx.key, date);
+}
+function rsPopClear() { if (rsPopCtx) rsApplyStepDate(rsPopCtx.id, rsPopCtx.key, ''); }
+
+function rsApplyStepDate(id, key, date) {
+  const idx = repairRecords.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  const r = repairRecords[idx];
+  const err = rsValidateStepChange(r, key, date);
+  if (err) { showToast(err, 'warning'); return; }
+  const wasDone = rsIsDone(r);
+  let next;
+  if (key === 'incident') next = { ...r, reportDate: date };
+  else {
+    const steps = { ...(r.steps || {}) };
+    if (date) steps[key] = date; else delete steps[key];
+    next = { ...r, steps };
+  }
+  next.updatedAt = new Date().toISOString();
+  repairRecords[idx] = next;
+  rsSave();
+  rsWriteFB([next]);
+  rsPopClose();
+  rsRenderAll();
+  showToast(date ? 'บันทึกวันที่แล้ว' : 'ล้างวันที่แล้ว', 'success');
+  if (!wasDone && rsIsDone(next) && typeof sendTelegramNotification === 'function') {
+    sendTelegramNotification(`✅ <b>ซ่อมทรัพย์สินเสร็จแล้ว</b>\nเลขที่: ${r.runningNo} (${escapeHtml(r.type)})\nทรัพย์สิน: ${escapeHtml(r.asset)}\nทะเบียน: ${escapeHtml(r.plate)}`);
+  }
+}
+
 // ===== List =====
 function rsFiltered() {
   const type = document.getElementById('rs-f-type')?.value || '';
@@ -348,7 +441,7 @@ function rsRenderList() {
           <span class="rs-status ${rsStatusClass(r)}">${escapeHtml(rsStatusLabel(r))}</span>
         </div>
         <div class="rs-card-actions">
-          ${next ? `<button class="action-btn rs-next-btn" onclick="rsAdvance('${r.id}')" title="ใส่วันที่วันนี้ให้ขั้นถัดไป">➡️ ${escapeHtml(next.label)}</button>` : ''}
+          ${next ? `<button class="action-btn rs-next-btn" onclick="rsAdvance('${r.id}')" title="ใส่วันที่วันนี้ให้ขั้นถัดไป (หรือคลิกวงกลมในไทม์ไลน์เพื่อเลือกวันที่เอง)">ขั้นถัดไป ➡️ ${escapeHtml(next.label)}</button>` : ''}
           <button class="action-btn action-view" onclick="rsEditCase('${r.id}')">แก้ไข</button>
           <button class="action-btn action-delete" onclick="rsDeleteCase('${r.id}')">ลบ</button>
         </div>
