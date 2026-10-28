@@ -391,9 +391,10 @@ function gvDeleteRecord(id) {
 function gvDeleteAllRecords() {
   if (currentUserProfile?.role !== 'admin') { showToast('เฉพาะแอดมินเท่านั้น', 'error'); return; }
   if (!confirmDeleteWithPin(`ลบรายงานความผิด GPS ทั้งหมด ${gvRecords.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  const gvAllIds = gvRecords.map(r => r.id);
   gvRecords = [];
   gvSave();
-  gvPushIfReady();
+  if (gvReady) gsDeleteMany('/gpsViolations', gvAllIds);
   gvRenderList();
   showToast('ลบทั้งหมดเรียบร้อย', 'success');
 }
@@ -614,24 +615,21 @@ function gvObjToRecords(obj) {
 }
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
-function gvApplyServer(serverRecords) {
+// ใช้ป้ายลบ (<path>/_deleted/<id>) + เขียนทีละรายการ ผ่าน gsSplit/gsMerge/gsWriteMany/gsDeleteMany ใน gpscctv.js
+function gvApplyServer(serverRecords, deleted) {
   gvFbLoaded = true;
-  const serverIds = new Set(serverRecords.map(r => r.id));
-  const localOnly = (gvRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
-  gvRecords = serverRecords.concat(localOnly);
+  const { merged, localOnly } = gsMerge(gvRecords, serverRecords, deleted || new Set());
+  gvRecords = merged;
   gvSave();
   gvFillTypeSelect('gv-f-type');
   gvRenderList();
   if (document.getElementById('gv-subpage-dashboard')?.classList.contains('active')) { gvFillTypeSelect('gv-dash-type'); gvRenderDashboard(); }
   if (document.getElementById('gv-subpage-daily')?.classList.contains('active')) { gvFillTypeSelect('gv-daily-type'); gvRenderDailyReport(); }
-  if (localOnly.length > 0) gvWriteFB();
+  if (localOnly.length > 0) gsWriteMany('/gpsViolations', localOnly);
 }
 async function gvWriteFB() {
   if (!gvRef) return;
-  try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(gvRef, gvRecordsToObj(gvRecords));
-  } catch (e) { console.warn('gvWriteFB error', e); notifySyncWriteError(e.message); }
+  await gsWriteMany('/gpsViolations', gvRecords);
 }
 function gvPushIfReady() { if (gvReady) gvWriteFB(); }
 
@@ -647,10 +645,7 @@ function gvPushOneIfReady(record) { if (gvReady) gvWriteOne(record); }
 
 async function gvRemoveOne(id) {
   if (!gvRef) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `/gpsViolations/${id}`));
-  } catch (e) { console.warn('gvRemoveOne error', e); notifySyncWriteError(e.message); }
+  await gsDeleteMany('/gpsViolations', [id]);
 }
 function gvRemoveOneIfReady(id) { if (gvReady) gvRemoveOne(id); }
 
@@ -670,10 +665,10 @@ async function gvInit() {
     const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     gvRef = ref(fbDb, '/gpsViolations');
     const snap = await get(gvRef);
-    if (snap.exists()) gvApplyServer(gvObjToRecords(snap.val()));
+    if (snap.exists()) { const p = gsSplit(snap.val()); gvApplyServer(p.records, p.deleted); }
     gvReady = true;
     if (!snap.exists() && gvRecords.length > 0) await gvWriteFB();
-    onValue(gvRef, s => { if (s.exists()) gvApplyServer(gvObjToRecords(s.val())); });
+    onValue(gvRef, s => { if (s.exists()) { const p = gsSplit(s.val()); gvApplyServer(p.records, p.deleted); } });
   } catch (e) { console.warn('gvInit error', e); notifySyncLoadError(e.message); }
 }
 
