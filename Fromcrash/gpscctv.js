@@ -205,9 +205,10 @@ function gcDeleteCase(id) {
 function gcDeleteAllCases() {
   if (typeof mdIsAdmin === 'function' && !mdIsAdmin()) { showToast('เฉพาะแอดมินเท่านั้นที่ลบทั้งหมดได้', 'error'); return; }
   if (!confirmDeleteWithPin(`ลบรายการติดตั้ง/ถอดทั้งหมด ${gcRecords.length} รายการ?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) return;
+  const gcAllIds = gcRecords.map(r => r.id);
   gcRecords = [];
   gcSave();
-  gcPushIfReady();
+  if (gcReady) gsDeleteMany('/gpsCctvInstalls', gcAllIds);
   gcRenderList();
   showToast('ลบรายการติดตั้ง/ถอดทั้งหมดแล้ว', 'warning');
 }
@@ -602,24 +603,59 @@ async function grSaveReportImage() {
 }
 
 // ===== Firebase Sync (ใช้ fbDb/fbReady จาก claims.js) =====
+// ลบแล้วกลับมาอีก: เครื่องอื่นที่ยังมีรายการเก่าอยู่ในเครื่องจะ sync ขึ้นไปใหม่ -> เก็บ "ป้ายลบ" ไว้ที่ <path>/_deleted/<id>
+// และเขียนทีละรายการด้วย update() เท่านั้น (ไม่ set ทั้ง path) เพื่อไม่ให้เครื่องที่ข้อมูลเก่าเขียนทับ/ปลุกรายการที่ลบแล้ว
+function gsSplit(val) {
+  const deleted = new Set();
+  if (!val || typeof val !== 'object') return { records: [], deleted };
+  const dv = Array.isArray(val) ? null : val._deleted;
+  if (dv && typeof dv === 'object') Object.keys(dv).forEach(k => deleted.add(k));
+  const list = Array.isArray(val) ? val.filter(Boolean) : Object.keys(val).filter(k => k !== '_deleted').map(k => val[k]);
+  return { records: list.filter(r => r && r.id && !deleted.has(r.id)), deleted };
+}
+async function gsWriteMany(path, records) {
+  if (typeof fbDb === 'undefined' || !fbDb) return;
+  const upd = {};
+  (records || []).forEach(r => { if (r && r.id) upd[r.id] = r; });
+  if (!Object.keys(upd).length) return;
+  try {
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await update(ref(fbDb, path), upd);
+    notifySyncWriteSuccess();
+  } catch (e) { console.warn('gsWriteMany error', path, e); notifySyncWriteError(e.message); }
+}
+async function gsDeleteMany(path, ids) {
+  if (typeof fbDb === 'undefined' || !fbDb) return;
+  const upd = {};
+  const ts = new Date().toISOString();
+  (ids || []).forEach(id => { if (id) { upd[id] = null; upd['_deleted/' + id] = ts; } });
+  if (!Object.keys(upd).length) return;
+  try {
+    const { ref, update } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    await update(ref(fbDb, path), upd);
+    notifySyncWriteSuccess();
+  } catch (e) { console.warn('gsDeleteMany error', path, e); notifySyncWriteError(e.message); }
+}
+function gsMerge(local, server, deleted) {
+  const serverIds = new Set(server.map(r => r.id));
+  const localOnly = (local || []).filter(t => t && t.id && !serverIds.has(t.id) && !deleted.has(t.id));
+  return { merged: server.concat(localOnly), localOnly };
+}
+
 function gcRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; }); return o; }
 function gcObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
-function gcApplyServer(serverRecords) {
-  const serverIds = new Set(serverRecords.map(r => r.id));
-  const localOnly = (gcRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
-  gcRecords = serverRecords.concat(localOnly);
+function gcApplyServer(serverRecords, deleted) {
+  const { merged, localOnly } = gsMerge(gcRecords, serverRecords, deleted || new Set());
+  gcRecords = merged;
   gcSave();
   gcRenderList();
-  if (localOnly.length > 0) gcWriteFB();
+  if (localOnly.length > 0) gsWriteMany('/gpsCctvInstalls', localOnly);
 }
 async function gcWriteFB() {
   if (!gcRef) return;
-  try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(gcRef, gcRecordsToObj(gcRecords));
-  } catch (e) { console.warn('gcWriteFB error', e); notifySyncWriteError(e.message); }
+  await gsWriteMany('/gpsCctvInstalls', gcRecords);
 }
 function gcPushIfReady() { if (gcReady) gcWriteFB(); }
 
@@ -635,29 +671,22 @@ function gcPushOneIfReady(record) { if (gcReady) gcWriteOne(record); }
 
 async function gcRemoveOne(id) {
   if (!gcRef) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `/gpsCctvInstalls/${id}`));
-  } catch (e) { console.warn('gcRemoveOne error', e); notifySyncWriteError(e.message); }
+  await gsDeleteMany('/gpsCctvInstalls', [id]);
 }
 function gcRemoveOneIfReady(id) { if (gcReady) gcRemoveOne(id); }
 
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
-function grApplyServer(serverRecords) {
-  const serverIds = new Set(serverRecords.map(r => r.id));
-  const localOnly = (grRecords || []).filter(t => t && t.id && !serverIds.has(t.id));
-  grRecords = serverRecords.concat(localOnly);
+function grApplyServer(serverRecords, deleted) {
+  const { merged, localOnly } = gsMerge(grRecords, serverRecords, deleted || new Set());
+  grRecords = merged;
   grSave();
   grRenderList();
-  if (localOnly.length > 0) grWriteFB();
+  if (localOnly.length > 0) gsWriteMany('/gpsCctvRepairs', localOnly);
 }
 async function grWriteFB() {
   if (!grRef) return;
-  try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(grRef, gcRecordsToObj(grRecords));
-  } catch (e) { console.warn('grWriteFB error', e); notifySyncWriteError(e.message); }
+  await gsWriteMany('/gpsCctvRepairs', grRecords);
 }
 function grPushIfReady() { if (grReady) grWriteFB(); }
 
@@ -673,10 +702,7 @@ function grPushOneIfReady(record) { if (grReady) grWriteOne(record); }
 
 async function grRemoveOne(id) {
   if (!grRef) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `/gpsCctvRepairs/${id}`));
-  } catch (e) { console.warn('grRemoveOne error', e); notifySyncWriteError(e.message); }
+  await gsDeleteMany('/gpsCctvRepairs', [id]);
 }
 function grRemoveOneIfReady(id) { if (grReady) grRemoveOne(id); }
 
@@ -697,14 +723,14 @@ async function gcInit() {
     gcRef = ref(fbDb, '/gpsCctvInstalls');
     grRef = ref(fbDb, '/gpsCctvRepairs');
     const [gcSnap, grSnap] = await Promise.allSettled([get(gcRef), get(grRef)]);
-    if (gcSnap.status === 'fulfilled' && gcSnap.value.exists()) gcApplyServer(gcObjToRecords(gcSnap.value.val()));
-    if (grSnap.status === 'fulfilled' && grSnap.value.exists()) grApplyServer(gcObjToRecords(grSnap.value.val()));
+    if (gcSnap.status === 'fulfilled' && gcSnap.value.exists()) { const p = gsSplit(gcSnap.value.val()); gcApplyServer(p.records, p.deleted); }
+    if (grSnap.status === 'fulfilled' && grSnap.value.exists()) { const p = gsSplit(grSnap.value.val()); grApplyServer(p.records, p.deleted); }
     gcReady = true;
     grReady = true;
     if (gcSnap.status === 'fulfilled' && !gcSnap.value.exists() && gcRecords.length > 0) await gcWriteFB();
     if (grSnap.status === 'fulfilled' && !grSnap.value.exists() && grRecords.length > 0) await grWriteFB();
-    onValue(gcRef, s => { if (s.exists()) gcApplyServer(gcObjToRecords(s.val())); });
-    onValue(grRef, s => { if (s.exists()) grApplyServer(gcObjToRecords(s.val())); });
+    onValue(gcRef, s => { if (s.exists()) { const p = gsSplit(s.val()); gcApplyServer(p.records, p.deleted); } });
+    onValue(grRef, s => { if (s.exists()) { const p = gsSplit(s.val()); grApplyServer(p.records, p.deleted); } });
   } catch (e) {
     console.warn('gcInit error', e);
     notifySyncLoadError(e.message);
@@ -887,10 +913,11 @@ function ddbDeleteRecord(type, id) {
 
 function ddbDeleteAll(type) {
   if (!mdConfirmDeleteAll(`ฐานข้อมูล${DDB_LABELS[type]}`)) return;
+  const ddbAllIds = ddbRecords[type].map(r => r.id);
   ddbRecords[type] = [];
   ddbSave(type);
   ddbRenderList(type);
-  if (ddbReady[type]) ddbWriteFB(type);
+  if (ddbReady[type]) gsDeleteMany(DDB_FB_PATH[type], ddbAllIds);
   showToast(`ลบฐานข้อมูล${DDB_LABELS[type]}ทั้งหมดแล้ว`, 'warning');
 }
 
@@ -954,21 +981,17 @@ function ddbRecordsToObj(arr) { const o = {}; (arr || []).forEach(r => { if (r &
 function ddbObjToRecords(obj) { if (!obj) return []; if (Array.isArray(obj)) return obj.filter(Boolean); return Object.values(obj).filter(r => r && r.id); }
 // ถ้าเครื่องนี้มีบันทึกที่ server ยังไม่มี (เช่น กดบันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
-function ddbApplyServer(type, serverRecords) {
-  const serverIds = new Set(serverRecords.map(r => r.id));
-  const localOnly = (ddbRecords[type] || []).filter(t => t && t.id && !serverIds.has(t.id));
-  ddbRecords[type] = serverRecords.concat(localOnly);
+function ddbApplyServer(type, serverRecords, deleted) {
+  const { merged, localOnly } = gsMerge(ddbRecords[type], serverRecords, deleted || new Set());
+  ddbRecords[type] = merged;
   ddbSave(type);
   ddbRenderList(type);
-  if (localOnly.length > 0) ddbWriteFB(type);
+  if (localOnly.length > 0) gsWriteMany(DDB_FB_PATH[type], localOnly);
 }
 
 async function ddbWriteFB(type) {
   if (!ddbRef[type]) return;
-  try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(ddbRef[type], ddbRecordsToObj(ddbRecords[type]));
-  } catch (e) { console.warn('ddbWriteFB error', type, e); notifySyncWriteError(e.message); }
+  await gsWriteMany(DDB_FB_PATH[type], ddbRecords[type]);
 }
 
 async function ddbWriteOne(type, record) {
@@ -982,10 +1005,7 @@ async function ddbWriteOne(type, record) {
 
 async function ddbRemoveOne(type, id) {
   if (!ddbRef[type]) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `${DDB_FB_PATH[type]}/${id}`));
-  } catch (e) { console.warn('ddbRemoveOne error', type, e); notifySyncWriteError(e.message); }
+  await gsDeleteMany(DDB_FB_PATH[type], [id]);
 }
 
 async function ddbInit() {
@@ -995,10 +1015,10 @@ async function ddbInit() {
     for (const type of DDB_TYPES) {
       ddbRef[type] = ref(fbDb, DDB_FB_PATH[type]);
       const snap = await get(ddbRef[type]);
-      if (snap.exists()) ddbApplyServer(type, ddbObjToRecords(snap.val()));
+      if (snap.exists()) { const p = gsSplit(snap.val()); ddbApplyServer(type, p.records, p.deleted); }
       ddbReady[type] = true;
       if (!snap.exists() && ddbRecords[type].length > 0) await ddbWriteFB(type);
-      onValue(ddbRef[type], s => { if (s.exists()) ddbApplyServer(type, ddbObjToRecords(s.val())); });
+      onValue(ddbRef[type], s => { if (s.exists()) { const p = gsSplit(s.val()); ddbApplyServer(type, p.records, p.deleted); } });
     }
   } catch (e) {
     console.warn('ddbInit error', e);
