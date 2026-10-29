@@ -1797,3 +1797,8 @@ body {
 .rs-pop-sub { font-size: 0.82rem; color: var(--text-muted); margin: 2px 0 12px; }
 .rs-pop input[type=date] { width: 100%; margin-bottom: 14px; }
 .rs-pop-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ดรอปดาวน์ แจ้ง/ไม่แจ้ง ในตารางประวัติเข้าอู่ */
+.gh-notify-sel { padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-family: inherit; font-size: 0.9rem; cursor: pointer; }
+.gh-notify-sel.gh-notify-0 { border-color: #06d6a0; color: #058c68; font-weight: 600; }
+.gh-notify-sel.gh-notify-1 { border-color: #ef476f; color: #d6224b; font-weight: 600; }

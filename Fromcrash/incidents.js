@@ -1251,6 +1251,17 @@ function ghClearListFilters() {
   ghRenderList();
 }
 
+// เลือก แจ้ง/ไม่แจ้ง ได้ตรงๆ ในตาราง (บันทึกทันที)
+function ghSetNotified(id, value) {
+  const idx = ghRecords.findIndex(r => r.id === id);
+  if (idx < 0) return;
+  ghRecords[idx] = { ...ghRecords[idx], notified: GH_NOTIFY_OPTIONS.includes(value) ? value : '', updatedAt: new Date().toISOString() };
+  ghSave();
+  ghPushOneIfReady(ghRecords[idx]);
+  ghRenderList();
+  showToast('บันทึกการแจ้งแล้ว', 'success');
+}
+
 function ghRepairDaysLabel(r) {
   if (!r.inDate || !r.outDate) return '-';
   const diff = Math.round((new Date(r.outDate) - new Date(r.inDate)) / 86400000);
@@ -1275,7 +1286,10 @@ function ghRenderList() {
   tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
-      <td>${escapeHtml(r.notified || '-')}</td>
+      <td><select class="gh-notify-sel gh-notify-${GH_NOTIFY_OPTIONS.indexOf(r.notified)}" onchange="ghSetNotified('${r.id}', this.value)">
+        <option value="">-</option>
+        ${GH_NOTIFY_OPTIONS.map(o => `<option value="${o}"${r.notified === o ? ' selected' : ''}>${o}</option>`).join('')}
+      </select></td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.businessUnit || '-')}</td>
