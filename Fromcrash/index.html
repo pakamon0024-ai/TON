@@ -1980,8 +1980,8 @@
                 <div class="chart-box"><canvas id="gh-chart-month"></canvas></div>
               </div>
               <div class="chart-card">
-                <div class="chart-title"><span>ค่าใช้จ่ายรวมรายเดือน</span><span class="chart-total" id="gh-chart-cost-total"></span></div>
-                <div class="chart-box"><canvas id="gh-chart-cost"></canvas></div>
+                <div class="chart-title"><span>การแจ้ง / ไม่แจ้ง รายเดือน</span><span class="chart-total" id="gh-chart-notify-total"></span></div>
+                <div class="chart-box"><canvas id="gh-chart-notify"></canvas></div>
               </div>
               <div class="chart-card">
                 <div class="chart-title"><span>จำนวนครั้งตามลานจอด</span><span class="chart-total" id="gh-chart-yard-total"></span></div>
@@ -1990,6 +1990,10 @@
               <div class="chart-card">
                 <div class="chart-title"><span>จำนวนครั้งตามอู่/ศูนย์ซ่อม</span><span class="chart-total" id="gh-chart-shop-total"></span></div>
                 <div class="chart-box"><canvas id="gh-chart-shop"></canvas></div>
+              </div>
+              <div class="chart-card span-2">
+                <div class="chart-title"><span>ค่าใช้จ่ายรวมรายเดือน</span><span class="chart-total" id="gh-chart-cost-total"></span></div>
+                <div class="chart-box"><canvas id="gh-chart-cost"></canvas></div>
               </div>
             </div>
           </div>
@@ -2024,6 +2028,7 @@
                 <thead>
                   <tr>
                     <th class="tk-sortable" onclick="ghSortBy('runningNo')">เลขที่<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-runningNo"></span></th>
+                    <th class="tk-sortable" onclick="ghSortBy('notified')">การแจ้ง<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-notified"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('plate')">ทะเบียนรถ<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-plate"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('yard')">ลานจอด<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-yard"></span></th>
                     <th class="tk-sortable" onclick="ghSortBy('businessUnit')">หน่วยงาน<span class="gh-sort-ind tk-sort-ind" id="gh-sort-ind-businessUnit"></span></th>
@@ -2038,7 +2043,7 @@
                 </thead>
                 <tbody id="gh-list-body">
                   <tr>
-                    <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -2055,12 +2060,16 @@
             <div class="form-card">
               <div class="fieldset-title">ประวัติการนำรถเข้าอู่</div>
               <div class="form-row-3">
+                <div class="form-group"><label>การแจ้ง</label>
+                  <select id="gh-notified">
+                    <option value="">-- เลือก --</option>
+                    <option value="แจ้ง">แจ้ง</option>
+                    <option value="ไม่แจ้ง">ไม่แจ้ง</option>
+                  </select></div>
                 <div class="form-group"><label>ทะเบียนรถ <span class="req">*</span></label>
                   <input type="text" id="gh-plate" list="gh-plate-list" placeholder="พิมพ์ทะเบียนรถ..." /></div>
                 <div class="form-group"><label>ลานจอด</label>
                   <input type="text" id="gh-yard" list="gh-yard-list" placeholder="เลือก/พิมพ์ลานจอด..." /></div>
-                <div class="form-group"><label>อู่/ศูนย์ซ่อม</label>
-                  <input type="text" id="gh-shop" placeholder="ชื่ออู่/ศูนย์ซ่อม..." /></div>
               </div>
               <datalist id="gh-plate-list"></datalist>
               <datalist id="gh-yard-list"></datalist>
@@ -2073,6 +2082,8 @@
                   <input type="text" id="gh-days" readonly /></div>
               </div>
               <div class="form-row-3">
+                <div class="form-group"><label>อู่/ศูนย์ซ่อม</label>
+                  <input type="text" id="gh-shop" placeholder="ชื่ออู่/ศูนย์ซ่อม..." /></div>
                 <div class="form-group"><label>หน่วยงาน</label>
                   <input type="text" id="gh-bu" list="gh-bu-list" placeholder="เลือก/พิมพ์หน่วยงาน..." />
                   <datalist id="gh-bu-list"></datalist>

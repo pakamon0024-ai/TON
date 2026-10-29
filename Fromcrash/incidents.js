@@ -918,8 +918,10 @@ let ghCharts = {};
 let ghSortField = null; // null = ใช้ลำดับ default (วันที่เข้าอู่ใหม่สุดก่อน)
 let ghSortDir = 1;
 
-const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'ลานจอด', 'หน่วยงาน', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้'];
-const GH_XLSX_COLWIDTHS = [8, 14, 12, 16, 20, 18, 18, 30, 14];
+// คอลัมน์ "การแจ้ง" อยู่ท้ายสุดเพื่อให้ไฟล์ Excel เดิมที่ไม่มีคอลัมน์นี้ยัง import ได้
+const GH_XLSX_HEADERS = ['ลำดับที่', 'ทะเบียนรถ', 'ลานจอด', 'หน่วยงาน', 'อู่/ศูนย์ซ่อม', 'วันที่เข้าอู่ (dd/mm/yyyy)', 'วันที่ซ่อมเสร็จ (dd/mm/yyyy)', 'รายละเอียด/สาเหตุที่เข้าอู่', 'ค่าใช้จ่ายรอบนี้', 'การแจ้ง (แจ้ง/ไม่แจ้ง)'];
+const GH_XLSX_COLWIDTHS = [8, 14, 12, 16, 20, 18, 18, 30, 14, 16];
+const GH_NOTIFY_OPTIONS = ['แจ้ง', 'ไม่แจ้ง'];
 const GH_NUMERIC_FIELDS = ['runningNo', 'cost'];
 const GH_DATE_FIELDS = ['inDate', 'outDate'];
 
@@ -955,6 +957,7 @@ const GH_CHART_COLORS = {
   yard:  { bg: 'rgba(255,209,102,0.9)', border: '#e0a800' },
   shop:  { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
 };
+const GH_NOTIFY_COLORS = { 'แจ้ง': '#06d6a0', 'ไม่แจ้ง': '#ef476f', 'ไม่ระบุ': '#adb5bd' };
 const GH_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 function ghDestroyChart(id) {
@@ -983,6 +986,46 @@ function ghBarChart(canvasId, key, labels, data, opts) {
     },
   });
   setChartTotal(canvasId, data, isMoney, true);
+}
+
+// แจ้ง / ไม่แจ้ง รายเดือน (แท่งซ้อน) ; รายการเก่าที่ยังไม่ได้เลือกแสดงเป็น "ไม่ระบุ" เฉพาะเมื่อมีอยู่จริง
+function ghNotifyChart(filtered, year) {
+  ghDestroyChart('notify');
+  const cats = ['แจ้ง', 'ไม่แจ้ง', 'ไม่ระบุ'];
+  const series = { 'แจ้ง': new Array(12).fill(0), 'ไม่แจ้ง': new Array(12).fill(0), 'ไม่ระบุ': new Array(12).fill(0) };
+  filtered.forEach(r => {
+    if (!r.inDate) return;
+    const d = new Date(r.inDate);
+    if (isNaN(d) || d.getFullYear() !== year) return;
+    series[GH_NOTIFY_OPTIONS.includes(r.notified) ? r.notified : 'ไม่ระบุ'][d.getMonth()]++;
+  });
+  const sum = a => a.reduce((s, v) => s + v, 0);
+  const shown = cats.filter(c => c !== 'ไม่ระบุ' || sum(series[c]) > 0);
+  const canvas = document.getElementById('gh-chart-notify');
+  if (!canvas) return;
+  ghCharts.notify = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: GH_MONTH_LABELS_TH,
+      datasets: shown.map(c => ({ label: c, data: series[c], backgroundColor: GH_NOTIFY_COLORS[c], borderWidth: 0, borderRadius: 4 })),
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top', labels: { font: GH_CHART_FONT, color: '#3d4f6d', boxWidth: 14 } },
+        datalabels: {
+          display: ctx => ctx.dataset.data[ctx.dataIndex] > 0,
+          color: '#fff', font: { family: "'Kanit','Sarabun',sans-serif", size: 12, weight: '700' },
+        },
+      },
+      scales: {
+        y: { stacked: true, beginAtZero: true, grace: '10%', grid: GH_CHART_GRID, ticks: { ...GH_CHART_TICK, precision: 0 } },
+        x: { stacked: true, grid: { display: false }, ticks: { ...GH_CHART_TICK, autoSkip: false } },
+      },
+    },
+  });
+  const el = document.getElementById('gh-chart-notify-total');
+  if (el) el.textContent = shown.map(c => c + ' ' + sum(series[c])).join(' · ');
 }
 
 function ghDashFillSelect(id, list) {
@@ -1021,6 +1064,7 @@ function ghRenderDashboard() {
   });
   ghBarChart('gh-chart-month', 'month', GH_MONTH_LABELS_TH, monthCount);
   ghBarChart('gh-chart-cost', 'cost', GH_MONTH_LABELS_TH, monthCost, { isMoney: true, datasetLabel: 'ค่าใช้จ่าย (บาท)' });
+  ghNotifyChart(filtered, curYear);
 
   const countBy = field => {
     const map = {};
@@ -1067,6 +1111,7 @@ function ghSaveRecord() {
 
   const record = {
     plate,
+    notified: document.getElementById('gh-notified').value,
     yard: document.getElementById('gh-yard').value.trim(),
     businessUnit: document.getElementById('gh-bu').value.trim(),
     inDate,
@@ -1105,7 +1150,7 @@ function ghClearForm() {
   ghEditingId = null;
   const banner = document.getElementById('gh-edit-banner');
   if (banner) banner.style.display = 'none';
-  ['gh-plate', 'gh-yard', 'gh-bu', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
+  ['gh-notified', 'gh-plate', 'gh-yard', 'gh-bu', 'gh-shop', 'gh-in', 'gh-out', 'gh-days', 'gh-reason', 'gh-cost']
     .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
 }
 
@@ -1115,6 +1160,7 @@ function ghEditRecord(id) {
   ghEditingId = id;
   document.getElementById('gh-edit-banner').style.display = 'flex';
   document.getElementById('gh-edit-no').textContent = rec.runningNo;
+  document.getElementById('gh-notified').value = rec.notified || '';
   document.getElementById('gh-plate').value = rec.plate || '';
   document.getElementById('gh-yard').value = rec.yard || '';
   document.getElementById('gh-bu').value = rec.businessUnit || '';
@@ -1210,7 +1256,7 @@ function ghRenderList() {
   ghUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
@@ -1219,6 +1265,7 @@ function ghRenderList() {
   tbody.innerHTML = pageItems.map(r => `
     <tr>
       <td>${r.runningNo}</td>
+      <td>${escapeHtml(r.notified || '-')}</td>
       <td style="font-family:monospace">${escapeHtml(r.plate)}</td>
       <td>${escapeHtml(r.yard || '-')}</td>
       <td>${escapeHtml(r.businessUnit || '-')}</td>
@@ -1240,7 +1287,7 @@ function ghRenderList() {
 function ghDownloadTemplate() {
   const sample = [
     GH_XLSX_HEADERS,
-    ['', '70-1234', 'ABC', 'Trailer', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500'],
+    ['', '70-1234', 'ABC', 'Trailer', 'อู่ช่างสมชาย', '15/01/2026', '20/01/2026', 'เปลี่ยนกันชนหน้า', '3500', 'แจ้ง'],
   ];
   const ws = XLSX.utils.aoa_to_sheet(sample);
   ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -1253,7 +1300,7 @@ function ghDownloadTemplate() {
 function ghExportExcel() {
   if (!ghRecords.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [GH_XLSX_HEADERS, ...ghRecords.map(r => [
-    r.runningNo, r.plate || '', r.yard || '', r.businessUnit || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0,
+    r.runningNo, r.plate || '', r.yard || '', r.businessUnit || '', r.shop || '', formatDMY(r.inDate), formatDMY(r.outDate), r.reason || '', r.cost || 0, r.notified || '',
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = GH_XLSX_COLWIDTHS.map(w => ({ wch: w }));
@@ -1287,6 +1334,9 @@ function ghImportExcel(evt) {
           reason: String(row[7] || '').trim(),
           cost: parseFloat(row[8]) || 0,
         };
+        // คอลัมน์ "การแจ้ง" เป็นตัวเลือก: ไฟล์เก่าที่ไม่มีคอลัมน์นี้ (หรือเว้นว่าง) จะไม่ทับค่าที่มีอยู่
+        const notified = String(row[9] || '').trim();
+        if (GH_NOTIFY_OPTIONS.includes(notified)) data.notified = notified;
         // จับคู่ด้วย "ลำดับที่" (คอลัมน์แรก) — ถ้ามีเลขนี้อยู่แล้วให้แก้ไขรายการเดิมแทนการเพิ่มซ้ำ
         const rowNo = parseInt(row[0]);
         const existingIdx = rowNo ? ghRecords.findIndex(r => r.runningNo === rowNo) : -1;
