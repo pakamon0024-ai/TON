@@ -1808,3 +1808,9 @@ body {
 .recent-table-wrap .data-table { width: 100%; min-width: max-content; }
 .recent-table-wrap .data-table th { white-space: nowrap; padding-left: 14px; padding-right: 14px; }
 .recent-table-wrap .data-table td { padding-left: 14px; padding-right: 14px; }
+
+/* หน้าที่มีตารางข้อมูล: .form-section จำกัดกว้างแค่ 960px ทำให้ตารางไม่ขยายเต็มจอ — ปลดเพดานเฉพาะหน้าที่มีตาราง */
+.form-section:has(.recent-table-wrap) { max-width: none; }
+/* ตารางกรอกรายการ/ตารางเคลมเก่า: หัวไม่ตัดบรรทัด ขยายพอดีหัวข้อเหมือนตารางอื่น */
+.table-wrap .items-table { min-width: max-content; }
+.table-wrap .items-table th, #page-claims .dt th { white-space: nowrap; }
