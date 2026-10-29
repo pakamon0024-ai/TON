@@ -957,6 +957,12 @@ const GH_CHART_COLORS = {
   yard:  { bg: 'rgba(255,209,102,0.9)', border: '#e0a800' },
   shop:  { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
 };
+// ตัวกรอง "การแจ้ง": '' = ทั้งหมด, '__none' = ยังไม่ได้เลือก
+function ghNotifyMatch(r, f) {
+  if (!f) return true;
+  if (f === '__none') return !GH_NOTIFY_OPTIONS.includes(r.notified);
+  return r.notified === f;
+}
 const GH_NOTIFY_COLORS = { 'แจ้ง': '#06d6a0', 'ไม่แจ้ง': '#ef476f', 'ไม่ระบุ': '#adb5bd' };
 const GH_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
@@ -1046,7 +1052,9 @@ function ghRenderDashboard() {
   const month = document.getElementById('gh-dash-month')?.value || '';
   const yardFilter = document.getElementById('gh-dash-yard')?.value || '';
   const buFilter = document.getElementById('gh-dash-bu')?.value || '';
+  const notifyFilter = document.getElementById('gh-dash-notified')?.value || '';
   const filtered = ghRecords.filter(r =>
+    ghNotifyMatch(r, notifyFilter) &&
     (!month || (r.inDate || '').startsWith(month)) &&
     (!yardFilter || r.yard === yardFilter) && (!buFilter || r.businessUnit === buFilter)
   );
@@ -1199,9 +1207,11 @@ function ghDeleteAllRecords() {
 // ===== List / Filter =====
 function ghFilteredList() {
   const bu = document.getElementById('gh-f-bu')?.value || '';
+  const notifyF = document.getElementById('gh-f-notified')?.value || '';
   const search = (document.getElementById('gh-f-search')?.value || '').toLowerCase().trim();
   const list = ghRecords.filter(r => {
     if (bu && r.businessUnit !== bu) return false;
+    if (!ghNotifyMatch(r, notifyF)) return false;
     if (search && !(`${r.plate} ${r.yard} ${r.shop} ${r.reason}`.toLowerCase().includes(search))) return false;
     return true;
   });
@@ -1237,7 +1247,7 @@ function ghUpdateSortIndicators() {
 }
 
 function ghClearListFilters() {
-  ['gh-f-bu', 'gh-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['gh-f-notified', 'gh-f-bu', 'gh-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   ghRenderList();
 }
 

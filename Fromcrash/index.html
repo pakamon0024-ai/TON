@@ -1962,6 +1962,15 @@
                 <input type="month" id="gh-dash-month" onchange="ghRenderDashboard()" />
               </div>
               <div class="filter-group">
+                <label>การแจ้ง</label>
+                <select id="gh-dash-notified" onchange="ghRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="แจ้ง">แจ้ง</option>
+                  <option value="ไม่แจ้ง">ไม่แจ้ง</option>
+                  <option value="__none">ไม่ระบุ</option>
+                </select>
+              </div>
+              <div class="filter-group">
                 <label>กรองตามลานจอด</label>
                 <select id="gh-dash-yard" onchange="ghRenderDashboard()">
                   <option value="">ทั้งหมด</option>
@@ -2001,6 +2010,15 @@
           <!-- GARAGE HISTORY — LIST SUBPAGE -->
           <div class="subpage" id="gh-subpage-list">
             <div class="filter-bar">
+              <div class="filter-group">
+                <label>การแจ้ง</label>
+                <select id="gh-f-notified" onchange="ghRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="แจ้ง">แจ้ง</option>
+                  <option value="ไม่แจ้ง">ไม่แจ้ง</option>
+                  <option value="__none">ไม่ระบุ</option>
+                </select>
+              </div>
               <div class="filter-group">
                 <label>หน่วยงาน</label>
                 <select id="gh-f-bu" onchange="ghRenderList()">
