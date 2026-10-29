@@ -1802,3 +1802,9 @@ body {
 .gh-notify-sel { padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); font-family: inherit; font-size: 0.9rem; cursor: pointer; }
 .gh-notify-sel.gh-notify-0 { border-color: #06d6a0; color: #058c68; font-weight: 600; }
 .gh-notify-sel.gh-notify-1 { border-color: #ef476f; color: #d6224b; font-weight: 600; }
+
+/* ตารางทุกหน้า: หัวตารางไม่ตัดบรรทัด (เช่น "รายละเอียด/สาเหตุ" ไม่แตกเป็น 3 บรรทัด) ตารางขยายกว้างพอดีกับหัวข้อ
+   ถ้าคอลัมน์รวมกว้างกว่ากล่อง กล่องจะเลื่อนแนวนอนเอง ไม่บีบหัวข้อ — ใช้เฉพาะในกล่อง .recent-table-wrap (ไม่กระทบตารางในภาพรายงาน) */
+.recent-table-wrap .data-table { width: 100%; min-width: max-content; }
+.recent-table-wrap .data-table th { white-space: nowrap; padding-left: 14px; padding-right: 14px; }
+.recent-table-wrap .data-table td { padding-left: 14px; padding-right: 14px; }
