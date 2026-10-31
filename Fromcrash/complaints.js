@@ -167,7 +167,7 @@ function cpRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
@@ -183,7 +183,6 @@ function cpRenderList() {
       <td>${escapeHtml(i.driverName || '-')}</td>
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
-      <td>${escapeHtml(i.resolution || '-')}</td>
       <td>${escapeHtml(i.supervisor || '-')}</td>
       <td>
         <button class="action-btn action-view" onclick="cpEditCase('${i.id}')">แก้ไข</button>
