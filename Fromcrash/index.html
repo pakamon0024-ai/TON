@@ -2304,12 +2304,57 @@
           </div>
 
           <div class="subtabs">
-            <button class="subtab active" id="cp-tab-list" onclick="cpSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab active" id="cp-tab-dashboard" onclick="cpSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="cp-tab-list" onclick="cpSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="cp-tab-add" onclick="cpSwitchTab('add')">➕ เพิ่มบันทึก</button>
           </div>
 
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="cp-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน</label>
+                <input type="month" id="cp-dash-month" onchange="cpRenderDashboard()" />
+              </div>
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="cp-dash-yard" onchange="cpRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตามหน่วยงาน</label>
+                <select id="cp-dash-bu" onchange="cpRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนข้อร้องเรียนรายเดือน</span><span class="chart-total" id="cp-chart-month-total"></span></div>
+                <div class="chart-box"><canvas id="cp-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนข้อร้องเรียนตามลานจอด</span><span class="chart-total" id="cp-chart-yard-total"></span></div>
+                <div class="chart-box"><canvas id="cp-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนข้อร้องเรียนตามหน่วยงาน</span><span class="chart-total" id="cp-chart-bu-total"></span></div>
+                <div class="chart-box"><canvas id="cp-chart-bu"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนข้อร้องเรียนตามหัวหน้างาน</span><span class="chart-total" id="cp-chart-supervisor-total"></span></div>
+                <div class="chart-box"><canvas id="cp-chart-supervisor"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนข้อร้องเรียนตามเรื่อง</span><span class="chart-total" id="cp-chart-subject-total"></span></div>
+                <div class="chart-box"><canvas id="cp-chart-subject"></canvas></div>
+              </div>
+            </div>
+          </div>
+
           <!-- LIST SUBPAGE -->
-          <div class="subpage active" id="cp-subpage-list">
+          <div class="subpage" id="cp-subpage-list">
             <div class="filter-bar">
               <div class="filter-group">
                 <label>ลานจอด</label>
