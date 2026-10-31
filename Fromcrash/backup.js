@@ -50,6 +50,7 @@ async function bkExportAll() {
     ['หมวดหมู่ค่าใช้จ่าย', bkNameList(typeof loadCategoriesDB === 'function' ? loadCategoriesDB() : [])],
     ['บันทึกอุบัติเหตุ', typeof incidents !== 'undefined' ? incidents : []],
     ['บันทึกปัญหาการทำงาน', typeof workIssues !== 'undefined' ? workIssues : []],
+    ['ข้อร้องเรียน', typeof complaints !== 'undefined' ? complaints : []],
     ['MEMO', typeof memos !== 'undefined' ? memos : []],
     ['สถานะการซ่อมทรัพย์สิน', typeof repairRecords !== 'undefined' ? repairRecords : []],
     ['เบิกจ่าย Stock Safety', typeof safetyStock !== 'undefined' ? safetyStock : []],

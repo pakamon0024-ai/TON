@@ -125,6 +125,10 @@
           <span class="nav-icon">🛠️</span>
           <span>บันทึกปัญหาการทำงาน</span>
         </a>
+        <a href="#" class="nav-item" data-page="complaints" onclick="showPage('complaints')">
+          <span class="nav-icon">📢</span>
+          <span>ข้อร้องเรียน</span>
+        </a>
         <a href="#" class="nav-item" data-page="breakdown" onclick="showPage('breakdown')">
           <span class="nav-icon">🚛</span>
           <span>Truck Breakdown</span>
@@ -2283,6 +2287,123 @@
               <div class="form-actions">
                 <button class="btn-secondary" onclick="wiClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-complaints">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">📢</div>
+            <div>
+              <h2>ข้อร้องเรียน</h2>
+              <p>บันทึกและติดตามข้อร้องเรียน พร้อมการแก้ไขและหัวหน้างานผู้รับผิดชอบ</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="cp-tab-list" onclick="cpSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="cp-tab-add" onclick="cpSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage active" id="cp-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ลานจอด</label>
+                <select id="cp-f-yard" onchange="cpRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="cp-f-search"
+                  placeholder="เรื่อง / ทะเบียน / พนักงาน / หัวหน้างาน..." oninput="debouncedRender('cpRenderList')" /></div>
+              <button class="btn-secondary" onclick="cpClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="cpExportExcel()">📥 Export</button>
+            </div>
+            <div class="ctxt" id="cp-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>เลขที่</th>
+                    <th>ลงวันที่</th>
+                    <th>เรื่อง</th>
+                    <th>รายละเอียด</th>
+                    <th>ทะเบียน</th>
+                    <th>พนักงานขับรถ</th>
+                    <th>หน่วยงาน</th>
+                    <th>ลานจอด</th>
+                    <th>การแก้ไข</th>
+                    <th>หัวหน้างาน</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="cp-list-body">
+                  <tr>
+                    <td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="cp-list-pager"></div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="cp-subpage-add">
+            <div class="edit-banner" id="cp-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขข้อร้องเรียน <strong id="cp-edit-no"></strong></span>
+              <button class="btn-secondary" onclick="cpCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลข้อร้องเรียน</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ลงวันที่ <span class="req">*</span></label><input type="date"
+                    id="cp-date" /></div>
+                <div class="form-group" style="grid-column:span 2;"><label>เรื่อง <span class="req">*</span></label>
+                  <input type="text" id="cp-subject" placeholder="ระบุเรื่องที่ร้องเรียน..." />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียด <span
+                      class="req">*</span></label>
+                  <textarea class="fta" id="cp-detail" rows="3" placeholder="อธิบายรายละเอียดข้อร้องเรียน..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ทะเบียน</label>
+                  <input type="text" id="cp-plate" list="cp-plate-list" placeholder="พิมพ์ทะเบียนหรือเลือก..."
+                    oninput="cpLookupVehicle()" />
+                  <datalist id="cp-plate-list"></datalist>
+                </div>
+                <div class="form-group"><label>พนักงานขับรถ</label>
+                  <input type="text" id="cp-driver" list="cp-driver-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="cp-driver-list"></datalist>
+                </div>
+                <div class="form-group"><label>หน่วยงาน</label>
+                  <input type="text" id="cp-bu" list="cp-bu-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="cp-bu-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>ลานจอด</label>
+                  <input type="text" id="cp-yard" list="cp-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="cp-yard-list"></datalist>
+                </div>
+                <div class="form-group"><label>หัวหน้างาน</label>
+                  <input type="text" id="cp-supervisor" placeholder="ชื่อหัวหน้างาน" />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>การแก้ไข</label>
+                  <textarea class="fta" id="cp-resolution" rows="3" placeholder="การแก้ไข / การดำเนินการ..."></textarea>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="cpClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="cpSaveCase()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
           </div>
@@ -5147,6 +5268,7 @@
   <script src="incidents.js"></script>
   <script src="damage.js"></script>
   <script src="issues.js"></script>
+  <script src="complaints.js"></script>
   <script src="breakdown.js"></script>
   <script src="safetystock.js"></script>
   <script src="repairstatus.js"></script>

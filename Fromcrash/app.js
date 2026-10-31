@@ -121,6 +121,7 @@ function showPage(page) {
     users: 'จัดการผู้ใช้',
     incidents: 'บันทึกอุบัติเหตุ',
     issues: 'บันทึกปัญหาการทำงาน',
+    complaints: 'ข้อร้องเรียน',
     breakdown: 'Truck Breakdown',
     safetystock: 'เบิกจ่าย Stock Safety',
     repairstatus: 'สถานะการซ่อมทรัพย์สิน',
@@ -141,6 +142,7 @@ function showPage(page) {
   if (page === 'users' && typeof renderUsersPage === 'function') renderUsersPage();
   if (page === 'incidents' && typeof incOnPageShown === 'function') incOnPageShown();
   if (page === 'issues' && typeof wiOnPageShown === 'function') wiOnPageShown();
+  if (page === 'complaints' && typeof cpOnPageShown === 'function') cpOnPageShown();
   if (page === 'breakdown' && typeof bdOnPageShown === 'function') bdOnPageShown();
   if (page === 'safetystock' && typeof ssOnPageShown === 'function') ssOnPageShown();
   if (page === 'repairstatus' && typeof rsOnPageShown === 'function') rsOnPageShown();
