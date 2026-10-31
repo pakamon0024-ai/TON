@@ -1816,9 +1816,9 @@ body {
 .table-wrap .items-table th, #page-claims .dt th { white-space: nowrap; }
 
 /* ลดความกว้างตารางบนจอ โดยบีบเฉพาะช่องไฟซ้าย-ขวาของเซลล์ (ไม่เปลี่ยนขนาดตัวอักษร) — ไม่แตะตารางในภาพรายงาน/เอกสารพิมพ์ */
-.recent-table-wrap .data-table, .table-wrap .items-table { width: auto; min-width: 0; }
-.recent-table-wrap .data-table th, .recent-table-wrap .data-table td { padding-left: 5px; padding-right: 5px; }
+.recent-table-wrap .data-table, .table-wrap .items-table { width: 100%; min-width: max-content; }
+.recent-table-wrap .data-table th, .recent-table-wrap .data-table td { padding-left: 8px; padding-right: 8px; }
 .recent-table-wrap .data-table th { letter-spacing: 0; }
-.table-wrap .items-table th { padding-left: 6px; padding-right: 6px; }
-.table-wrap .items-table td { padding-left: 4px; padding-right: 4px; }
-#page-claims .dt th, #page-claims .dt td { padding-left: 6px; padding-right: 6px; }
+.table-wrap .items-table th { padding-left: 8px; padding-right: 8px; }
+.table-wrap .items-table td { padding-left: 6px; padding-right: 6px; }
+#page-claims .dt th, #page-claims .dt td { padding-left: 8px; padding-right: 8px; }
