@@ -313,6 +313,57 @@ function dtkExportExcel() {
   showToast('Export เรียบร้อย', 'success');
 }
 
+// Template ใช้หัวคอลัมน์เดียวกับ Export (ไฟล์ที่ Export ออกไปแก้แล้ว Import กลับได้) — คอลัมน์ "เอกสารเกินกำหนด (วัน)" ระบบคำนวณเอง ไม่อ่านค่าตอน Import
+function dtkDownloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    DTK_XLSX_HEADERS,
+    ['20/04/2026', 'Trouble Report', '-', 'สมชาย ใจดี', 'APC', 'Trailer', '25/04/2026', '', '', 'ชื่อผู้รับผิดชอบ', 'อุบัติเหตุ'],
+  ]);
+  ws['!cols'] = [12, 22, 10, 24, 10, 12, 12, 12, 14, 16, 24].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Template');
+  XLSX.writeFile(wb, 'Template_ติดตามเอกสาร.xlsx');
+  showToast('ดาวน์โหลด Template เรียบร้อย', 'success');
+}
+
+function dtkImportExcel(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      let added = 0, skipped = 0;
+      rows.slice(1).forEach(row => {
+        const date = normalizeImportDate(row[0]);
+        const detail = String(row[1] || '').trim();
+        const name = String(row[3] || '').trim();
+        const dueDate = normalizeImportDate(row[6]);
+        if (!date && !detail && !name) return;
+        if (!date || !detail || !name || !dueDate) { skipped++; return; }
+        docTracks.push({
+          id: 'DTK_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+          date, detail, name, dueDate,
+          empId: String(row[2] || '').trim(),
+          yard: String(row[4] || '').trim(),
+          project: String(row[5] || '').trim(),
+          sendDate: normalizeImportDate(row[7]),
+          owner: String(row[9] || '').trim(),
+          note: String(row[10] || '').trim(),
+          createdAt: new Date().toISOString(),
+        });
+        added++;
+      });
+      dtkSave(); dtkPushIfReady(); dtkRefreshLookupDropdowns(); dtkRenderList();
+      showToast(`นำเข้า ${added} รายการ` + (skipped ? ` (ข้าม ${skipped} แถวที่ข้อมูลไม่ครบ)` : ''), skipped ? 'warning' : 'success');
+    } catch (err) { showToast('นำเข้าไม่ได้: ' + err.message, 'error'); }
+    evt.target.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 // ===== Firebase Sync =====
 function dtkRecordsToObj(arr) {
   const o = {};
@@ -351,6 +402,7 @@ async function dtkWriteOne(record) {
     notifySyncWriteSuccess();
   } catch (e) { console.warn('dtkWriteOne error', e); notifySyncWriteError(e.message); }
 }
+function dtkPushIfReady() { if (dtkReady) dtkWriteFB(); }
 function dtkPushOneIfReady(record) { if (dtkReady) dtkWriteOne(record); }
 
 async function dtkRemoveOne(id) {

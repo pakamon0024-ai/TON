@@ -2387,6 +2387,11 @@
                   placeholder="ชื่อ / รายละเอียด / ผู้รับผิดชอบ..." oninput="debouncedRender('dtkRenderList')" /></div>
               <button class="btn-secondary" onclick="dtkClearListFilters()">🔄 ล้าง</button>
               <button class="btn-secondary" onclick="dtkExportExcel()">📥 Export</button>
+              <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
+                📤 Import
+                <input type="file" accept=".xlsx,.xls" style="display:none" onchange="dtkImportExcel(event)">
+              </label>
+              <button class="btn-secondary" onclick="dtkDownloadTemplate()">📋 Template</button>
             </div>
             <div class="ctxt" id="dtk-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
             </div>
