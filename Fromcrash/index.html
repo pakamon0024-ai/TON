@@ -2312,12 +2312,61 @@
           </div>
 
           <div class="subtabs">
-            <button class="subtab active" id="dtk-tab-list" onclick="dtkSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab active" id="dtk-tab-dashboard" onclick="dtkSwitchTab('dashboard')">📊 แดชบอร์ด</button>
+            <button class="subtab" id="dtk-tab-list" onclick="dtkSwitchTab('list')">📋 รายการทั้งหมด</button>
             <button class="subtab" id="dtk-tab-add" onclick="dtkSwitchTab('add')">➕ เพิ่มบันทึก</button>
           </div>
 
+          <!-- DASHBOARD SUBPAGE -->
+          <div class="subpage active" id="dtk-subpage-dashboard">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>เดือน (Date)</label>
+                <input type="month" id="dtk-dash-month" onchange="dtkRenderDashboard()" />
+              </div>
+              <div class="filter-group">
+                <label>กรองตามลานจอด</label>
+                <select id="dtk-dash-yard" onchange="dtkRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>กรองตาม Project</label>
+                <select id="dtk-dash-project" onchange="dtkRenderDashboard()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+            </div>
+            <div class="chart-grid">
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนเอกสารรายเดือน</span><span class="chart-total" id="dtk-chart-month-total"></span></div>
+                <div class="chart-box"><canvas id="dtk-chart-month"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>สถานะการส่งเอกสาร</span><span class="chart-total" id="dtk-chart-status-total"></span></div>
+                <div class="chart-box"><canvas id="dtk-chart-status"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนเอกสารตามลานจอด</span><span class="chart-total" id="dtk-chart-yard-total"></span></div>
+                <div class="chart-box"><canvas id="dtk-chart-yard"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนเอกสารตาม Project</span><span class="chart-total" id="dtk-chart-project-total"></span></div>
+                <div class="chart-box"><canvas id="dtk-chart-project"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนเอกสารตามรายละเอียด (Detail)</span><span class="chart-total" id="dtk-chart-detail-total"></span></div>
+                <div class="chart-box"><canvas id="dtk-chart-detail"></canvas></div>
+              </div>
+              <div class="chart-card">
+                <div class="chart-title"><span>จำนวนเอกสารตามผู้รับผิดชอบ</span><span class="chart-total" id="dtk-chart-owner-total"></span></div>
+                <div class="chart-box"><canvas id="dtk-chart-owner"></canvas></div>
+              </div>
+            </div>
+          </div>
+
           <!-- LIST SUBPAGE -->
-          <div class="subpage active" id="dtk-subpage-list">
+          <div class="subpage" id="dtk-subpage-list">
             <div class="filter-bar">
               <div class="filter-group">
                 <label>ลานจอด (Yard)</label>

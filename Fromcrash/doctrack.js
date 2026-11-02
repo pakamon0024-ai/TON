@@ -25,10 +25,11 @@ function dtkOverdueDays(rec) {
 
 // ===== Sub-tabs =====
 function dtkSwitchTab(tab) {
-  ['list', 'add'].forEach(t => {
+  ['dashboard', 'list', 'add'].forEach(t => {
     document.getElementById(`dtk-tab-${t}`).classList.toggle('active', t === tab);
     document.getElementById(`dtk-subpage-${t}`).classList.toggle('active', t === tab);
   });
+  if (tab === 'dashboard') { dtkRefreshDashFilters(); dtkRenderDashboard(); }
   if (tab === 'list') dtkRenderList();
   if (tab === 'add' && !dtkEditingId) dtkClearForm();
 }
@@ -36,6 +37,90 @@ function dtkSwitchTab(tab) {
 function dtkOnPageShown() {
   dtkRefreshLookupDropdowns();
   dtkRenderList();
+  if (document.getElementById('dtk-subpage-dashboard')?.classList.contains('active')) {
+    dtkRefreshDashFilters();
+    dtkRenderDashboard();
+  }
+}
+
+// ===== Dashboard =====
+const DTK_CHART_FONT = { family: "'Kanit','Sarabun','Noto Sans Thai',sans-serif", size: 13 };
+const DTK_CHART_TICK = { color: '#3d4f6d', font: DTK_CHART_FONT };
+const DTK_CHART_GRID = { color: 'rgba(10,31,56,0.07)' };
+const DTK_CHART_COLORS = {
+  month:   { bg: 'rgba(67,97,238,0.85)', border: '#4361ee' },
+  status:  { bg: ['rgba(6,214,160,0.88)', 'rgba(255,170,0,0.88)', 'rgba(239,71,111,0.88)'], border: '#fff' },
+  yard:    { bg: 'rgba(6,214,160,0.88)', border: '#06d6a0' },
+  project: { bg: 'rgba(155,93,229,0.85)', border: '#9b5de5' },
+  detail:  { bg: 'rgba(255,107,0,0.88)', border: '#ff6b00' },
+  owner:   { bg: 'rgba(239,71,111,0.85)', border: '#ef476f' },
+};
+const DTK_MONTH_LABELS_TH = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+let dtkCharts = {};
+
+function dtkDestroyChart(id) {
+  if (dtkCharts[id]) { dtkCharts[id].destroy(); delete dtkCharts[id]; }
+}
+
+function dtkBarChart(canvasId, key, labels, data, maxRotation) {
+  dtkDestroyChart(key);
+  const dl = {
+    display: true, anchor: 'end', align: 'end', color: '#1a2540',
+    font: { family: "'Kanit','Sarabun',sans-serif", size: 13, weight: '700' },
+    formatter: v => v > 0 ? v : '',
+  };
+  dtkCharts[key] = new Chart(document.getElementById(canvasId), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'จำนวนรายการ', data, backgroundColor: DTK_CHART_COLORS[key].bg, borderColor: DTK_CHART_COLORS[key].border, borderWidth: 0, borderRadius: 5 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, datalabels: dl },
+      scales: {
+        y: { beginAtZero: true, grace: '15%', grid: DTK_CHART_GRID, ticks: { ...DTK_CHART_TICK, precision: 0 } },
+        x: { grid: { display: false }, ticks: { ...DTK_CHART_TICK, autoSkip: false, minRotation: maxRotation || 0, maxRotation: maxRotation || 0 } },
+      },
+    },
+  });
+  setChartTotal(canvasId, data);
+}
+
+function dtkRefreshDashFilters() {
+  dtkFillSelect('dtk-dash-yard', mdYards);
+  dtkFillSelect('dtk-dash-project', mdBusinessUnits);
+}
+
+function dtkRenderDashboard() {
+  const month = document.getElementById('dtk-dash-month')?.value || '';
+  const yardFilter = document.getElementById('dtk-dash-yard')?.value || '';
+  const projectFilter = document.getElementById('dtk-dash-project')?.value || '';
+  const filtered = docTracks.filter(i =>
+    (!month || (i.date || '').startsWith(month)) &&
+    (!yardFilter || i.yard === yardFilter) && (!projectFilter || i.project === projectFilter)
+  );
+
+  const curYear = new Date().getFullYear();
+  const monthCount = new Array(12).fill(0);
+  filtered.forEach(i => {
+    if (!i.date) return;
+    const d = new Date(i.date);
+    if (!isNaN(d) && d.getFullYear() === curYear) monthCount[d.getMonth()]++;
+  });
+  dtkBarChart('dtk-chart-month', 'month', DTK_MONTH_LABELS_TH, monthCount);
+
+  const sent = filtered.filter(i => i.sendDate).length;
+  const late = filtered.filter(i => !i.sendDate && dtkOverdueDays(i) > 0).length;
+  const pending = filtered.length - sent - late;
+  dtkBarChart('dtk-chart-status', 'status', ['ส่งแล้ว', 'ยังไม่ส่ง (ไม่เกินกำหนด)', 'ยังไม่ส่งและเกินกำหนด'], [sent, pending, late]);
+
+  const countBy = field => {
+    const map = {};
+    filtered.forEach(i => { const v = (i[field] || '').trim(); if (v) map[v] = (map[v] || 0) + 1; });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  };
+  ['yard', 'project', 'detail', 'owner'].forEach(key => {
+    const sorted = countBy(key);
+    dtkBarChart(`dtk-chart-${key}`, key, sorted.map(e => e[0]), sorted.map(e => e[1]), 30);
+  });
 }
 
 // ===== Lookup dropdowns =====
@@ -247,6 +332,7 @@ function dtkApplyServer(serverList) {
   dtkSave();
   dtkRefreshLookupDropdowns();
   dtkRenderList();
+  if (document.getElementById('dtk-subpage-dashboard')?.classList.contains('active')) dtkRenderDashboard();
   if (localOnly.length > 0) dtkWriteFB();
 }
 async function dtkWriteFB() {
