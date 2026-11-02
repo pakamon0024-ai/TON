@@ -125,6 +125,10 @@
           <span class="nav-icon">🛠️</span>
           <span>บันทึกปัญหาการทำงาน</span>
         </a>
+        <a href="#" class="nav-item" data-page="doctrack" onclick="showPage('doctrack')">
+          <span class="nav-icon">🗂️</span>
+          <span>ติดตามเอกสาร</span>
+        </a>
         <a href="#" class="nav-item" data-page="complaints" onclick="showPage('complaints')">
           <span class="nav-icon">📢</span>
           <span>ข้อร้องเรียน</span>
@@ -1191,7 +1195,11 @@
                 <button class="btn-danger admin-only-btn" style="display:none;" onclick="deleteAllAbcStaffDB()">🗑️
                   ลบทั้งหมด</button>
               </div>
-              <div class="recent-table-wrap" style="margin-top:16px;">
+              <div class="filter-bar" style="margin-top:16px;">
+                <div class="filter-group"><label>ค้นหาชื่อ</label><input type="text" class="fc" id="md-abcstaff-search"
+                    placeholder="พิมพ์ชื่อพนักงาน..." oninput="debouncedRender('renderAbcStaffTable')" /></div>
+              </div>
+              <div class="recent-table-wrap" style="margin-top:8px;">
                 <table class="data-table">
                   <thead>
                     <tr>
@@ -2287,6 +2295,134 @@
               <div class="form-actions">
                 <button class="btn-secondary" onclick="wiClearForm()">🗑️ ล้างข้อมูล</button>
                 <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-doctrack">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">🗂️</div>
+            <div>
+              <h2>ติดตามเอกสาร</h2>
+              <p>ติดตามเอกสารต่างๆ ที่ต้องส่งตามกำหนด พร้อมนับจำนวนวันที่เกินกำหนดให้อัตโนมัติ</p>
+            </div>
+          </div>
+
+          <div class="subtabs">
+            <button class="subtab active" id="dtk-tab-list" onclick="dtkSwitchTab('list')">📋 รายการทั้งหมด</button>
+            <button class="subtab" id="dtk-tab-add" onclick="dtkSwitchTab('add')">➕ เพิ่มบันทึก</button>
+          </div>
+
+          <!-- LIST SUBPAGE -->
+          <div class="subpage active" id="dtk-subpage-list">
+            <div class="filter-bar">
+              <div class="filter-group">
+                <label>ลานจอด (Yard)</label>
+                <select id="dtk-f-yard" onchange="dtkRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>สถานะ</label>
+                <select id="dtk-f-status" onchange="dtkRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="pending">ยังไม่ส่ง</option>
+                  <option value="overdue">ยังไม่ส่งและเกินกำหนด</option>
+                  <option value="sent">ส่งแล้ว</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="dtk-f-search"
+                  placeholder="ชื่อ / รายละเอียด / ผู้รับผิดชอบ..." oninput="debouncedRender('dtkRenderList')" /></div>
+              <button class="btn-secondary" onclick="dtkClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="dtkExportExcel()">📥 Export</button>
+            </div>
+            <div class="ctxt" id="dtk-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;">
+            </div>
+            <div class="recent-table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Detail</th>
+                    <th>ID.</th>
+                    <th>Name</th>
+                    <th>Yard</th>
+                    <th>Project</th>
+                    <th class="dtk-due">Duedate</th>
+                    <th class="dtk-send">Send date</th>
+                    <th>เอกสารเกินกำหนด (วัน)</th>
+                    <th>ผู้รับผิดชอบ</th>
+                    <th>หมายเหตุ</th>
+                    <th>จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="dtk-list-body">
+                  <tr>
+                    <td colspan="12" class="empty-state">ยังไม่มีข้อมูล</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div id="dtk-list-pager"></div>
+          </div>
+
+          <!-- ADD SUBPAGE -->
+          <div class="subpage" id="dtk-subpage-add">
+            <div class="edit-banner" id="dtk-edit-banner" style="display:none;">
+              <span>✏️ กำลังแก้ไขรายการติดตามเอกสาร</span>
+              <button class="btn-secondary" onclick="dtkCancelEdit()">✕ ยกเลิกการแก้ไข</button>
+            </div>
+            <div class="form-card">
+              <div class="fieldset-title">ข้อมูลเอกสาร</div>
+              <div class="form-row-3">
+                <div class="form-group"><label>Date <span class="req">*</span></label><input type="date"
+                    id="dtk-date" /></div>
+                <div class="form-group"><label>Detail <span class="req">*</span></label>
+                  <input type="text" id="dtk-detail" list="dtk-detail-list" placeholder="เช่น Trouble Report" />
+                  <datalist id="dtk-detail-list"></datalist>
+                </div>
+                <div class="form-group"><label>ID.</label>
+                  <input type="text" id="dtk-empid" placeholder="รหัสพนักงาน (ถ้ามี)" />
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>Name <span class="req">*</span></label>
+                  <input type="text" id="dtk-name" list="dtk-name-list" placeholder="พิมพ์ชื่อหรือเลือก..." />
+                  <datalist id="dtk-name-list"></datalist>
+                </div>
+                <div class="form-group"><label>Yard</label>
+                  <input type="text" id="dtk-yard" list="dtk-yard-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="dtk-yard-list"></datalist>
+                </div>
+                <div class="form-group"><label>Project</label>
+                  <input type="text" id="dtk-project" list="dtk-project-list" placeholder="พิมพ์หรือเลือก..." />
+                  <datalist id="dtk-project-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>Duedate <span class="req">*</span></label><input type="date"
+                    id="dtk-due" /></div>
+                <div class="form-group"><label>Send date</label><input type="date" id="dtk-send" /></div>
+                <div class="form-group"><label>ผู้รับผิดชอบ</label>
+                  <input type="text" id="dtk-owner" list="dtk-owner-list" placeholder="ชื่อผู้รับผิดชอบ" />
+                  <datalist id="dtk-owner-list"></datalist>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>หมายเหตุ</label>
+                  <input type="text" id="dtk-note" list="dtk-note-list" placeholder="เช่น อุบัติเหตุ" />
+                  <datalist id="dtk-note-list"></datalist>
+                </div>
+                <div class="form-group" style="grid-column:span 2;align-self:end;">
+                  <small style="color:var(--text-muted);">จำนวนวันที่เกินกำหนดคำนวณให้อัตโนมัติ (จาก Duedate ถึง Send date หรือถึงวันนี้ถ้ายังไม่ส่ง)</small>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn-secondary" onclick="dtkClearForm()">🗑️ ล้างข้อมูล</button>
+                <button class="btn-primary" onclick="dtkSaveCase()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
           </div>
@@ -5313,6 +5449,7 @@
   <script src="damage.js"></script>
   <script src="issues.js"></script>
   <script src="complaints.js"></script>
+  <script src="doctrack.js"></script>
   <script src="breakdown.js"></script>
   <script src="safetystock.js"></script>
   <script src="repairstatus.js"></script>

@@ -1822,3 +1822,12 @@ body {
 .table-wrap .items-table th { padding-left: 8px; padding-right: 8px; }
 .table-wrap .items-table td { padding-left: 6px; padding-right: 6px; }
 #page-claims .dt th, #page-claims .dt td { padding-left: 8px; padding-right: 8px; }
+
+/* ติดตามเอกสาร: Duedate เหลือง / Send date ส้มอ่อน ตามไฟล์ Excel เดิม, แถวที่ยังไม่ส่งและเกินกำหนดเป็นตัวอักษรแดง */
+.data-table th.dtk-due { background: #fff59d; color: #333; }
+.data-table th.dtk-send { background: #ffe0b2; color: #333; }
+.data-table td.dtk-due { background: #fff9c4; }
+.data-table td.dtk-send { background: #fff3e0; }
+.data-table td.dtk-days { text-align: center; font-weight: 700; }
+.data-table tr.dtk-row-late td { color: #d32f2f; }
+.data-table tr.dtk-row-late td.dtk-send input { color: inherit; }

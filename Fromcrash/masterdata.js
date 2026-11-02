@@ -1039,8 +1039,9 @@ function renderAbcStaffTable() {
   const tbody = document.getElementById('md-abcstaff-body');
   const pagerEl = document.getElementById('md-abcstaff-pager');
   if (!tbody) return;
-  const activeStaff = mdAbcStaffActive();
-  if (activeStaff.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">ยังไม่มีข้อมูล</td></tr>'; if (pagerEl) pagerEl.innerHTML = ''; return; }
+  const search = (document.getElementById('md-abcstaff-search')?.value || '').toLowerCase().trim();
+  const activeStaff = mdAbcStaffActive().filter(s => !search || (s.name || '').toLowerCase().includes(search));
+  if (activeStaff.length === 0) { tbody.innerHTML = `<tr><td colspan="4" class="empty-state">${search ? 'ไม่พบชื่อที่ค้นหา' : 'ยังไม่มีข้อมูล'}</td></tr>`; if (pagerEl) pagerEl.innerHTML = ''; return; }
   const { pageItems, page, totalPages, total } = paginateSlice('md-abcstaff', activeStaff);
   if (pagerEl) pagerEl.innerHTML = paginatePagerHtml('md-abcstaff', page, totalPages, total, 'renderAbcStaffTable');
   tbody.innerHTML = pageItems.map(s => `
