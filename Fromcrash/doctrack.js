@@ -15,12 +15,27 @@ function dtkTodayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-// จำนวนวันที่เกินกำหนด: นับจาก Duedate ถึงวันที่ส่ง (ถ้ายังไม่ส่งนับถึงวันนี้) — ไม่เกินกำหนดให้เป็น 0
+// Duedate = Date + 5 วัน (คำนวณเสมอจาก Date ไม่ใช้ค่าที่กรอก/เก็บไว้)
+const DTK_DUE_DAYS = 5;
+function dtkDueOf(rec) {
+  if (!rec || !rec.date) return '';
+  const d = new Date(rec.date + 'T00:00:00Z');
+  if (isNaN(d)) return '';
+  d.setUTCDate(d.getUTCDate() + DTK_DUE_DAYS);
+  return d.toISOString().slice(0, 10);
+}
+
+// จำนวนวันที่เกินกำหนด: นับจาก Duedate (Date+5) ถึงวันที่ส่ง (ถ้ายังไม่ส่งนับถึงวันนี้) — ไม่เกินกำหนดให้เป็น 0
 function dtkOverdueDays(rec) {
-  if (!rec.dueDate) return 0;
+  const due = dtkDueOf(rec);
+  if (!due) return 0;
   const end = rec.sendDate || dtkTodayStr();
-  const diff = Math.round((new Date(end) - new Date(rec.dueDate)) / 86400000);
+  const diff = Math.round((new Date(end + 'T00:00:00Z') - new Date(due + 'T00:00:00Z')) / 86400000);
   return diff > 0 ? diff : 0;
+}
+
+function dtkUpdateDueField() {
+  document.getElementById('dtk-due').value = dtkDueOf({ date: document.getElementById('dtk-date').value });
 }
 
 // ===== Sub-tabs =====
@@ -155,12 +170,11 @@ function dtkSaveCase() {
   const date = document.getElementById('dtk-date').value;
   const detail = document.getElementById('dtk-detail').value.trim();
   const name = document.getElementById('dtk-name').value.trim();
-  const dueDate = document.getElementById('dtk-due').value;
+  const dueDate = dtkDueOf({ date });
 
   if (!date) { showToast('กรุณาระบุวันที่ (Date)', 'warning'); return; }
   if (!detail) { showToast('กรุณาระบุรายละเอียด (Detail)', 'warning'); return; }
   if (!name) { showToast('กรุณาระบุชื่อ (Name)', 'warning'); return; }
-  if (!dueDate) { showToast('กรุณาระบุวันครบกำหนด (Duedate)', 'warning'); return; }
 
   const record = {
     date, detail, name, dueDate,
@@ -212,6 +226,7 @@ function dtkEditCase(id) {
   dtkEditingId = id;
   document.getElementById('dtk-edit-banner').style.display = 'flex';
   Object.entries(DTK_FORM_FIELDS).forEach(([elId, field]) => { document.getElementById(elId).value = rec[field] || ''; });
+  dtkUpdateDueField();
   dtkSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -285,7 +300,7 @@ function dtkRenderList() {
       <td>${escapeHtml(i.name)}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.project || '-')}</td>
-      <td class="dtk-due">${formatDate(i.dueDate)}</td>
+      <td class="dtk-due">${formatDate(dtkDueOf(i))}</td>
       <td class="dtk-send"><input type="date" value="${i.sendDate || ''}" onchange="dtkSetSendDate('${i.id}', this.value)" /></td>
       <td class="dtk-days">${days > 0 ? days : '-'}</td>
       <td>${escapeHtml(i.owner || '-')}</td>
@@ -298,12 +313,83 @@ function dtkRenderList() {
   }).join('');
 }
 
+// ===== บันทึกภาพรายงาน (ส่งกลุ่มไลน์) — ใช้ #dtk-report-container นอกจอ ตามตัวกรองที่เลือกในหน้ารายการ =====
+function dtkReportTitle() {
+  const status = document.getElementById('dtk-f-status')?.value || '';
+  const yard = document.getElementById('dtk-f-yard')?.value || '';
+  let title = 'รายงานติดตามเอกสาร';
+  if (status === 'pending') title += ' (ยังไม่ส่ง)';
+  else if (status === 'overdue') title += ' (ยังไม่ส่งและเกินกำหนด)';
+  else if (status === 'sent') title += ' (ส่งแล้ว)';
+  if (yard) title += ' ลาน ' + yard;
+  return title;
+}
+
+async function dtkSaveReportImage() {
+  const rpt = document.getElementById('dtk-report-container');
+  const tbody = document.getElementById('dtk-report-body');
+  if (!rpt || !tbody) return;
+
+  const list = dtkFilteredList();
+  if (list.length === 0) { showToast('ไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+  // จำกัดจำนวนแถวกันเบราว์เซอร์ค้าง/ภาพใหญ่เกินไป
+  if (list.length > 300) { showToast(`มีข้อมูลตรงตัวกรอง ${list.length} รายการ เยอะเกินจะทำภาพเดียว — กรุณากรองให้แคบลงก่อน`, 'warning'); return; }
+
+  const now = new Date();
+  document.getElementById('dtk-rpt-title').textContent = dtkReportTitle();
+  document.getElementById('dtk-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('dtk-rpt-total-count').textContent = list.length;
+  tbody.innerHTML = list.map((i, idx) => {
+    const days = dtkOverdueDays(i);
+    const late = days > 0 && !i.sendDate;
+    return `
+    <tr class="${late ? 'dtk-row-late' : ''}">
+      <td>${idx + 1}</td>
+      <td>${formatDate(i.date)}</td>
+      <td class="dtk-left">${escapeHtml(i.detail)}</td>
+      <td class="dtk-left">${escapeHtml(i.name)}</td>
+      <td>${escapeHtml(i.yard || '-')}</td>
+      <td>${escapeHtml(i.project || '-')}</td>
+      <td class="dtk-due">${formatDate(dtkDueOf(i))}</td>
+      <td class="dtk-send">${i.sendDate ? formatDate(i.sendDate) : ''}</td>
+      <td class="dtk-days">${days > 0 ? days : '-'}</td>
+      <td>${escapeHtml(i.owner || '-')}</td>
+      <td class="dtk-note">${escapeHtml(i.note || '-')}</td>
+    </tr>`;
+  }).join('');
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 60));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = 'รายงานติดตามเอกสาร_' + now.toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-3000px';
+}
+
 // ===== Excel Export =====
 function dtkExportExcel() {
   if (!docTracks.length) { showToast('ไม่มีข้อมูลให้ Export', 'warning'); return; }
   const rows = [DTK_XLSX_HEADERS, ...docTracks.map(i => [
     formatDMY(i.date), i.detail||'', i.empId||'', i.name||'', i.yard||'', i.project||'',
-    formatDMY(i.dueDate), formatDMY(i.sendDate), dtkOverdueDays(i), i.owner||'', i.note||''
+    formatDMY(dtkDueOf(i)), formatDMY(i.sendDate), dtkOverdueDays(i), i.owner||'', i.note||''
   ])];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = [12, 22, 10, 24, 10, 12, 12, 12, 14, 16, 24].map(w => ({ wch: w }));
@@ -313,11 +399,11 @@ function dtkExportExcel() {
   showToast('Export เรียบร้อย', 'success');
 }
 
-// Template ใช้หัวคอลัมน์เดียวกับ Export (ไฟล์ที่ Export ออกไปแก้แล้ว Import กลับได้) — คอลัมน์ "เอกสารเกินกำหนด (วัน)" ระบบคำนวณเอง ไม่อ่านค่าตอน Import
+// Template ใช้หัวคอลัมน์เดียวกับ Export (ไฟล์ที่ Export ออกไปแก้แล้ว Import กลับได้) — คอลัมน์ Duedate (Date+5 วัน) และ "เอกสารเกินกำหนด (วัน)" ระบบคำนวณเอง ไม่อ่านค่าตอน Import
 function dtkDownloadTemplate() {
   const ws = XLSX.utils.aoa_to_sheet([
     DTK_XLSX_HEADERS,
-    ['20/04/2026', 'Trouble Report', '-', 'สมชาย ใจดี', 'APC', 'Trailer', '25/04/2026', '', '', 'ชื่อผู้รับผิดชอบ', 'อุบัติเหตุ'],
+    ['20/04/2026', 'Trouble Report', '-', 'สมชาย ใจดี', 'APC', 'Trailer', '25/04/2026 (คำนวณอัตโนมัติ)', '', '(คำนวณอัตโนมัติ)', 'ชื่อผู้รับผิดชอบ', 'อุบัติเหตุ'],
   ]);
   ws['!cols'] = [12, 22, 10, 24, 10, 12, 12, 12, 14, 16, 24].map(w => ({ wch: w }));
   const wb = XLSX.utils.book_new();
@@ -340,12 +426,11 @@ function dtkImportExcel(evt) {
         const date = normalizeImportDate(row[0]);
         const detail = String(row[1] || '').trim();
         const name = String(row[3] || '').trim();
-        const dueDate = normalizeImportDate(row[6]);
         if (!date && !detail && !name) return;
-        if (!date || !detail || !name || !dueDate) { skipped++; return; }
+        if (!date || !detail || !name) { skipped++; return; }
         docTracks.push({
           id: 'DTK_IMP_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
-          date, detail, name, dueDate,
+          date, detail, name, dueDate: dtkDueOf({ date }),
           empId: String(row[2] || '').trim(),
           yard: String(row[4] || '').trim(),
           project: String(row[5] || '').trim(),

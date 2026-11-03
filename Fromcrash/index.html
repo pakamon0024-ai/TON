@@ -2386,6 +2386,7 @@
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="dtk-f-search"
                   placeholder="ชื่อ / รายละเอียด / ผู้รับผิดชอบ..." oninput="debouncedRender('dtkRenderList')" /></div>
               <button class="btn-secondary" onclick="dtkClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="dtkSaveReportImage()">📸 บันทึกภาพรายงาน</button>
               <button class="btn-secondary" onclick="dtkExportExcel()">📥 Export</button>
               <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
                 📤 Import
@@ -2433,7 +2434,7 @@
               <div class="fieldset-title">ข้อมูลเอกสาร</div>
               <div class="form-row-3">
                 <div class="form-group"><label>Date <span class="req">*</span></label><input type="date"
-                    id="dtk-date" /></div>
+                    id="dtk-date" oninput="dtkUpdateDueField()" /></div>
                 <div class="form-group"><label>Detail <span class="req">*</span></label>
                   <input type="text" id="dtk-detail" list="dtk-detail-list" placeholder="เช่น Trouble Report" />
                   <datalist id="dtk-detail-list"></datalist>
@@ -2457,8 +2458,8 @@
                 </div>
               </div>
               <div class="form-row-3">
-                <div class="form-group"><label>Duedate <span class="req">*</span></label><input type="date"
-                    id="dtk-due" /></div>
+                <div class="form-group"><label>Duedate (Date + 5 วัน)</label><input type="date"
+                    id="dtk-due" readonly tabindex="-1" /></div>
                 <div class="form-group"><label>Send date</label><input type="date" id="dtk-send" /></div>
                 <div class="form-group"><label>ผู้รับผิดชอบ</label>
                   <input type="text" id="dtk-owner" list="dtk-owner-list" placeholder="ชื่อผู้รับผิดชอบ" />
@@ -2471,7 +2472,7 @@
                   <datalist id="dtk-note-list"></datalist>
                 </div>
                 <div class="form-group" style="grid-column:span 2;align-self:end;">
-                  <small style="color:var(--text-muted);">จำนวนวันที่เกินกำหนดคำนวณให้อัตโนมัติ (จาก Duedate ถึง Send date หรือถึงวันนี้ถ้ายังไม่ส่ง)</small>
+                  <small style="color:var(--text-muted);">Duedate = Date + 5 วัน และจำนวนวันที่เกินกำหนดคำนวณให้อัตโนมัติ (จาก Duedate ถึง Send date หรือถึงวันนี้ถ้ายังไม่ส่ง)</small>
                 </div>
               </div>
               <div class="form-actions">
@@ -5490,6 +5491,37 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบรายงานความผิด GPS · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · GPS VIOLATION REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container รายงานติดตามเอกสาร (ตามตัวกรองที่เลือก) (off-screen, captured by html2canvas) -->
+  <div id="dtk-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title" id="dtk-rpt-title">รายงานติดตามเอกสาร</div>
+        <div class="rpt-date-text" id="dtk-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนรายการ</div>
+        <div class="rpt-count-val" id="dtk-rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <table class="data-table dtk-report-table">
+        <thead>
+          <tr>
+            <th>เลขที่</th><th>Date</th><th>Detail</th><th>Name</th><th>Yard</th><th>Project</th>
+            <th class="dtk-due">Duedate</th><th class="dtk-send">Send date</th>
+            <th>เอกสารเกินกำหนด (วัน)</th><th>ผู้รับผิดชอบ</th><th>หมายเหตุ</th>
+          </tr>
+        </thead>
+        <tbody id="dtk-report-body"></tbody>
+      </table>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบติดตามเอกสาร · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · DOCUMENT TRACKING REPORT</div>
     </div>
   </div>
 
