@@ -1872,3 +1872,8 @@ body {
 #wi-report-container .wi-report-table td.wi-detail { white-space: normal; text-align: left; min-width: 260px; max-width: 360px; }
 #wi-report-container .wi-report-table td.wi-photo img { display: block; max-width: 300px; max-height: 220px; border-radius: 6px; margin: 0 auto; }
 #wi-report-container .wi-report-table tbody tr:nth-child(even) td { background: #f6f8fc; }
+#wi-report-container .wi-report-table td.wi-st-pending { color: #d6224b; font-weight: 700; }
+#wi-report-container .wi-report-table td.wi-st-done { color: #058c68; font-weight: 700; }
+
+/* รูปแนบในภาพรายงานแจ้งซ่อม GPS/CCTV */
+.gr-report-table td.gr-photo img { display: block; max-width: 180px; max-height: 130px; border-radius: 6px; margin: 0 auto; }

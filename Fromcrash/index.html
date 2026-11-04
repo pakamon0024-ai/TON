@@ -2208,6 +2208,16 @@
                   <option value="">ทั้งหมด</option>
                 </select>
               </div>
+              <div class="filter-group">
+                <label>สถานะซ่อม</label>
+                <select id="wi-f-status" onchange="wiRenderList()">
+                  <option value="">ทั้งหมด</option>
+                  <option value="pending">รอซ่อม</option>
+                  <option value="done">ซ่อมแล้ว</option>
+                </select>
+              </div>
+              <div class="filter-group"><label>วันที่ (เริ่ม)</label><input type="date" id="wi-f-from" onchange="wiRenderList()" /></div>
+              <div class="filter-group"><label>วันที่ (ถึง)</label><input type="date" id="wi-f-to" onchange="wiRenderList()" /></div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="wi-f-search"
                   placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="debouncedRender('wiRenderList')" /></div>
               <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้าง</button>
@@ -2233,6 +2243,7 @@
                     <th>หน่วยงาน</th>
                     <th>ลานจอด</th>
                     <th>รายละเอียด</th>
+                    <th>สถานะซ่อม</th>
                     <th>รูป</th>
                     <th>จัดการ</th>
                   </tr>
@@ -2292,6 +2303,14 @@
                 <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span
                       class="req">*</span></label>
                   <textarea class="fta" id="wi-detail" rows="3" placeholder="อธิบายรายละเอียดปัญหาที่พบ..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group"><label>สถานะซ่อม</label>
+                  <select id="wi-repair-status">
+                    <option value="pending">รอซ่อม</option>
+                    <option value="done">ซ่อมแล้ว</option>
+                  </select>
                 </div>
               </div>
               <div class="form-row-3">
@@ -4203,12 +4222,13 @@
                     <th>วันที่นัดซ่อม</th>
                     <th class="tk-sortable" onclick="grSortBy('status')">สถานะ<span class="gr-sort-ind tk-sort-ind" id="gr-sort-ind-status"></span></th>
                     <th>หมายเหตุ</th>
+                    <th>รูป</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="gr-list-body">
                   <tr>
-                    <td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="11"class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -4261,6 +4281,12 @@
               <div class="form-row-3">
                 <div class="form-group full" style="grid-column:1/-1;"><label>หมายเหตุ</label>
                   <textarea class="fta" id="gr-note" rows="2" placeholder="หมายเหตุเพิ่มเติม..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>แนบรูป (1 รูป)</label>
+                  <input type="file" accept="image/*" onchange="grPhotoSelected(event)" />
+                  <div id="gr-photo-preview" style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;"></div>
                 </div>
               </div>
               <div class="form-actions">
@@ -5379,7 +5405,7 @@
         <thead>
           <tr>
             <th>ลำดับ</th><th>ทะเบียนรถ</th><th>ลานจอด</th><th>อุปกรณ์</th><th>อาการ</th>
-            <th>วันที่แจ้ง</th><th>วันที่นัดซ่อม</th><th>สถานะ</th><th>หมายเหตุ</th>
+            <th>วันที่แจ้ง</th><th>วันที่นัดซ่อม</th><th>สถานะ</th><th>หมายเหตุ</th><th>รูป</th>
           </tr>
         </thead>
         <tbody id="gr-report-body"></tbody>
@@ -5520,7 +5546,7 @@
         <thead>
           <tr>
             <th>เลขที่</th><th>วันที่</th><th>หัวข้อปัญหา</th><th>พนักงาน</th><th>ทะเบียน</th>
-            <th>หน่วยงาน</th><th>ลานจอด</th><th>รายละเอียด</th><th>รูป</th>
+            <th>หน่วยงาน</th><th>ลานจอด</th><th>รายละเอียด</th><th>สถานะซ่อม</th><th>รูป</th>
           </tr>
         </thead>
         <tbody id="wi-report-body"></tbody>

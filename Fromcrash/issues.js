@@ -230,6 +230,7 @@ function wiSaveCase() {
     yard: document.getElementById('wi-yard').value,
     detail,
     photo: wiPhotoData,
+    repairStatus: document.getElementById('wi-repair-status').value || 'pending',
   };
 
   let savedRecord;
@@ -273,6 +274,7 @@ function wiClearForm() {
   document.getElementById('wi-bu').value = '';
   document.getElementById('wi-yard').value = '';
   document.getElementById('wi-detail').value = '';
+  document.getElementById('wi-repair-status').value = 'pending';
   wiRemovePhoto();
 }
 
@@ -289,6 +291,7 @@ function wiEditCase(id) {
   document.getElementById('wi-bu').value = rec.businessUnit || '';
   document.getElementById('wi-yard').value = rec.yard || '';
   document.getElementById('wi-detail').value = rec.detail || '';
+  document.getElementById('wi-repair-status').value = rec.repairStatus || 'pending';
   wiPhotoData = rec.photo || '';
   wiRenderPhotoPreview();
   wiSwitchTab('add');
@@ -310,17 +313,35 @@ function wiDeleteCase(id) {
 function wiFilteredList() {
   const topic = document.getElementById('wi-f-topic')?.value || '';
   const yard = document.getElementById('wi-f-yard')?.value || '';
+  const status = document.getElementById('wi-f-status')?.value || '';
+  const dateFrom = document.getElementById('wi-f-from')?.value || '';
+  const dateTo = document.getElementById('wi-f-to')?.value || '';
   const search = (document.getElementById('wi-f-search')?.value || '').toLowerCase().trim();
   return workIssues.filter(i => {
     if (topic && i.topic !== topic) return false;
     if (yard && i.yard !== yard) return false;
+    if (status && i.repairStatus !== status) return false;
+    if (dateFrom && (i.date || '') < dateFrom) return false;
+    if (dateTo && (i.date || '') > dateTo) return false;
     if (search && !(`${i.topic} ${i.driverName} ${i.plate} ${i.businessUnit} ${i.detail}`.toLowerCase().includes(search))) return false;
     return true;
   });
 }
 
 function wiClearListFilters() {
-  ['wi-f-topic', 'wi-f-yard', 'wi-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['wi-f-topic', 'wi-f-yard', 'wi-f-status', 'wi-f-from', 'wi-f-to', 'wi-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  wiRenderList();
+}
+
+const WI_REPAIR_LABELS = { pending: 'รอซ่อม', done: 'ซ่อมแล้ว' };
+
+// เปลี่ยนสถานะซ่อมได้ตรงจากหน้ารายการ (ไม่ต้องเข้าไปแก้ไข)
+function wiSetRepairStatus(id, value) {
+  const idx = workIssues.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  workIssues[idx] = { ...workIssues[idx], repairStatus: value, updatedAt: new Date().toISOString() };
+  wiSave();
+  wiPushOneIfReady(workIssues[idx]);
   wiRenderList();
 }
 
@@ -332,7 +353,7 @@ function wiRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
@@ -348,6 +369,13 @@ function wiRenderList() {
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.detail)}</td>
+      <td>
+        <select class="gh-notify-sel ${i.repairStatus === 'done' ? 'gh-notify-0' : i.repairStatus === 'pending' ? 'gh-notify-1' : ''}" onchange="wiSetRepairStatus('${i.id}', this.value)">
+          ${i.repairStatus ? '' : '<option value="" selected>-</option>'}
+          <option value="pending" ${i.repairStatus === 'pending' ? 'selected' : ''}>รอซ่อม</option>
+          <option value="done" ${i.repairStatus === 'done' ? 'selected' : ''}>ซ่อมแล้ว</option>
+        </select>
+      </td>
       <td>${i.photo ? `<img src="${i.photo}" alt="รูปแนบ" style="height:40px;border-radius:4px;cursor:zoom-in;" onclick="wiShowPhoto(this.src)" />` : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="wiEditCase('${i.id}')">แก้ไข</button>
@@ -364,6 +392,13 @@ function wiReportTitle() {
   let title = 'รายงานปัญหาการทำงาน';
   if (topic) title += ' หัวข้อ ' + topic;
   if (yard) title += ' ลาน ' + yard;
+  const status = document.getElementById('wi-f-status')?.value || '';
+  if (status) title += ' (' + WI_REPAIR_LABELS[status] + ')';
+  const from = document.getElementById('wi-f-from')?.value || '';
+  const to = document.getElementById('wi-f-to')?.value || '';
+  if (from && to) title += ` ${formatDate(from)} - ${formatDate(to)}`;
+  else if (from) title += ` ตั้งแต่ ${formatDate(from)}`;
+  else if (to) title += ` ถึง ${formatDate(to)}`;
   return title;
 }
 
@@ -391,6 +426,7 @@ async function wiSaveReportImage() {
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
       <td class="wi-detail">${escapeHtml(i.detail || '-')}</td>
+      <td class="${i.repairStatus === 'done' ? 'wi-st-done' : i.repairStatus === 'pending' ? 'wi-st-pending' : ''}">${WI_REPAIR_LABELS[i.repairStatus] || '-'}</td>
       <td class="wi-photo">${i.photo ? `<img src="${i.photo}" alt="" />` : '-'}</td>
     </tr>
   `).join('');

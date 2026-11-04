@@ -279,6 +279,57 @@ function grStatusBadge(rec) {
   return `<span class="badge ${opt.badge}">${opt.label}</span>`;
 }
 
+// ===== รูปแนบ (1 รูปต่อรายการ) =====
+// ย่อรูปและบีบเป็น JPEG ก่อนเก็บ (เก็บเป็น data URL ในตัวบันทึก) เพื่อไม่ให้ localStorage / Firebase บวมเกินไป
+const GR_PHOTO_MAX_SIDE = 1000;
+const GR_PHOTO_QUALITY = 0.72;
+let grPhotoData = '';
+
+function grRenderPhotoPreview() {
+  const box = document.getElementById('gr-photo-preview');
+  if (!box) return;
+  box.innerHTML = grPhotoData
+    ? `<img src="${grPhotoData}" alt="รูปแนบ" style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" onclick="grShowPhoto(this.src)" />
+       <button type="button" class="btn-secondary" onclick="grRemovePhoto()">✕ ลบรูป</button>`
+    : '';
+}
+
+function grPhotoSelected(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', 'warning'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, GR_PHOTO_MAX_SIDE / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      grPhotoData = canvas.toDataURL('image/jpeg', GR_PHOTO_QUALITY);
+      grRenderPhotoPreview();
+    };
+    img.onerror = () => showToast('อ่านไฟล์รูปไม่ได้', 'error');
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function grRemovePhoto() { grPhotoData = ''; grRenderPhotoPreview(); }
+
+function grShowPhoto(src) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:16px;';
+  ov.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:92vh;border-radius:8px;background:#fff;" />`;
+  ov.onclick = () => ov.remove();
+  document.body.appendChild(ov);
+}
+
 function grSaveCase() {
   const plate = document.getElementById('gr-plate').value.trim();
   const yard = document.getElementById('gr-yard').value.trim();
@@ -292,7 +343,7 @@ function grSaveCase() {
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
   if (!symptom) { showToast('กรุณาระบุอาการ', 'warning'); return; }
 
-  const record = { plate, yard, device, symptom, appointmentDate, repairDate, status, note };
+  const record = { plate, yard, device, symptom, appointmentDate, repairDate, status, note, photo: grPhotoData };
 
   let savedRecord;
   if (grEditingId) {
@@ -333,6 +384,7 @@ function grClearForm() {
   document.getElementById('gr-repair-date').value = '';
   document.getElementById('gr-status').value = 'pending';
   document.getElementById('gr-note').value = '';
+  grRemovePhoto();
 }
 
 function grEditCase(id) {
@@ -349,6 +401,8 @@ function grEditCase(id) {
   document.getElementById('gr-repair-date').value = rec.repairDate || '';
   document.getElementById('gr-status').value = grStatusOf(rec);
   document.getElementById('gr-note').value = rec.note || '';
+  grPhotoData = rec.photo || '';
+  grRenderPhotoPreview();
   gcSwitchTab('repadd');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -418,7 +472,7 @@ function grRenderList() {
   grUpdateSortIndicators();
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="11" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
@@ -435,6 +489,7 @@ function grRenderList() {
       <td>${r.repairDate ? formatDate(r.repairDate) : '-'}</td>
       <td>${grStatusBadge(r)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
+      <td>${r.photo ? `<img src="${r.photo}" alt="รูปแนบ" style="height:40px;border-radius:4px;cursor:zoom-in;" onclick="grShowPhoto(this.src)" />` : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="grEditCase('${r.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="grDeleteCase('${r.id}')">ลบ</button>
@@ -573,12 +628,13 @@ async function grSaveReportImage() {
       <td>${r.repairDate ? formatDate(r.repairDate) : '-'}</td>
       <td>${grStatusBadge(r)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
+      <td class="gr-photo">${r.photo ? `<img src="${r.photo}" alt="" />` : '-'}</td>
     </tr>
   `).join('');
 
   rpt.style.height = 'auto';
   rpt.style.left = '0';
-  await new Promise(r => setTimeout(r, 60));
+  await new Promise(r => setTimeout(r, 120));
   const captureH = rpt.offsetHeight;
   rpt.style.height = captureH + 'px';
   await new Promise(r => setTimeout(r, 60));
