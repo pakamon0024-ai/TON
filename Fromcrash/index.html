@@ -2211,6 +2211,7 @@
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="wi-f-search"
                   placeholder="พนักงาน / ทะเบียน / รายละเอียด..." oninput="debouncedRender('wiRenderList')" /></div>
               <button class="btn-secondary" onclick="wiClearListFilters()">🔄 ล้าง</button>
+              <button class="btn-secondary" onclick="wiSaveReportImage()">📸 บันทึกภาพรายงาน</button>
               <button class="btn-secondary" onclick="wiExportExcel()">📥 Export</button>
               <label class="btn-secondary" style="cursor:pointer;margin:0;display:inline-flex;align-items:center;">
                 📤 Import
@@ -2232,12 +2233,13 @@
                     <th>หน่วยงาน</th>
                     <th>ลานจอด</th>
                     <th>รายละเอียด</th>
+                    <th>รูป</th>
                     <th>จัดการ</th>
                   </tr>
                 </thead>
                 <tbody id="wi-list-body">
                   <tr>
-                    <td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td>
+                    <td colspan="10"class="empty-state">ยังไม่มีข้อมูล</td>
                   </tr>
                 </tbody>
               </table>
@@ -2290,6 +2292,12 @@
                 <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียดปัญหา <span
                       class="req">*</span></label>
                   <textarea class="fta" id="wi-detail" rows="3" placeholder="อธิบายรายละเอียดปัญหาที่พบ..."></textarea>
+                </div>
+              </div>
+              <div class="form-row-3">
+                <div class="form-group full" style="grid-column:1/-1;"><label>แนบรูป (1 รูป)</label>
+                  <input type="file" accept="image/*" onchange="wiPhotoSelected(event)" />
+                  <div id="wi-photo-preview" style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;"></div>
                 </div>
               </div>
               <div class="form-actions">
@@ -5491,6 +5499,36 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบรายงานความผิด GPS · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · GPS VIOLATION REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container รายงานปัญหาการทำงาน (ตามตัวกรองที่เลือก) (off-screen, captured by html2canvas) -->
+  <div id="wi-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title" id="wi-rpt-title">รายงานปัญหาการทำงาน</div>
+        <div class="rpt-date-text" id="wi-rpt-date-text">—</div>
+      </div>
+      <div>
+        <div class="rpt-count-label">จำนวนรายการ</div>
+        <div class="rpt-count-val" id="wi-rpt-total-count">0</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <table class="data-table wi-report-table">
+        <thead>
+          <tr>
+            <th>เลขที่</th><th>วันที่</th><th>หัวข้อปัญหา</th><th>พนักงาน</th><th>ทะเบียน</th>
+            <th>หน่วยงาน</th><th>ลานจอด</th><th>รายละเอียด</th><th>รูป</th>
+          </tr>
+        </thead>
+        <tbody id="wi-report-body"></tbody>
+      </table>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบบันทึกปัญหาการทำงาน · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · WORK ISSUES REPORT</div>
     </div>
   </div>
 

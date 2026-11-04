@@ -1855,3 +1855,20 @@ body {
 #dtk-report-container .dtk-report-table tbody tr:nth-child(even) td.dtk-due { background: #fff9c4; }
 #dtk-report-container .dtk-report-table tbody tr:nth-child(even) td.dtk-send { background: #fff3e0; }
 #dtk-report-container .dtk-report-table tr.dtk-row-late td { color: #d32f2f; }
+
+/* ===== ภาพรายงานปัญหาการทำงาน (บันทึกส่งไลน์) — ตัวอักษรใหญ่ มีรูปแนบ ===== */
+#wi-report-container {
+  position: fixed; left: -3000px; top: 0; z-index: 9998;
+  width: fit-content; min-width: 720px; height: auto; overflow: hidden;
+  background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
+}
+#wi-report-container .wi-report-table { width: auto; min-width: 100%; background: #fff; border-collapse: collapse; font-size: 1.35rem; }
+#wi-report-container .wi-report-table th,
+#wi-report-container .wi-report-table td {
+  padding: 16px 20px; font-size: 1.35rem; text-align: center; white-space: nowrap; border: 1px solid #dde1ee; color: #1a2540; vertical-align: middle;
+}
+#wi-report-container .wi-report-table th { background: #e4e9f2; font-weight: 700; text-transform: none; letter-spacing: 0; }
+#wi-report-container .wi-report-table td.wi-left { text-align: left; }
+#wi-report-container .wi-report-table td.wi-detail { white-space: normal; text-align: left; min-width: 260px; max-width: 360px; }
+#wi-report-container .wi-report-table td.wi-photo img { display: block; max-width: 300px; max-height: 220px; border-radius: 6px; margin: 0 auto; }
+#wi-report-container .wi-report-table tbody tr:nth-child(even) td { background: #f6f8fc; }

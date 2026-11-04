@@ -156,6 +156,57 @@ function wiQuickAddTopic() {
   if (sel) sel.value = name;
 }
 
+// ===== รูปแนบ (1 รูปต่อรายการ) =====
+// ย่อรูปและบีบเป็น JPEG ก่อนเก็บ (เก็บเป็น data URL ในตัวบันทึก) เพื่อไม่ให้ localStorage / Firebase บวมเกินไป
+const WI_PHOTO_MAX_SIDE = 1000;
+const WI_PHOTO_QUALITY = 0.72;
+let wiPhotoData = '';
+
+function wiRenderPhotoPreview() {
+  const box = document.getElementById('wi-photo-preview');
+  if (!box) return;
+  box.innerHTML = wiPhotoData
+    ? `<img src="${wiPhotoData}" alt="รูปแนบ" style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" onclick="wiShowPhoto(this.src)" />
+       <button type="button" class="btn-secondary" onclick="wiRemovePhoto()">✕ ลบรูป</button>`
+    : '';
+}
+
+function wiPhotoSelected(evt) {
+  const file = evt.target.files[0];
+  evt.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', 'warning'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, WI_PHOTO_MAX_SIDE / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      wiPhotoData = canvas.toDataURL('image/jpeg', WI_PHOTO_QUALITY);
+      wiRenderPhotoPreview();
+    };
+    img.onerror = () => showToast('อ่านไฟล์รูปไม่ได้', 'error');
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function wiRemovePhoto() { wiPhotoData = ''; wiRenderPhotoPreview(); }
+
+function wiShowPhoto(src) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:16px;';
+  ov.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:92vh;border-radius:8px;background:#fff;" />`;
+  ov.onclick = () => ov.remove();
+  document.body.appendChild(ov);
+}
+
 // ===== Running number =====
 function wiNextRunningNo() {
   return workIssues.length ? Math.max(...workIssues.map(i => i.runningNo || 0)) + 1 : 1;
@@ -178,6 +229,7 @@ function wiSaveCase() {
     businessUnit: document.getElementById('wi-bu').value,
     yard: document.getElementById('wi-yard').value,
     detail,
+    photo: wiPhotoData,
   };
 
   let savedRecord;
@@ -221,6 +273,7 @@ function wiClearForm() {
   document.getElementById('wi-bu').value = '';
   document.getElementById('wi-yard').value = '';
   document.getElementById('wi-detail').value = '';
+  wiRemovePhoto();
 }
 
 function wiEditCase(id) {
@@ -236,6 +289,8 @@ function wiEditCase(id) {
   document.getElementById('wi-bu').value = rec.businessUnit || '';
   document.getElementById('wi-yard').value = rec.yard || '';
   document.getElementById('wi-detail').value = rec.detail || '';
+  wiPhotoData = rec.photo || '';
+  wiRenderPhotoPreview();
   wiSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -277,7 +332,7 @@ function wiRenderList() {
   if (!tbody) return;
   if (countEl) countEl.textContent = `ทั้งหมด ${list.length} รายการ`;
   if (list.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="empty-state">ยังไม่มีข้อมูล</td></tr>';
     if (pagerEl) pagerEl.innerHTML = '';
     return;
   }
@@ -293,12 +348,77 @@ function wiRenderList() {
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.detail)}</td>
+      <td>${i.photo ? `<img src="${i.photo}" alt="รูปแนบ" style="height:40px;border-radius:4px;cursor:zoom-in;" onclick="wiShowPhoto(this.src)" />` : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="wiEditCase('${i.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="wiDeleteCase('${i.id}')">ลบ</button>
       </td>
     </tr>
   `).join('');
+}
+
+// ===== บันทึกภาพรายงาน (ส่งกลุ่มไลน์) — ใช้ #wi-report-container นอกจอ ตามตัวกรองที่เลือกในหน้ารายการ =====
+function wiReportTitle() {
+  const topic = document.getElementById('wi-f-topic')?.value || '';
+  const yard = document.getElementById('wi-f-yard')?.value || '';
+  let title = 'รายงานปัญหาการทำงาน';
+  if (topic) title += ' หัวข้อ ' + topic;
+  if (yard) title += ' ลาน ' + yard;
+  return title;
+}
+
+async function wiSaveReportImage() {
+  const rpt = document.getElementById('wi-report-container');
+  const tbody = document.getElementById('wi-report-body');
+  if (!rpt || !tbody) return;
+
+  const list = wiFilteredList();
+  if (list.length === 0) { showToast('ไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
+  // รูปแนบทำให้ภาพสูงขึ้นมาก จำกัดจำนวนแถวกันเบราว์เซอร์ค้าง/ภาพใหญ่เกินไป
+  if (list.length > 40) { showToast(`มีข้อมูลตรงตัวกรอง ${list.length} รายการ เยอะเกินจะทำภาพเดียว — กรุณากรองให้แคบลงก่อน (ไม่เกิน 40 รายการ)`, 'warning'); return; }
+
+  const now = new Date();
+  document.getElementById('wi-rpt-title').textContent = wiReportTitle();
+  document.getElementById('wi-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('wi-rpt-total-count').textContent = list.length;
+  tbody.innerHTML = list.map((i, idx) => `
+    <tr>
+      <td>${idx + 1}</td>
+      <td>${formatDate(i.date)}</td>
+      <td class="wi-left">${escapeHtml(i.topic || '-')}</td>
+      <td class="wi-left">${escapeHtml(i.driverName || '-')}</td>
+      <td>${escapeHtml(i.plate || '-')}</td>
+      <td>${escapeHtml(i.businessUnit || '-')}</td>
+      <td>${escapeHtml(i.yard || '-')}</td>
+      <td class="wi-detail">${escapeHtml(i.detail || '-')}</td>
+      <td class="wi-photo">${i.photo ? `<img src="${i.photo}" alt="" />` : '-'}</td>
+    </tr>
+  `).join('');
+
+  rpt.style.height = 'auto';
+  rpt.style.left = '0';
+  await new Promise(r => setTimeout(r, 120));
+  const captureH = rpt.offsetHeight;
+  rpt.style.height = captureH + 'px';
+  await new Promise(r => setTimeout(r, 60));
+
+  const savedScroll = window.scrollY;
+  window.scrollTo(0, 0);
+  await new Promise(r => setTimeout(r, 60));
+
+  try {
+    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+    const link = document.createElement('a');
+    link.download = 'รายงานปัญหาการทำงาน_' + now.toISOString().slice(0, 10) + '.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
+  } catch (e) {
+    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+  }
+
+  window.scrollTo(0, savedScroll);
+  rpt.style.left = '-3000px';
 }
 
 // ===== Excel Export / Import / Template =====
