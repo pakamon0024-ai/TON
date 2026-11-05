@@ -157,55 +157,34 @@ function wiQuickAddTopic() {
 }
 
 // ===== รูปแนบ (1 รูปต่อรายการ) =====
-// ย่อรูปและบีบเป็น JPEG ก่อนเก็บ (เก็บเป็น data URL ในตัวบันทึก) เพื่อไม่ให้ localStorage / Firebase บวมเกินไป
-const WI_PHOTO_MAX_SIDE = 1000;
-const WI_PHOTO_QUALITY = 0.72;
+// รูปเก็บแยกที่ /recordPhotos/issues/<id> (ดู photos.js) ตัวบันทึกมีแค่ hasPhoto
 let wiPhotoData = '';
+let wiPhotoDirty = false; // true = ผู้ใช้เลือกรูปใหม่/ลบรูปในฟอร์มนี้ ต้องเขียนลง Firebase ตอนบันทึก
 
 function wiRenderPhotoPreview() {
   const box = document.getElementById('wi-photo-preview');
   if (!box) return;
   box.innerHTML = wiPhotoData
-    ? `<img src="${wiPhotoData}" alt="รูปแนบ" style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" onclick="wiShowPhoto(this.src)" />
+    ? `<img src="${wiPhotoData}" alt="รูปแนบ" style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" onclick="photoShow(this.src)" />
        <button type="button" class="btn-secondary" onclick="wiRemovePhoto()">✕ ลบรูป</button>`
     : '';
 }
 
-function wiPhotoSelected(evt) {
+async function wiPhotoSelected(evt) {
   const file = evt.target.files[0];
   evt.target.value = '';
   if (!file) return;
   if (!file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', 'warning'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, WI_PHOTO_MAX_SIDE / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      wiPhotoData = canvas.toDataURL('image/jpeg', WI_PHOTO_QUALITY);
-      wiRenderPhotoPreview();
-    };
-    img.onerror = () => showToast('อ่านไฟล์รูปไม่ได้', 'error');
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  try {
+    wiPhotoData = await photoCompress(file);
+    wiPhotoDirty = true;
+    wiRenderPhotoPreview();
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
-function wiRemovePhoto() { wiPhotoData = ''; wiRenderPhotoPreview(); }
+function wiRemovePhoto() { wiPhotoData = ''; wiPhotoDirty = true; wiRenderPhotoPreview(); }
 
-function wiShowPhoto(src) {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:16px;';
-  ov.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:92vh;border-radius:8px;background:#fff;" />`;
-  ov.onclick = () => ov.remove();
-  document.body.appendChild(ov);
-}
+function wiViewPhoto(id) { photoViewOf('issues', workIssues.find(i => i.id === id)); }
 
 // ===== Running number =====
 function wiNextRunningNo() {
@@ -213,7 +192,7 @@ function wiNextRunningNo() {
 }
 
 // ===== Save / Edit / Delete =====
-function wiSaveCase() {
+async function wiSaveCase() {
   const date = document.getElementById('wi-date').value;
   const topic = document.getElementById('wi-topic').value.trim();
   const detail = document.getElementById('wi-detail').value.trim();
@@ -222,6 +201,18 @@ function wiSaveCase() {
   if (!topic) { showToast('กรุณาเลือกหัวข้อปัญหา', 'warning'); return; }
   if (!detail) { showToast('กรุณาระบุรายละเอียดปัญหา', 'warning'); return; }
 
+  // เขียนรูปลง Firebase ก่อนบันทึกรายการ ถ้าเขียนไม่สำเร็จให้หยุด (ไม่ทิ้งรายการที่อ้างรูปที่ไม่มีอยู่จริง)
+  const photoData = wiPhotoData, photoDirty = wiPhotoDirty;
+  const recId = wiEditingId || ('WI_' + Date.now());
+  if (photoDirty && photoData) {
+    if (!(await photoPut('issues', recId, photoData))) {
+      showToast('บันทึกรูปไม่สำเร็จ (ยังเชื่อมต่อ Firebase ไม่ได้) — ลองใหม่อีกครั้ง', 'error');
+      return;
+    }
+  } else if (photoDirty) {
+    photoDelete('issues', recId);
+  }
+
   const record = {
     date, topic,
     driverName: document.getElementById('wi-driver').value,
@@ -229,9 +220,9 @@ function wiSaveCase() {
     businessUnit: document.getElementById('wi-bu').value,
     yard: document.getElementById('wi-yard').value,
     detail,
-    photo: wiPhotoData,
     repairStatus: document.getElementById('wi-repair-status').value || 'pending',
   };
+  if (photoDirty) { record.photo = ''; record.hasPhoto = !!photoData; }
 
   let savedRecord;
   if (wiEditingId) {
@@ -246,7 +237,7 @@ function wiSaveCase() {
     }
     wiCancelEdit();
   } else {
-    record.id = 'WI_' + Date.now();
+    record.id = recId;
     record.runningNo = wiNextRunningNo();
     record.createdAt = new Date().toISOString();
     workIssues.unshift(record);
@@ -275,7 +266,8 @@ function wiClearForm() {
   document.getElementById('wi-yard').value = '';
   document.getElementById('wi-detail').value = '';
   document.getElementById('wi-repair-status').value = 'pending';
-  wiRemovePhoto();
+  wiPhotoData = ''; wiPhotoDirty = false;
+  wiRenderPhotoPreview();
 }
 
 function wiEditCase(id) {
@@ -293,7 +285,11 @@ function wiEditCase(id) {
   document.getElementById('wi-detail').value = rec.detail || '';
   document.getElementById('wi-repair-status').value = rec.repairStatus || 'pending';
   wiPhotoData = rec.photo || '';
+  wiPhotoDirty = false;
   wiRenderPhotoPreview();
+  if (!wiPhotoData && rec.hasPhoto) {
+    photoFetch('issues', rec.id).then(d => { if (wiEditingId === rec.id && !wiPhotoDirty) { wiPhotoData = d; wiRenderPhotoPreview(); } });
+  }
   wiSwitchTab('add');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -302,6 +298,8 @@ function wiCancelEdit() { wiClearForm(); }
 
 function wiDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบบันทึกนี้?')) return;
+  const delRec = workIssues.find(i => i.id === id);
+  if (delRec && delRec.hasPhoto) photoDelete('issues', id);
   workIssues = workIssues.filter(i => i.id !== id);
   wiSave();
   wiRemoveOneIfReady(id);
@@ -376,7 +374,7 @@ function wiRenderList() {
           <option value="done" ${i.repairStatus === 'done' ? 'selected' : ''}>ซ่อมแล้ว</option>
         </select>
       </td>
-      <td>${i.photo ? `<img src="${i.photo}" alt="รูปแนบ" style="height:40px;border-radius:4px;cursor:zoom-in;" onclick="wiShowPhoto(this.src)" />` : '-'}</td>
+      <td>${(i.photo || i.hasPhoto) ? `<button class="action-btn action-view" onclick="wiViewPhoto('${i.id}')">📷 ดู</button>` : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="wiEditCase('${i.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="wiDeleteCase('${i.id}')">ลบ</button>
@@ -412,6 +410,9 @@ async function wiSaveReportImage() {
   // รูปแนบทำให้ภาพสูงขึ้นมาก จำกัดจำนวนแถวกันเบราว์เซอร์ค้าง/ภาพใหญ่เกินไป
   if (list.length > 40) { showToast(`มีข้อมูลตรงตัวกรอง ${list.length} รายการ เยอะเกินจะทำภาพเดียว — กรุณากรองให้แคบลงก่อน (ไม่เกิน 40 รายการ)`, 'warning'); return; }
 
+  const photos = {};
+  await Promise.all(list.map(async i => { photos[i.id] = await photoOf('issues', i); }));
+
   const now = new Date();
   document.getElementById('wi-rpt-title').textContent = wiReportTitle();
   document.getElementById('wi-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -427,7 +428,7 @@ async function wiSaveReportImage() {
       <td>${escapeHtml(i.yard || '-')}</td>
       <td class="wi-detail">${escapeHtml(i.detail || '-')}</td>
       <td class="${i.repairStatus === 'done' ? 'wi-st-done' : i.repairStatus === 'pending' ? 'wi-st-pending' : ''}">${WI_REPAIR_LABELS[i.repairStatus] || '-'}</td>
-      <td class="wi-photo">${i.photo ? `<img src="${i.photo}" alt="" />` : '-'}</td>
+      <td class="wi-photo">${photos[i.id] ? `<img src="${photos[i.id]}" alt="" />` : '-'}</td>
     </tr>
   `).join('');
 

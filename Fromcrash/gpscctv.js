@@ -280,57 +280,36 @@ function grStatusBadge(rec) {
 }
 
 // ===== รูปแนบ (1 รูปต่อรายการ) =====
-// ย่อรูปและบีบเป็น JPEG ก่อนเก็บ (เก็บเป็น data URL ในตัวบันทึก) เพื่อไม่ให้ localStorage / Firebase บวมเกินไป
-const GR_PHOTO_MAX_SIDE = 1000;
-const GR_PHOTO_QUALITY = 0.72;
+// รูปเก็บแยกที่ /recordPhotos/gpsRepairs/<id> (ดู photos.js) ตัวบันทึกมีแค่ hasPhoto
 let grPhotoData = '';
+let grPhotoDirty = false; // true = ผู้ใช้เลือกรูปใหม่/ลบรูปในฟอร์มนี้ ต้องเขียนลง Firebase ตอนบันทึก
 
 function grRenderPhotoPreview() {
   const box = document.getElementById('gr-photo-preview');
   if (!box) return;
   box.innerHTML = grPhotoData
-    ? `<img src="${grPhotoData}" alt="รูปแนบ" style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" onclick="grShowPhoto(this.src)" />
+    ? `<img src="${grPhotoData}" alt="รูปแนบ" style="max-height:140px;max-width:100%;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" onclick="photoShow(this.src)" />
        <button type="button" class="btn-secondary" onclick="grRemovePhoto()">✕ ลบรูป</button>`
     : '';
 }
 
-function grPhotoSelected(evt) {
+async function grPhotoSelected(evt) {
   const file = evt.target.files[0];
   evt.target.value = '';
   if (!file) return;
   if (!file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพ', 'warning'); return; }
-  const reader = new FileReader();
-  reader.onload = e => {
-    const img = new Image();
-    img.onload = () => {
-      const scale = Math.min(1, GR_PHOTO_MAX_SIDE / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      grPhotoData = canvas.toDataURL('image/jpeg', GR_PHOTO_QUALITY);
-      grRenderPhotoPreview();
-    };
-    img.onerror = () => showToast('อ่านไฟล์รูปไม่ได้', 'error');
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
+  try {
+    grPhotoData = await photoCompress(file);
+    grPhotoDirty = true;
+    grRenderPhotoPreview();
+  } catch (e) { showToast(e.message, 'error'); }
 }
 
-function grRemovePhoto() { grPhotoData = ''; grRenderPhotoPreview(); }
+function grRemovePhoto() { grPhotoData = ''; grPhotoDirty = true; grRenderPhotoPreview(); }
 
-function grShowPhoto(src) {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:zoom-out;padding:16px;';
-  ov.innerHTML = `<img src="${src}" style="max-width:95vw;max-height:92vh;border-radius:8px;background:#fff;" />`;
-  ov.onclick = () => ov.remove();
-  document.body.appendChild(ov);
-}
+function grViewPhoto(id) { photoViewOf('gpsRepairs', grRecords.find(r => r.id === id)); }
 
-function grSaveCase() {
+async function grSaveCase() {
   const plate = document.getElementById('gr-plate').value.trim();
   const yard = document.getElementById('gr-yard').value.trim();
   const device = document.getElementById('gr-device').value;
@@ -343,7 +322,20 @@ function grSaveCase() {
   if (!plate) { showToast('กรุณาระบุทะเบียนรถ', 'warning'); return; }
   if (!symptom) { showToast('กรุณาระบุอาการ', 'warning'); return; }
 
-  const record = { plate, yard, device, symptom, appointmentDate, repairDate, status, note, photo: grPhotoData };
+  // เขียนรูปลง Firebase ก่อนบันทึกรายการ ถ้าเขียนไม่สำเร็จให้หยุด (ไม่ทิ้งรายการที่อ้างรูปที่ไม่มีอยู่จริง)
+  const photoData = grPhotoData, photoDirty = grPhotoDirty;
+  const recId = grEditingId || ('GR_' + Date.now());
+  if (photoDirty && photoData) {
+    if (!(await photoPut('gpsRepairs', recId, photoData))) {
+      showToast('บันทึกรูปไม่สำเร็จ (ยังเชื่อมต่อ Firebase ไม่ได้) — ลองใหม่อีกครั้ง', 'error');
+      return;
+    }
+  } else if (photoDirty) {
+    photoDelete('gpsRepairs', recId);
+  }
+
+  const record = { plate, yard, device, symptom, appointmentDate, repairDate, status, note };
+  if (photoDirty) { record.photo = ''; record.hasPhoto = !!photoData; }
 
   let savedRecord;
   if (grEditingId) {
@@ -355,7 +347,7 @@ function grSaveCase() {
     }
     grCancelEdit();
   } else {
-    record.id = 'GR_' + Date.now();
+    record.id = recId;
     record.runningNo = grNextRunningNo();
     record.createdAt = new Date().toISOString();
     grRecords.unshift(record);
@@ -384,7 +376,8 @@ function grClearForm() {
   document.getElementById('gr-repair-date').value = '';
   document.getElementById('gr-status').value = 'pending';
   document.getElementById('gr-note').value = '';
-  grRemovePhoto();
+  grPhotoData = ''; grPhotoDirty = false;
+  grRenderPhotoPreview();
 }
 
 function grEditCase(id) {
@@ -402,7 +395,11 @@ function grEditCase(id) {
   document.getElementById('gr-status').value = grStatusOf(rec);
   document.getElementById('gr-note').value = rec.note || '';
   grPhotoData = rec.photo || '';
+  grPhotoDirty = false;
   grRenderPhotoPreview();
+  if (!grPhotoData && rec.hasPhoto) {
+    photoFetch('gpsRepairs', rec.id).then(d => { if (grEditingId === rec.id && !grPhotoDirty) { grPhotoData = d; grRenderPhotoPreview(); } });
+  }
   gcSwitchTab('repadd');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -411,6 +408,8 @@ function grCancelEdit() { grClearForm(); }
 
 function grDeleteCase(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
+  const delRec = grRecords.find(r => r.id === id);
+  if (delRec && delRec.hasPhoto) photoDelete('gpsRepairs', id);
   grRecords = grRecords.filter(r => r.id !== id);
   grSave();
   grRemoveOneIfReady(id);
@@ -489,7 +488,7 @@ function grRenderList() {
       <td>${r.repairDate ? formatDate(r.repairDate) : '-'}</td>
       <td>${grStatusBadge(r)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
-      <td>${r.photo ? `<img src="${r.photo}" alt="รูปแนบ" style="height:40px;border-radius:4px;cursor:zoom-in;" onclick="grShowPhoto(this.src)" />` : '-'}</td>
+      <td>${(r.photo || r.hasPhoto) ? `<button class="action-btn action-view" onclick="grViewPhoto('${r.id}')">📷 ดู</button>` : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="grEditCase('${r.id}')">แก้ไข</button>
         <button class="action-btn action-delete" onclick="grDeleteCase('${r.id}')">ลบ</button>
@@ -614,6 +613,9 @@ async function grSaveReportImage() {
   const list = grFilteredList();
   if (list.length === 0) { showToast('ไม่มีข้อมูลให้บันทึกภาพ', 'warning'); return; }
 
+  const photos = {};
+  await Promise.all(list.map(async r => { photos[r.id] = await photoOf('gpsRepairs', r); }));
+
   const now = new Date();
   document.getElementById('gr-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('gr-rpt-total-count').textContent = list.length;
@@ -628,7 +630,7 @@ async function grSaveReportImage() {
       <td>${r.repairDate ? formatDate(r.repairDate) : '-'}</td>
       <td>${grStatusBadge(r)}</td>
       <td>${escapeHtml(r.note || '-')}</td>
-      <td class="gr-photo">${r.photo ? `<img src="${r.photo}" alt="" />` : '-'}</td>
+      <td class="gr-photo">${photos[r.id] ? `<img src="${photos[r.id]}" alt="" />` : '-'}</td>
     </tr>
   `).join('');
 
