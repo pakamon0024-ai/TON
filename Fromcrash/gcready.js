@@ -1,7 +1,7 @@
 // ===== ความพร้อมใช้งาน GPS & CCTV (รายวัน แยก GPS / CCTV) =====
 // % ความพร้อมของวันหนึ่ง = (จำนวนอุปกรณ์ทั้งหมด − จำนวนที่เสียในวันนั้น) ÷ จำนวนทั้งหมด
 //  - "จำนวนทั้งหมด" อ้างอิงจำนวนรถในฐานข้อมูล GPS (ddbRecords.gps) และฐานข้อมูลกล้อง (ddbRecords.cam)
-//    นับ ณ วันนั้น: ติดตั้งแล้ว (วันที่ติดตั้ง <= วัน) และยังไม่ถอด (วันที่ถอด > วัน หรือไม่มี) ; ทะเบียนซ้ำนับเป็น 1
+//    นับตามทะเบียนไม่ซ้ำในฐานข้อมูล (ไม่กรองวันติดตั้ง/ถอด) ; ทะเบียนเทียบแบบตัดช่องว่าง/ขีดและตัวพิมพ์ใหญ่
 //  - "เสีย" มาจากรายการแจ้งซ่อม (grRecords) ของอุปกรณ์ชนิดนั้น: ช่วงที่เสีย = ตั้งแต่ "วันที่แจ้ง" จนซ่อมเสร็จ
 //    (ซ่อมเสร็จ = สถานะ "ซ่อมเสร็จแล้ว" และมีบันทึก "วันที่นัดซ่อม/ซ่อมเสร็จ" ; วันนั้นถือว่าใช้งานได้แล้ว
 //    ยกเว้นแจ้งและซ่อมวันเดียวกันจะนับเสีย 1 วัน) ; ถ้ายังไม่มีวันที่ซ่อมเสร็จ = ไม่พร้อมต่อเนื่องทุกวันจนถึงวันนี้
@@ -40,46 +40,35 @@ function gcrFaultyOn(iv, day) {
   return iv.end === null || day < iv.end || day === iv.start;
 }
 
-// อุปกรณ์ทั้งหมด (ทะเบียนไม่ซ้ำ) ณ วันที่กำหนด
-function gcrPlatesOn(typeKey, day) {
+// ทะเบียนที่ใช้เทียบกัน: ตัดช่องว่าง/ขีด และตัวพิมพ์ใหญ่ เพื่อให้ฐานข้อมูลกับรายการแจ้งซ่อมจับคู่กันได้
+function gcrNormPlate(p) { return String(p || '').replace(/[\s\-_.]/g, '').toUpperCase(); }
+
+// อุปกรณ์ทั้งหมด = จำนวนทะเบียนไม่ซ้ำในฐานข้อมูลของอุปกรณ์ชนิดนั้น (นับตามทะเบียน ไม่กรองวันติดตั้ง/ถอด)
+function gcrPlatesOn(typeKey) {
   const plates = new Set();
-  (ddbRecords[typeKey] || []).forEach(r => {
-    if (!r.plate) return;
-    if (r.installDate && r.installDate > day) return;
-    if (r.removeDate && r.removeDate <= day) return;
-    plates.add(r.plate);
-  });
+  (ddbRecords[typeKey] || []).forEach(r => { const p = gcrNormPlate(r.plate); if (p) plates.add(p); });
   return plates;
 }
 
 // แยกสาเหตุที่จำนวนที่นับ ณ วันนั้น น้อยกว่าจำนวนรายการในฐานข้อมูล (ใช้อธิบายในการ์ดสรุป)
-function gcrGapReason(typeKey, day) {
+function gcrGapReason(typeKey) {
   const recs = ddbRecords[typeKey] || [];
-  const counted = gcrPlatesOn(typeKey, day);
-  let noPlate = 0, notInstalled = 0, removed = 0;
-  const seen = new Set();
-  let dup = 0;
-  recs.forEach(r => {
-    if (!r.plate) { noPlate++; return; }
-    if (r.installDate && r.installDate > day) { notInstalled++; return; }
-    if (r.removeDate && r.removeDate <= day) { removed++; return; }
-    if (seen.has(r.plate)) dup++; else seen.add(r.plate);
-  });
+  const counted = gcrPlatesOn(typeKey);
+  const noPlate = recs.filter(r => !gcrNormPlate(r.plate)).length;
+  const dup = recs.length - noPlate - counted.size;
   const parts = [];
-  if (removed) parts.push(`ถอดแล้ว ${removed}`);
   if (dup) parts.push(`ทะเบียนซ้ำ ${dup}`);
-  if (notInstalled) parts.push(`ยังไม่ถึงวันติดตั้ง ${notInstalled}`);
   if (noPlate) parts.push(`ไม่มีทะเบียน ${noPlate}`);
   return { dbCount: recs.length, counted: counted.size, text: parts.join(' · ') };
 }
 
 function gcrDayStats(dev, day) {
-  const all = gcrPlatesOn(dev.key, day);
+  const all = gcrPlatesOn(dev.key);
   const faulty = new Set();
   grRecords.forEach(r => {
-    if (r.device !== dev.repairName || !all.has(r.plate)) return;
+    if (r.device !== dev.repairName || !all.has(gcrNormPlate(r.plate))) return;
     const iv = gcrFaultInterval(r);
-    if (iv && gcrFaultyOn(iv, day)) faulty.add(r.plate);
+    if (iv && gcrFaultyOn(iv, day)) faulty.add(gcrNormPlate(r.plate));
   });
   const total = all.size;
   const pct = total > 0 ? (total - faulty.size) / total * 100 : null;
@@ -128,7 +117,7 @@ function gcrRender() {
     cards.innerHTML = GCR_DEVICES.map(dev => {
       const s = latest ? latest[dev.key] : null;
       const avg = gcrAvg(rows, dev.key);
-      const gap = latest ? gcrGapReason(dev.key, latest.day) : null;
+      const gap = latest ? gcrGapReason(dev.key) : null;
       const gapLine = gap && gap.dbCount !== gap.counted
         ? `<div class="gcr-card-sub" style="color:#b45309;">ฐานข้อมูล ${gap.dbCount} รายการ นับได้ ${gap.counted} คัน (${gap.text || 'ไม่ทราบสาเหตุ'})</div>` : '';
       return `<div class="gcr-card ${gcrPctClass(s ? s.pct : null)}">
