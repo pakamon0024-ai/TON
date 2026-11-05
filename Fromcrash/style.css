@@ -1877,3 +1877,30 @@ body {
 
 /* รูปแนบในภาพรายงานแจ้งซ่อม GPS/CCTV */
 .gr-report-table td.gr-photo img { display: block; max-width: 180px; max-height: 130px; border-radius: 6px; margin: 0 auto; }
+
+/* ===== ภาพรายงานความพร้อม GPS & CCTV (ส่งไลน์) — กว้างพอดี ตัวใหญ่ อ่านชัดบนมือถือ ===== */
+#gcr-report-container {
+  position: fixed; left: -3000px; top: 0; z-index: 9998;
+  width: 1000px; height: auto; overflow: hidden;
+  background: #eef2f7; font-family: 'Kanit', 'Sarabun', sans-serif;
+}
+#gcr-report-container .rpt-header { padding: 28px 40px; }
+#gcr-report-container .rpt-body { padding: 22px 28px 0; }
+#gcr-report-container .rpt-footer-note { font-size: 16px; }
+#gcr-report-container .rpt-footer-brand { font-size: 17px; }
+.gcr-rpt-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+.gcr-rpt-card { --c: #22c55e; background: #fff; border-radius: 16px; border-top: 8px solid; padding: 16px 22px; text-align: center; }
+.gcr-rpt-card.gcr-warn { --c: #f59e0b; }
+.gcr-rpt-card.gcr-bad { --c: #ef4444; }
+.gcr-rpt-card-t { font-size: 1.5rem; font-weight: 700; color: #475569; }
+.gcr-rpt-card-p { font-size: 4rem; font-weight: 800; line-height: 1.15; color: var(--c); }
+.gcr-rpt-card-s { font-size: 1.3rem; color: #64748b; }
+#gcr-report-container .gcr-report-table { width: 100%; background: #fff; border-collapse: collapse; font-size: 1.4rem; }
+#gcr-report-container .gcr-report-table th,
+#gcr-report-container .gcr-report-table td { text-align: center; white-space: nowrap; padding: 8px 10px; border: 1px solid #d5dce8; text-transform: none; letter-spacing: 0; }
+#gcr-report-container .gcr-report-table th { background: #e4e9f2; font-weight: 700; }
+#gcr-report-container .gcr-report-table tbody tr:nth-child(even) td { background: #f6f8fc; }
+#gcr-report-container .gcr-report-table td.gcr-ok { color: #15803d; background: rgba(34, 197, 94, 0.14); }
+#gcr-report-container .gcr-report-table td.gcr-warn { color: #b45309; background: rgba(245, 158, 11, 0.2); }
+#gcr-report-container .gcr-report-table td.gcr-bad { color: #b91c1c; background: rgba(239, 68, 68, 0.18); }
+#gcr-report-container .gcr-report-table tr.gcr-avg td { border-top: 3px solid #1e293b; font-weight: 800; }

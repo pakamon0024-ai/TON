@@ -15,7 +15,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap"
     rel="stylesheet" />
-  <link rel="stylesheet" href="style.css?v=20261031a" />
+  <link rel="stylesheet" href="style.css?v=20261105a" />
   <script>
     // ตั้งค่า theme ก่อนวาดหน้าจอ เพื่อไม่ให้กระพริบธีมเดิมก่อนสลับ
     (function () {
@@ -4308,10 +4308,11 @@
           <div class="subpage" id="gc-subpage-ready">
             <div class="filter-bar">
               <div class="filter-group"><label>เดือน</label><input type="month" id="gcr-month" onchange="gcrRender()" /></div>
+              <button class="btn-secondary" onclick="gcrSaveReportImage()">📸 บันทึกภาพรายงาน</button>
               <button class="btn-secondary" onclick="gcrExportExcel()">📥 Export</button>
             </div>
-            <p class="readonly-hint">% พร้อม = (ทั้งหมด − เสีย) ÷ ทั้งหมด · ทั้งหมด = จำนวนรถในฐานข้อมูล GPS / กล้อง ณ วันนั้น · เสีย = รถที่มีรายการแจ้งซ่อมยังไม่เสร็จในวันนั้น
-              (นับจากวันที่แจ้ง ถึงวันที่ซ่อมเสร็จ) · วันที่ไม่มีรายการเสีย = 100%</p>
+            <p class="readonly-hint">% พร้อม = (ทั้งหมด − เสีย) ÷ ทั้งหมด · ทั้งหมด = จำนวนรถในฐานข้อมูล GPS / กล้อง ณ วันนั้น · เสีย = รถที่มีรายการแจ้งซ่อม
+              นับตั้งแต่วันที่แจ้ง จนกว่าจะบันทึกสถานะ "ซ่อมเสร็จแล้ว" พร้อมวันที่ซ่อมเสร็จ (ถ้ายังไม่บันทึก = ไม่พร้อมต่อเนื่อง) · วันที่ไม่มีรายการเสีย = 100%</p>
             <div id="gcr-warn" style="display:none;margin:8px 0;padding:10px 14px;border-radius:10px;background:rgba(245,158,11,0.14);color:#b45309;font-size:0.88rem;"></div>
             <div id="gcr-cards" class="gcr-cards"></div>
             <div class="chart-card" style="margin:14px 0;">
@@ -5593,6 +5594,32 @@
     <div class="rpt-footer">
       <div class="rpt-footer-note">* ข้อมูลจากระบบติดตามเอกสาร · จัดทำอัตโนมัติ</div>
       <div class="rpt-footer-brand">QA APP · DOCUMENT TRACKING REPORT</div>
+    </div>
+  </div>
+
+  <!-- Report container รายงานความพร้อม GPS & CCTV (off-screen, captured by html2canvas) -->
+  <div id="gcr-report-container">
+    <div class="rpt-header">
+      <div>
+        <div class="rpt-org">Safety Department · Antigravity Transport</div>
+        <div class="rpt-title">รายงานความพร้อมใช้งาน GPS &amp; CCTV</div>
+        <div class="rpt-date-text" id="gcr-rpt-month">—</div>
+        <div class="rpt-date-text" id="gcr-rpt-date-text">—</div>
+      </div>
+    </div>
+    <div class="rpt-body">
+      <div class="gcr-rpt-summary" id="gcr-rpt-summary"></div>
+      <table class="data-table gcr-report-table">
+        <thead>
+          <tr><th rowspan="2">วันที่</th><th colspan="3" style="background:#2f6fd6;color:#fff;">GPS</th><th colspan="3" style="background:#0f9b8e;color:#fff;">CCTV</th></tr>
+          <tr><th>ทั้งหมด<br>(คัน)</th><th>ไม่พร้อม<br>(คัน)</th><th>% พร้อม</th><th>ทั้งหมด<br>(คัน)</th><th>ไม่พร้อม<br>(คัน)</th><th>% พร้อม</th></tr>
+        </thead>
+        <tbody id="gcr-report-body"></tbody>
+      </table>
+    </div>
+    <div class="rpt-footer">
+      <div class="rpt-footer-note">* ข้อมูลจากระบบจัดการ GPS/CCTV · จัดทำอัตโนมัติ</div>
+      <div class="rpt-footer-brand">QA APP · GPS/CCTV READINESS REPORT</div>
     </div>
   </div>
 
