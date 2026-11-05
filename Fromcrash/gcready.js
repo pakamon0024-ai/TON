@@ -52,6 +52,27 @@ function gcrPlatesOn(typeKey, day) {
   return plates;
 }
 
+// แยกสาเหตุที่จำนวนที่นับ ณ วันนั้น น้อยกว่าจำนวนรายการในฐานข้อมูล (ใช้อธิบายในการ์ดสรุป)
+function gcrGapReason(typeKey, day) {
+  const recs = ddbRecords[typeKey] || [];
+  const counted = gcrPlatesOn(typeKey, day);
+  let noPlate = 0, notInstalled = 0, removed = 0;
+  const seen = new Set();
+  let dup = 0;
+  recs.forEach(r => {
+    if (!r.plate) { noPlate++; return; }
+    if (r.installDate && r.installDate > day) { notInstalled++; return; }
+    if (r.removeDate && r.removeDate <= day) { removed++; return; }
+    if (seen.has(r.plate)) dup++; else seen.add(r.plate);
+  });
+  const parts = [];
+  if (removed) parts.push(`ถอดแล้ว ${removed}`);
+  if (dup) parts.push(`ทะเบียนซ้ำ ${dup}`);
+  if (notInstalled) parts.push(`ยังไม่ถึงวันติดตั้ง ${notInstalled}`);
+  if (noPlate) parts.push(`ไม่มีทะเบียน ${noPlate}`);
+  return { dbCount: recs.length, counted: counted.size, text: parts.join(' · ') };
+}
+
 function gcrDayStats(dev, day) {
   const all = gcrPlatesOn(dev.key, day);
   const faulty = new Set();
@@ -107,11 +128,15 @@ function gcrRender() {
     cards.innerHTML = GCR_DEVICES.map(dev => {
       const s = latest ? latest[dev.key] : null;
       const avg = gcrAvg(rows, dev.key);
+      const gap = latest ? gcrGapReason(dev.key, latest.day) : null;
+      const gapLine = gap && gap.dbCount !== gap.counted
+        ? `<div class="gcr-card-sub" style="color:#b45309;">ฐานข้อมูล ${gap.dbCount} รายการ นับได้ ${gap.counted} คัน (${gap.text || 'ไม่ทราบสาเหตุ'})</div>` : '';
       return `<div class="gcr-card ${gcrPctClass(s ? s.pct : null)}">
         <div class="gcr-card-title">${dev.label}${latest ? ` · ${formatDate(latest.day)}` : ''}</div>
         <div class="gcr-card-pct">${s ? gcrFmtPct(s.pct) : '-'}</div>
         <div class="gcr-card-sub">${s ? `เสีย <b>${s.faulty}</b> จากทั้งหมด <b>${s.total}</b>` : 'ยังไม่มีข้อมูล'}</div>
         <div class="gcr-card-sub">เฉลี่ยทั้งเดือน ${gcrFmtPct(avg)}</div>
+        ${gapLine}
       </div>`;
     }).join('');
   }
