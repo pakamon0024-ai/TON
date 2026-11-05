@@ -2410,6 +2410,13 @@
                   <option value="sent">ส่งแล้ว</option>
                 </select>
               </div>
+              <div class="filter-group">
+                <label>เรียงวันที่</label>
+                <select id="dtk-f-sort" onchange="dtkRenderList()">
+                  <option value="asc">น้อย → มาก (เก่าสุดก่อน)</option>
+                  <option value="desc">มาก → น้อย (ใหม่สุดก่อน)</option>
+                </select>
+              </div>
               <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="dtk-f-search"
                   placeholder="ชื่อ / รายละเอียด / ผู้รับผิดชอบ..." oninput="debouncedRender('dtkRenderList')" /></div>
               <button class="btn-secondary" onclick="dtkClearListFilters()">🔄 ล้าง</button>

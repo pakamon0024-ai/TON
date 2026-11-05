@@ -257,7 +257,8 @@ function dtkFilteredList() {
   const yard = document.getElementById('dtk-f-yard')?.value || '';
   const status = document.getElementById('dtk-f-status')?.value || '';
   const search = (document.getElementById('dtk-f-search')?.value || '').toLowerCase().trim();
-  return docTracks.filter(i => {
+  const sortDir = document.getElementById('dtk-f-sort')?.value || 'asc';
+  const filtered = docTracks.filter(i => {
     if (yard && i.yard !== yard) return false;
     // "ยังไม่ส่ง" = ยังไม่ส่งและยังไม่เกินกำหนด (ที่เกินกำหนดแล้วไปอยู่ในตัวกรอง "ยังไม่ส่งและเกินกำหนด")
     if (status === 'pending' && (i.sendDate || dtkOverdueDays(i) > 0)) return false;
@@ -266,10 +267,14 @@ function dtkFilteredList() {
     if (search && !(`${i.detail} ${i.empId} ${i.name} ${i.project} ${i.owner} ${i.note}`.toLowerCase().includes(search))) return false;
     return true;
   });
+  // เรียงตามวันที่ (Date) — น้อยไปมาก / มากไปน้อย (ใช้ทั้งรายการและภาพรายงาน)
+  const dir = sortDir === 'desc' ? -1 : 1;
+  return filtered.slice().sort((a, b) => dir * String(a.date || '').localeCompare(String(b.date || '')));
 }
 
 function dtkClearListFilters() {
   ['dtk-f-yard', 'dtk-f-status', 'dtk-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const s = document.getElementById('dtk-f-sort'); if (s) s.value = 'asc';
   dtkRenderList();
 }
 
