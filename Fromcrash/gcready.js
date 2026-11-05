@@ -55,9 +55,13 @@ function gcrGapReason(typeKey) {
   const recs = ddbRecords[typeKey] || [];
   const counted = gcrPlatesOn(typeKey);
   const noPlate = recs.filter(r => !gcrNormPlate(r.plate)).length;
+  // ทะเบียนที่ซ้ำ: เก็บทะเบียนตามที่พิมพ์ไว้ในฐานข้อมูล พร้อมจำนวนครั้งที่ซ้ำ
+  const byPlate = {};
+  recs.forEach(r => { const k = gcrNormPlate(r.plate); if (k) (byPlate[k] = byPlate[k] || []).push(r.plate); });
+  const dupList = Object.values(byPlate).filter(a => a.length > 1).map(a => `${a[0]} (${a.length} แถว)`);
   const dup = recs.length - noPlate - counted.size;
   const parts = [];
-  if (dup) parts.push(`ทะเบียนซ้ำ ${dup}`);
+  if (dup) parts.push(`ทะเบียนซ้ำ ${dup}: ${dupList.join(', ')}`);
   if (noPlate) parts.push(`ไม่มีทะเบียน ${noPlate}`);
   return { dbCount: recs.length, counted: counted.size, text: parts.join(' · ') };
 }
