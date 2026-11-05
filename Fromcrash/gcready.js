@@ -166,20 +166,28 @@ function gcrRender() {
     const shown = rows.filter(r => !r.future);
     const allVals = shown.flatMap(r => GCR_DEVICES.map(d => r[d.key].pct)).filter(v => v !== null);
     const minV = allVals.length ? Math.max(0, Math.floor(Math.min(...allVals) - 2)) : 90;
+    const showLabels = shown.length <= 16; // วันน้อยพอจึงแสดงตัวเลขบนแท่งได้ ถ้าเยอะจะรกจึงซ่อน
     gcrChart = new Chart(canvas, {
-      type: 'line',
+      type: 'bar',
       data: {
         labels: shown.map(r => r.d),
         datasets: GCR_DEVICES.map(d => ({
           label: `% พร้อม ${d.label}`, data: shown.map(r => r[d.key].pct === null ? null : Math.round(r[d.key].pct * 10) / 10),
-          borderColor: d.color, backgroundColor: d.color, borderWidth: 2.5, pointRadius: 3, tension: 0.25, fill: false,
-          datalabels: { display: false },
+          backgroundColor: d.color, borderRadius: 6, borderSkipped: false, maxBarThickness: 34,
+          categoryPercentage: 0.8, barPercentage: 0.92,
+          datalabels: showLabels
+            ? { display: true, anchor: 'end', align: 'end', offset: -2, color: '#fff', font: { weight: '700', size: 11 }, formatter: v => (v >= 99.95 ? '100' : v.toFixed(1)) }
+            : { display: false },
         })),
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { position: 'top' } },
-        scales: { y: { min: minV, max: 100, ticks: { callback: v => v + '%' } }, x: { title: { display: true, text: 'วันที่' } } },
+        plugins: { legend: { position: 'top', labels: { usePointStyle: true, pointStyle: 'rectRounded' } },
+          tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y}%` } } },
+        scales: {
+          y: { min: minV, max: 100, ticks: { callback: v => v + '%' }, grid: { color: 'rgba(148,163,184,0.25)' } },
+          x: { grid: { display: false }, title: { display: true, text: 'วันที่' } },
+        },
       },
     });
   }
