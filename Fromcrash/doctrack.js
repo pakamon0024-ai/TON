@@ -163,6 +163,7 @@ function dtkRefreshLookupDropdowns() {
   dtkFillDatalist('dtk-owner-list', uniq('owner'));
   dtkFillDatalist('dtk-note-list', uniq('note'));
   dtkFillSelect('dtk-f-yard', mdYards);
+  dtkFillSelect('dtk-f-detail', uniq('detail').sort((a, b) => a.localeCompare(b, 'th')));
 }
 
 // ===== Save / Edit / Delete =====
@@ -256,10 +257,12 @@ function dtkDeleteCase(id) {
 function dtkFilteredList() {
   const yard = document.getElementById('dtk-f-yard')?.value || '';
   const status = document.getElementById('dtk-f-status')?.value || '';
+  const detailF = (document.getElementById('dtk-f-detail')?.value || '').trim();
   const search = (document.getElementById('dtk-f-search')?.value || '').toLowerCase().trim();
   const sortDir = document.getElementById('dtk-f-sort')?.value || 'asc';
   const filtered = docTracks.filter(i => {
     if (yard && i.yard !== yard) return false;
+    if (detailF && (i.detail || '').trim() !== detailF) return false;
     // "ยังไม่ส่ง" = ยังไม่ส่งและยังไม่เกินกำหนด (ที่เกินกำหนดแล้วไปอยู่ในตัวกรอง "ยังไม่ส่งและเกินกำหนด")
     if (status === 'pending' && (i.sendDate || dtkOverdueDays(i) > 0)) return false;
     if (status === 'sent' && !i.sendDate) return false;
@@ -273,7 +276,7 @@ function dtkFilteredList() {
 }
 
 function dtkClearListFilters() {
-  ['dtk-f-yard', 'dtk-f-status', 'dtk-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['dtk-f-yard', 'dtk-f-detail', 'dtk-f-status', 'dtk-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const s = document.getElementById('dtk-f-sort'); if (s) s.value = 'asc';
   dtkRenderList();
 }
@@ -328,6 +331,8 @@ function dtkReportTitle() {
   else if (status === 'overdue') title += ' (ยังไม่ส่งและเกินกำหนด)';
   else if (status === 'sent') title += ' (ส่งแล้ว)';
   if (yard) title += ' ลาน ' + yard;
+  const detailF = document.getElementById('dtk-f-detail')?.value || '';
+  if (detailF) title += ' · ' + detailF;
   return title;
 }
 
@@ -461,28 +466,21 @@ function dtkRecordsToObj(arr) {
   (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; });
   return o;
 }
-function dtkObjToRecords(obj) {
-  if (!obj) return [];
-  if (Array.isArray(obj)) return obj.filter(Boolean);
-  return Object.values(obj).filter(r => r && r.id);
-}
-// เก็บบันทึกที่ server ยังไม่มีไว้ ไม่ให้ถูก apply ทับจนหาย แล้ว sync กลับขึ้น server
-function dtkApplyServer(serverList) {
-  const serverIds = new Set(serverList.map(r => r.id));
-  const localOnly = (docTracks || []).filter(t => t && t.id && !serverIds.has(t.id));
-  docTracks = serverList.concat(localOnly);
+// ลบแล้วกลับมาอีก: เครื่องอื่นที่ยังมีรายการเก่าอยู่ในเครื่องจะ sync ขึ้นไปใหม่ -> ใช้ "ป้ายลบ" ที่ /docTracking/_deleted/<id>
+// (ฟังก์ชัน gsSplit / gsMerge / gsWriteMany / gsDeleteMany อยู่ใน gpscctv.js ใช้ร่วมกัน)
+// เก็บบันทึกที่ server ยังไม่มีไว้ ไม่ให้ถูก apply ทับจนหาย แต่รายการที่ถูกลบแล้ว (มีป้ายลบ) จะไม่ถูกส่งกลับขึ้นไปอีก
+function dtkApplyServer(serverList, deleted) {
+  const { merged, localOnly } = gsMerge(docTracks, serverList, deleted || new Set());
+  docTracks = merged;
   dtkSave();
   dtkRefreshLookupDropdowns();
   dtkRenderList();
   if (document.getElementById('dtk-subpage-dashboard')?.classList.contains('active')) dtkRenderDashboard();
-  if (localOnly.length > 0) dtkWriteFB();
+  if (localOnly.length > 0) gsWriteMany('/docTracking', localOnly);
 }
 async function dtkWriteFB() {
   if (!dtkRef) return;
-  try {
-    const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(dtkRef, dtkRecordsToObj(docTracks));
-  } catch (e) { console.warn('dtkWriteFB error', e); notifySyncWriteError(e.message); }
+  await gsWriteMany('/docTracking', docTracks);
 }
 
 async function dtkWriteOne(record) {
@@ -498,10 +496,7 @@ function dtkPushOneIfReady(record) { if (dtkReady) dtkWriteOne(record); }
 
 async function dtkRemoveOne(id) {
   if (!dtkRef) return;
-  try {
-    const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await remove(ref(fbDb, `/docTracking/${id}`));
-  } catch (e) { console.warn('dtkRemoveOne error', e); notifySyncWriteError(e.message); }
+  await gsDeleteMany('/docTracking', [id]);
 }
 function dtkRemoveOneIfReady(id) { if (dtkReady) dtkRemoveOne(id); }
 
@@ -521,10 +516,10 @@ async function dtkInit() {
     const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     dtkRef = ref(fbDb, '/docTracking');
     const snap = await get(dtkRef);
-    if (snap.exists()) dtkApplyServer(dtkObjToRecords(snap.val()));
+    if (snap.exists()) { const p = gsSplit(snap.val()); dtkApplyServer(p.records, p.deleted); }
     dtkReady = true;
     if (!snap.exists() && docTracks.length > 0) await dtkWriteFB();
-    onValue(dtkRef, s => { if (s.exists()) dtkApplyServer(dtkObjToRecords(s.val())); });
+    onValue(dtkRef, s => { if (s.exists()) { const p = gsSplit(s.val()); dtkApplyServer(p.records, p.deleted); } });
   } catch (e) { console.warn('dtkInit error', e); notifySyncLoadError(e.message); }
 }
 
