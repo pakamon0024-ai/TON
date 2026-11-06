@@ -487,6 +487,8 @@ function dtkApplyServer(serverList, deleted) {
   const serverIds = new Set(serverList.map(r => r.id));
   const localOnly = (docTracks || []).filter(t => t && t.id && !serverIds.has(t.id) && !deleted.has(t.id) && dtkRecTs(t) > cutoff);
   docTracks = serverList.concat(localOnly);
+  console.log('[dtk] apply server', { server: serverList.length, tombstones: deleted.size, lastSync: last, localOnlyKept: localOnly.map(r => r.id) });
+  if (localOnly.length > 0) showToast(`⚠️ เครื่องนี้ส่งรายการที่ server ไม่มี กลับขึ้นไป ${localOnly.length} รายการ (${localOnly.map(r => r.detail).join(', ')})`, 'warning');
   if (localOnly.length === 0) { try { localStorage.setItem(DTK_LASTSYNC_KEY, String(Date.now())); } catch (e) {} }
   dtkSave();
   dtkRefreshLookupDropdowns();
@@ -522,12 +524,14 @@ async function dtkRemoveOne(id) {
       const v = before.val() || {};
       Object.keys(v).forEach(k => { if (k !== '_deleted' && v[k] && typeof v[k] === 'object' && v[k].id === id) keys.add(k); });
     }
+    console.log('[dtk] delete', id, 'keys on server:', [...keys]);
     await Promise.all([...keys].map(k => remove(ref(fbDb, `/docTracking/${k}`))));
     try { await set(ref(fbDb, `/docTracking/_deleted/${id}`), new Date().toISOString()); }
     catch (e) { console.warn('dtk tombstone error', e); }
     const after = await get(dtkRef);
     const left = after.exists() ? Object.entries(after.val() || {}).filter(([k, r]) => k !== '_deleted' && r && (k === id || r.id === id)).length : 0;
     if (left > 0) { showToast('ลบบนเซิร์ฟเวอร์ไม่สำเร็จ — รายการยังอยู่ (ตรวจสอบสิทธิ์ลบของ Firebase rules)', 'error'); return false; }
+    console.log('[dtk] delete verified gone from server', id);
     notifySyncWriteSuccess();
     return true;
   } catch (e) {
