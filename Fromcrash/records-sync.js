@@ -3,16 +3,16 @@
 // เป็น top-level let ใน claims.js ซึ่งมองเห็นได้จากไฟล์ script อื่นในหน้าเดียวกัน)
 // เก็บข้อมูลไว้ที่ path แยกต่างหาก "/finflow_records" ไม่ปะปนกับข้อมูลเคลมประกันภัย
 
-let rsRef = null;
-let rsReady = false;
+let rcsRef = null;
+let rcsReady = false;
 
-function rsRecordsToObj(arr) {
+function rcsRecordsToObj(arr) {
   const o = {};
   (arr || []).forEach(r => { if (r && r.id) o[r.id] = r; });
   return o;
 }
 
-function rsObjToRecords(obj) {
+function rcsObjToRecords(obj) {
   if (!obj) return [];
   let arr;
   if (Array.isArray(obj)) arr = obj.filter(Boolean);
@@ -26,51 +26,51 @@ function rsObjToRecords(obj) {
 
 // ถ้าเครื่องนี้มีรายการที่ server ยังไม่มี (เช่น บันทึกไปตอนยังเชื่อมต่อ Firebase ไม่ทัน ทำให้ push ไม่สำเร็จ)
 // ต้องเก็บไว้ ไม่ใช่ปล่อยให้ apply ทับข้อมูลเครื่องนี้จนหายไปเงียบๆ แล้ว sync กลับขึ้น server ทันที
-function rsApplyServerRecords(serverRecords) {
+function rcsApplyServerRecords(serverRecords) {
   const serverIds = new Set(serverRecords.map(r => r.id));
   const localOnly = (records || []).filter(r => r && r.id && !serverIds.has(r.id));
   records = serverRecords.concat(localOnly).sort((a, b) => new Date(b.savedAt || 0) - new Date(a.savedAt || 0));
   saveRecords();
   renderDashboard();
   renderHistory();
-  if (localOnly.length > 0) rsWriteFB();
+  if (localOnly.length > 0) rcsWriteFB();
 }
 
-async function rsWriteFB() {
-  if (!rsRef) return;
+async function rcsWriteFB() {
+  if (!rcsRef) return;
   try {
     const { set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    await set(rsRef, rsRecordsToObj(records));
+    await set(rcsRef, rcsRecordsToObj(records));
   } catch (e) {
-    console.error('rsWriteFB error', e);
+    console.error('rcsWriteFB error', e);
   }
 }
 
-function rsPushIfReady() {
-  if (rsReady) rsWriteFB();
+function rcsPushIfReady() {
+  if (rcsReady) rcsWriteFB();
 }
 
 // ===== เขียน/ลบเฉพาะรายการเดียว (ไม่ใช่ทั้งอาเรย์) =====
-async function rsWriteOne(record) {
-  if (!rsRef || !record?.id) return;
+async function rcsWriteOne(record) {
+  if (!rcsRef || !record?.id) return;
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/finflow_records/${record.id}`), record);
     notifySyncWriteSuccess();
-  } catch (e) { console.error('rsWriteOne error', e); notifySyncWriteError(e.message); }
+  } catch (e) { console.error('rcsWriteOne error', e); notifySyncWriteError(e.message); }
 }
-function rsPushOneIfReady(record) { if (rsReady) rsWriteOne(record); }
+function rcsPushOneIfReady(record) { if (rcsReady) rcsWriteOne(record); }
 
-async function rsRemoveOne(id) {
-  if (!rsRef) return;
+async function rcsRemoveOne(id) {
+  if (!rcsRef) return;
   try {
     const { ref, remove } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await remove(ref(fbDb, `/finflow_records/${id}`));
-  } catch (e) { console.error('rsRemoveOne error', e); }
+  } catch (e) { console.error('rcsRemoveOne error', e); }
 }
-function rsRemoveOneIfReady(id) { if (rsReady) rsRemoveOne(id); }
+function rcsRemoveOneIfReady(id) { if (rcsReady) rcsRemoveOne(id); }
 
-function rsWaitForFirebase() {
+function rcsWaitForFirebase() {
   return new Promise(resolve => {
     const check = () => {
       if (typeof fbDb !== 'undefined' && fbDb && typeof fbReady !== 'undefined' && fbReady) resolve();
@@ -80,27 +80,27 @@ function rsWaitForFirebase() {
   });
 }
 
-async function rsInit() {
-  await rsWaitForFirebase();
+async function rcsInit() {
+  await rcsWaitForFirebase();
   try {
     const { ref, onValue, get } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
-    rsRef = ref(fbDb, '/finflow_records');
-    const snap = await get(rsRef);
+    rcsRef = ref(fbDb, '/finflow_records');
+    const snap = await get(rcsRef);
     if (snap.exists()) {
-      rsApplyServerRecords(rsObjToRecords(snap.val()));
+      rcsApplyServerRecords(rcsObjToRecords(snap.val()));
     } else if (records.length > 0) {
       // Firebase ยังไม่มีข้อมูล แต่เครื่องนี้มีประวัติอยู่แล้ว -> อัปโหลดขึ้นไปเป็นชุดแรก
-      rsReady = true;
-      await rsWriteFB();
+      rcsReady = true;
+      await rcsWriteFB();
     }
-    rsReady = true;
-    onValue(rsRef, snap => {
+    rcsReady = true;
+    onValue(rcsRef, snap => {
       if (!snap.exists()) return;
-      rsApplyServerRecords(rsObjToRecords(snap.val()));
+      rcsApplyServerRecords(rcsObjToRecords(snap.val()));
     });
   } catch (e) {
-    console.error('rsInit error', e);
+    console.error('rcsInit error', e);
   }
 }
 
-document.addEventListener('DOMContentLoaded', rsInit);
+document.addEventListener('DOMContentLoaded', rcsInit);

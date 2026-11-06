@@ -469,9 +469,25 @@ function dtkRecordsToObj(arr) {
 // ลบแล้วกลับมาอีก: เครื่องอื่นที่ยังมีรายการเก่าอยู่ในเครื่องจะ sync ขึ้นไปใหม่ -> ใช้ "ป้ายลบ" ที่ /docTracking/_deleted/<id>
 // (ฟังก์ชัน gsSplit / gsMerge / gsWriteMany / gsDeleteMany อยู่ใน gpscctv.js ใช้ร่วมกัน)
 // เก็บบันทึกที่ server ยังไม่มีไว้ ไม่ให้ถูก apply ทับจนหาย แต่รายการที่ถูกลบแล้ว (มีป้ายลบ) จะไม่ถูกส่งกลับขึ้นไปอีก
+// เวลาสร้าง/แก้ไขล่าสุดของรายการ (ms) — ใช้ตัดสินว่ารายการที่ server ไม่มี "เพิ่งสร้างในเครื่องนี้ยังไม่ได้ส่งขึ้น" หรือ "ถูกลบจากเครื่องอื่นไปแล้ว"
+function dtkRecTs(r) {
+  const t = Date.parse(r.updatedAt || r.createdAt || '');
+  if (!isNaN(t)) return t;
+  const m = String(r.id || '').match(/(d{12,})/);
+  return m ? Number(m[1]) : 0;
+}
+const DTK_LASTSYNC_KEY = 'finflow_dtk_lastsync';
 function dtkApplyServer(serverList, deleted) {
-  const { merged, localOnly } = gsMerge(docTracks, serverList, deleted || new Set());
-  docTracks = merged;
+  deleted = deleted || new Set();
+  // รายการในเครื่องที่ server ไม่มี: ถ้าสร้าง/แก้หลังซิงค์ครั้งล่าสุด = ยังไม่ได้ส่งขึ้น ให้เก็บ+ส่ง ; ถ้าเก่ากว่า = เครื่องอื่นลบไปแล้ว ให้ทิ้ง
+  // (ไม่พึ่งป้ายลบอย่างเดียว เพราะถ้าป้ายลบเขียนไม่ได้ รายการที่ค้างในเครื่องอื่นจะถูกส่งกลับขึ้นไปจนลบไม่ออก)
+  let last = 0;
+  try { last = Number(localStorage.getItem(DTK_LASTSYNC_KEY) || 0); } catch (e) {}
+  const cutoff = last || (Date.now() - 10 * 60 * 1000);
+  const serverIds = new Set(serverList.map(r => r.id));
+  const localOnly = (docTracks || []).filter(t => t && t.id && !serverIds.has(t.id) && !deleted.has(t.id) && dtkRecTs(t) > cutoff);
+  docTracks = serverList.concat(localOnly);
+  if (localOnly.length === 0) { try { localStorage.setItem(DTK_LASTSYNC_KEY, String(Date.now())); } catch (e) {} }
   dtkSave();
   dtkRefreshLookupDropdowns();
   dtkRenderList();
@@ -542,7 +558,7 @@ async function dtkInit() {
     if (snap.exists()) { const p = gsSplit(snap.val()); dtkApplyServer(p.records, p.deleted); }
     dtkReady = true;
     if (!snap.exists() && docTracks.length > 0) await dtkWriteFB();
-    onValue(dtkRef, s => { if (s.exists()) { const p = gsSplit(s.val()); dtkApplyServer(p.records, p.deleted); } });
+    onValue(dtkRef, s => { if (s.exists()) { const p = gsSplit(s.val()); dtkApplyServer(p.records, p.deleted); } else dtkApplyServer([], new Set()); });
   } catch (e) { console.warn('dtkInit error', e); notifySyncLoadError(e.message); }
 }
 

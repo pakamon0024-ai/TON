@@ -58,7 +58,7 @@ async function forceSyncAllToFirebase() {
   }
   showToast('🔄 กำลังซิงค์ข้อมูลในเครื่องนี้ขึ้น Firebase...', 'success');
   try {
-    if (typeof rsPushIfReady === 'function') rsPushIfReady();
+    if (typeof rcsPushIfReady === 'function') rcsPushIfReady();
     if (typeof icWriteFB === 'function') await icWriteFB();
     if (typeof mdPushIfReady === 'function') mdPushIfReady();
     if (typeof incPushIfReady === 'function') incPushIfReady();
@@ -391,7 +391,7 @@ function savePettyCash() {
     }
   }
   saveRecords();
-  if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(savedRecord);
+  if (typeof rcsPushOneIfReady === 'function') rcsPushOneIfReady(savedRecord);
   renderDashboard();
   renderHistory();
 }
@@ -594,7 +594,7 @@ function saveApproval() {
     }
   }
   saveRecords();
-  if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(savedRecord);
+  if (typeof rcsPushOneIfReady === 'function') rcsPushOneIfReady(savedRecord);
   renderDashboard();
   renderHistory();
 }
@@ -777,7 +777,7 @@ function saveReceiptCert() {
     }
   }
   saveRecords();
-  if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(savedRecord);
+  if (typeof rcsPushOneIfReady === 'function') rcsPushOneIfReady(savedRecord);
   renderDashboard();
   renderHistory();
 }
@@ -934,7 +934,7 @@ function changeStatus(id, status) {
   if (rec) {
     rec.status = status;
     saveRecords();
-    if (typeof rsPushOneIfReady === 'function') rsPushOneIfReady(rec);
+    if (typeof rcsPushOneIfReady === 'function') rcsPushOneIfReady(rec);
     renderDashboard();
   }
 }
@@ -956,14 +956,14 @@ function deleteRecord(id) {
   if (!confirmDeleteWithPin('ยืนยันการลบรายการนี้?')) return;
   records = records.filter(r => r.id !== id);
   saveRecords();
-  if (typeof rsRemoveOneIfReady === 'function') rsRemoveOneIfReady(id);
+  if (typeof rcsRemoveOneIfReady === 'function') rcsRemoveOneIfReady(id);
   renderHistory(); renderDashboard();
   showToast('ลบรายการแล้ว', 'warning');
 }
 
 function clearAllHistory() {
   if (!confirmDeleteWithPin('ยืนยันการล้างประวัติทั้งหมด?')) return;
-  records = []; saveRecords(); rsPushIfReady(); renderHistory(); renderDashboard();
+  records = []; saveRecords(); rcsPushIfReady(); renderHistory(); renderDashboard();
   showToast('ล้างประวัติทั้งหมดแล้ว', 'warning');
 }
 
