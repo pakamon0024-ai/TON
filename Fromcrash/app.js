@@ -1010,15 +1010,7 @@ function showApprovalPrint(data) {
   document.getElementById('modalBody').innerHTML = html;
   document.getElementById('printModal').classList.add('show');
   currentPrintFn = () => {
-    const el = document.getElementById('modalBody');
-    html2pdf().set({
-      margin: [8, 8, 8, 8],
-      filename: `อนุมัติสำรองจ่าย_${data.docno}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['css', 'avoid-all'] }
-    }).from(el).save();
+    savePdfOnePage(document.getElementById('modalBody'), `อนุมัติสำรองจ่าย_${data.docno}.pdf`);
   };
 }
 
@@ -1182,11 +1174,63 @@ function buildReceiptCertDoc(data) {
   `;
 }
 
+// ===== จัดเอกสารให้พอดี 1 หน้า A4 (ใช้กับหนังสือขออนุมัติสำรองจ่าย) =====
+// แคปเอกสารเป็นภาพ แล้วย่อให้อยู่ในหน้าเดียวโดยรักษาสัดส่วน — เนื้อหาน้อยก็ไม่ขยาย เนื้อหายาวก็ไม่ล้นไปหน้าสอง
+async function docToCanvas(el) {
+  // แคปตัวเอกสาร (.print-doc) ไม่ใช่กล่อง modal ที่อาจมี scroll/max-height ตัดเนื้อหาด้านล่าง
+  const target = el.querySelector('.print-doc') || el;
+  return html2canvas(target, { scale: 3, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: -window.scrollY });
+}
+async function savePdfOnePage(el, filename) {
+  try {
+    const canvas = await docToCanvas(el);
+    const inner = 281 / 194; // ความสูง/ความกว้างของพื้นที่เนื้อหา A4 แนวตั้ง (ขอบ 8 มม.)
+    let out = canvas;
+    if (canvas.height / canvas.width > inner) {
+      // เอกสารสูงเกินหนึ่งหน้า: ขยายผ้าใบด้านข้างให้สัดส่วนเท่าหน้ากระดาษ แล้ววางภาพกึ่งกลาง (ผลคือภาพถูกย่อให้พอดีหน้า)
+      const w = Math.ceil(canvas.height / inner) + 4;
+      out = document.createElement('canvas');
+      out.width = w; out.height = canvas.height;
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
+      ctx.drawImage(canvas, Math.floor((w - canvas.width) / 2), 0);
+    }
+    await html2pdf().set({
+      margin: [8, 8, 8, 8], filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(out, 'canvas').save();
+  } catch (e) { showToast('สร้าง PDF ไม่ได้: ' + e.message, 'error'); }
+}
+// พิมพ์ผ่านเบราว์เซอร์แบบ 1 หน้า: ใส่ภาพเอกสารลงหน้าที่ซ่อนไว้ ให้ภาพพอดีหน้า A4 แล้วสั่งพิมพ์
+async function printOnePage(el) {
+  try {
+    const canvas = await docToCanvas(el);
+    const src = canvas.toDataURL('image/png');
+    const frame = document.createElement('iframe');
+    frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;';
+    document.body.appendChild(frame);
+    const d = frame.contentWindow.document;
+    d.open();
+    d.write(`<!doctype html><html><head><meta charset="utf-8"><style>
+      @page { size: A4 portrait; margin: 8mm; }
+      html, body { margin: 0; padding: 0; background: #fff; }
+      img { display: block; margin: 0 auto; max-width: 194mm; max-height: 280mm; width: auto; height: auto; object-fit: contain; }
+    </style></head><body><img id="doc" src="${src}" /></body></html>`);
+    d.close();
+    const img = d.getElementById('doc');
+    const go = () => { frame.contentWindow.focus(); frame.contentWindow.print(); setTimeout(() => frame.remove(), 60000); };
+    if (img.complete) go(); else img.onload = go;
+  } catch (e) { showToast('พิมพ์ไม่ได้: ' + e.message, 'error'); }
+}
+
 function doPrint() {
   if (currentPrintFn) currentPrintFn();
 }
 
 function printDocument() {
+  const memo = document.querySelector('#modalBody .ap-memo-doc');
+  if (memo) { printOnePage(document.getElementById('modalBody')); return; }
   window.print();
 }
 
