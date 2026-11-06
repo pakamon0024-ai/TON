@@ -494,11 +494,34 @@ async function dtkWriteOne(record) {
 function dtkPushIfReady() { if (dtkReady) dtkWriteFB(); }
 function dtkPushOneIfReady(record) { if (dtkReady) dtkWriteOne(record); }
 
+// ลบบน Firebase ทีละขั้น: ลบรายการ (รวมคีย์ที่ไม่ตรงกับ id ถ้ามี) -> วางป้ายลบ (ถ้าวางไม่ได้ก็ไม่ทำให้การลบล้มเหลว) -> อ่านกลับมาตรวจ
+// แล้วแจ้งผลจริงให้ผู้ใช้เห็น ไม่ใช่แค่ "ซิงค์สำเร็จ"
 async function dtkRemoveOne(id) {
-  if (!dtkRef) return;
-  await gsDeleteMany('/docTracking', [id]);
+  if (!dtkRef) { showToast('ลบในเครื่องนี้แล้ว แต่ยังไม่ได้เชื่อมต่อ Firebase (ยังไม่ลบบนเซิร์ฟเวอร์)', 'warning'); return false; }
+  try {
+    const { ref, get, remove, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
+    const keys = new Set([id]);
+    const before = await get(dtkRef);
+    if (before.exists()) {
+      const v = before.val() || {};
+      Object.keys(v).forEach(k => { if (k !== '_deleted' && v[k] && typeof v[k] === 'object' && v[k].id === id) keys.add(k); });
+    }
+    await Promise.all([...keys].map(k => remove(ref(fbDb, `/docTracking/${k}`))));
+    try { await set(ref(fbDb, `/docTracking/_deleted/${id}`), new Date().toISOString()); }
+    catch (e) { console.warn('dtk tombstone error', e); }
+    const after = await get(dtkRef);
+    const left = after.exists() ? Object.entries(after.val() || {}).filter(([k, r]) => k !== '_deleted' && r && (k === id || r.id === id)).length : 0;
+    if (left > 0) { showToast('ลบบนเซิร์ฟเวอร์ไม่สำเร็จ — รายการยังอยู่ (ตรวจสอบสิทธิ์ลบของ Firebase rules)', 'error'); return false; }
+    notifySyncWriteSuccess();
+    return true;
+  } catch (e) {
+    console.warn('dtkRemoveOne error', e);
+    showToast('ลบบนเซิร์ฟเวอร์ไม่สำเร็จ: ' + (e && e.message ? e.message : e), 'error');
+    notifySyncWriteError(e.message);
+    return false;
+  }
 }
-function dtkRemoveOneIfReady(id) { if (dtkReady) dtkRemoveOne(id); }
+function dtkRemoveOneIfReady(id) { return dtkRemoveOne(id); }
 
 function dtkWaitForFirebase() {
   return new Promise(resolve => {
