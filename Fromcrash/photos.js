@@ -35,14 +35,30 @@ function photoCompress(file) {
   });
 }
 
+// เหตุผลที่บันทึกรูปล้มเหลวครั้งล่าสุด (ใช้แสดงให้ผู้ใช้เห็นสาเหตุจริง ไม่ใช่เหมารวมว่าเน็ตหลุด)
+let photoLastError = '';
+function photoFailMessage() {
+  return 'ไม่สามารถบันทึกรูปได้: ' + (photoLastError || 'ไม่ทราบสาเหตุ');
+}
+
 async function photoPut(kind, id, data) {
-  if (!photoFbReady()) return false;
+  photoLastError = '';
+  if (!photoFbReady()) {
+    photoLastError = 'ระบบยังเชื่อมต่อฐานข้อมูลไม่เสร็จ (อาจยังไม่ได้เข้าสู่ระบบ หรือเพิ่งเปิดหน้า) — รอสักครู่หรือรีเฟรชหน้าแล้วลองใหม่';
+    return false;
+  }
   try {
     const { ref, set } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js');
     await set(ref(fbDb, `/recordPhotos/${kind}/${id}`), data);
     photoCache[`${kind}/${id}`] = data;
     return true;
-  } catch (e) { console.warn('photoPut error', e); return false; }
+  } catch (e) {
+    console.warn('photoPut error', e);
+    const msg = String(e && (e.code || e.message) || e);
+    if (/permission[_ -]?denied/i.test(msg)) photoLastError = 'ไม่มีสิทธิ์เขียนที่ /recordPhotos ใน Firebase (ต้องเพิ่ม Security Rules ให้ path นี้) — ' + msg;
+    else photoLastError = msg;
+    return false;
+  }
 }
 
 async function photoFetch(kind, id) {

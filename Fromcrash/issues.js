@@ -206,7 +206,7 @@ async function wiSaveCase() {
   const recId = wiEditingId || ('WI_' + Date.now());
   if (photoDirty && photoData) {
     if (!(await photoPut('issues', recId, photoData))) {
-      showToast('ไม่สามารถบันทึกรูปได้ เนื่องจาก Firebase ไม่สามารถเชื่อมต่อได้ — ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง', 'error');
+      showToast(photoFailMessage(), 'error');
       return;
     }
   } else if (photoDirty) {

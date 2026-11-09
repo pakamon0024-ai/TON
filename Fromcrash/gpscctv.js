@@ -327,7 +327,7 @@ async function grSaveCase() {
   const recId = grEditingId || ('GR_' + Date.now());
   if (photoDirty && photoData) {
     if (!(await photoPut('gpsRepairs', recId, photoData))) {
-      showToast('บันทึกรูปไม่สำเร็จ (ยังเชื่อมต่อ Firebase ไม่ได้) — ลองใหม่อีกครั้ง', 'error');
+      showToast(photoFailMessage(), 'error');
       return;
     }
   } else if (photoDirty) {
