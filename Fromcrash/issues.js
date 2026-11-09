@@ -206,7 +206,7 @@ async function wiSaveCase() {
   const recId = wiEditingId || ('WI_' + Date.now());
   if (photoDirty && photoData) {
     if (!(await photoPut('issues', recId, photoData))) {
-      showToast('บันทึกรูปไม่สำเร็จ (ยังเชื่อมต่อ Firebase ไม่ได้) — ลองใหม่อีกครั้ง', 'error');
+      showToast('ไม่สามารถบันทึกรูปได้ เนื่องจาก Firebase ไม่สามารถเชื่อมต่อได้ — ตรวจสอบอินเทอร์เน็ตแล้วลองใหม่อีกครั้ง', 'error');
       return;
     }
   } else if (photoDirty) {
@@ -220,7 +220,6 @@ async function wiSaveCase() {
     businessUnit: document.getElementById('wi-bu').value,
     yard: document.getElementById('wi-yard').value,
     detail,
-    repairStatus: document.getElementById('wi-repair-status').value || 'pending',
   };
   if (photoDirty) { record.photo = ''; record.hasPhoto = !!photoData; }
 
@@ -265,7 +264,6 @@ function wiClearForm() {
   document.getElementById('wi-bu').value = '';
   document.getElementById('wi-yard').value = '';
   document.getElementById('wi-detail').value = '';
-  document.getElementById('wi-repair-status').value = 'pending';
   wiPhotoData = ''; wiPhotoDirty = false;
   wiRenderPhotoPreview();
 }
@@ -283,7 +281,6 @@ function wiEditCase(id) {
   document.getElementById('wi-bu').value = rec.businessUnit || '';
   document.getElementById('wi-yard').value = rec.yard || '';
   document.getElementById('wi-detail').value = rec.detail || '';
-  document.getElementById('wi-repair-status').value = rec.repairStatus || 'pending';
   wiPhotoData = rec.photo || '';
   wiPhotoDirty = false;
   wiRenderPhotoPreview();
@@ -311,14 +308,12 @@ function wiDeleteCase(id) {
 function wiFilteredList() {
   const topic = document.getElementById('wi-f-topic')?.value || '';
   const yard = document.getElementById('wi-f-yard')?.value || '';
-  const status = document.getElementById('wi-f-status')?.value || '';
   const dateFrom = document.getElementById('wi-f-from')?.value || '';
   const dateTo = document.getElementById('wi-f-to')?.value || '';
   const search = (document.getElementById('wi-f-search')?.value || '').toLowerCase().trim();
   return workIssues.filter(i => {
     if (topic && i.topic !== topic) return false;
     if (yard && i.yard !== yard) return false;
-    if (status && i.repairStatus !== status) return false;
     if (dateFrom && (i.date || '') < dateFrom) return false;
     if (dateTo && (i.date || '') > dateTo) return false;
     if (search && !(`${i.topic} ${i.driverName} ${i.plate} ${i.businessUnit} ${i.detail}`.toLowerCase().includes(search))) return false;
@@ -327,19 +322,7 @@ function wiFilteredList() {
 }
 
 function wiClearListFilters() {
-  ['wi-f-topic', 'wi-f-yard', 'wi-f-status', 'wi-f-from', 'wi-f-to', 'wi-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  wiRenderList();
-}
-
-const WI_REPAIR_LABELS = { pending: 'รอซ่อม', done: 'ซ่อมแล้ว' };
-
-// เปลี่ยนสถานะซ่อมได้ตรงจากหน้ารายการ (ไม่ต้องเข้าไปแก้ไข)
-function wiSetRepairStatus(id, value) {
-  const idx = workIssues.findIndex(i => i.id === id);
-  if (idx < 0) return;
-  workIssues[idx] = { ...workIssues[idx], repairStatus: value, updatedAt: new Date().toISOString() };
-  wiSave();
-  wiPushOneIfReady(workIssues[idx]);
+  ['wi-f-topic', 'wi-f-yard', 'wi-f-from', 'wi-f-to', 'wi-f-search'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   wiRenderList();
 }
 
@@ -367,13 +350,6 @@ function wiRenderList() {
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
       <td>${escapeHtml(i.detail)}</td>
-      <td>
-        <select class="gh-notify-sel ${i.repairStatus === 'done' ? 'gh-notify-0' : i.repairStatus === 'pending' ? 'gh-notify-1' : ''}" onchange="wiSetRepairStatus('${i.id}', this.value)">
-          ${i.repairStatus ? '' : '<option value="" selected>-</option>'}
-          <option value="pending" ${i.repairStatus === 'pending' ? 'selected' : ''}>รอซ่อม</option>
-          <option value="done" ${i.repairStatus === 'done' ? 'selected' : ''}>ซ่อมแล้ว</option>
-        </select>
-      </td>
       <td>${(i.photo || i.hasPhoto) ? `<button class="action-btn action-view" onclick="wiViewPhoto('${i.id}')">📷 ดู</button>` : '-'}</td>
       <td>
         <button class="action-btn action-view" onclick="wiEditCase('${i.id}')">แก้ไข</button>
@@ -390,8 +366,6 @@ function wiReportTitle() {
   let title = 'รายงานปัญหาการทำงาน';
   if (topic) title += ' หัวข้อ ' + topic;
   if (yard) title += ' ลาน ' + yard;
-  const status = document.getElementById('wi-f-status')?.value || '';
-  if (status) title += ' (' + WI_REPAIR_LABELS[status] + ')';
   const from = document.getElementById('wi-f-from')?.value || '';
   const to = document.getElementById('wi-f-to')?.value || '';
   if (from && to) title += ` ${formatDate(from)} - ${formatDate(to)}`;
@@ -427,7 +401,6 @@ async function wiSaveReportImage() {
       <td>${escapeHtml(i.businessUnit || '-')}</td>
       <td>${escapeHtml(i.yard || '-')}</td>
       <td class="wi-detail">${escapeHtml(i.detail || '-')}</td>
-      <td class="${i.repairStatus === 'done' ? 'wi-st-done' : i.repairStatus === 'pending' ? 'wi-st-pending' : ''}">${WI_REPAIR_LABELS[i.repairStatus] || '-'}</td>
       <td class="wi-photo">${photos[i.id] ? `<img src="${photos[i.id]}" alt="" />` : '-'}</td>
     </tr>
   `).join('');
