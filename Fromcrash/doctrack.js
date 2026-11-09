@@ -263,8 +263,8 @@ function dtkFilteredList() {
   const filtered = docTracks.filter(i => {
     if (yard && i.yard !== yard) return false;
     if (detailF && (i.detail || '').trim() !== detailF) return false;
-    // "ยังไม่ส่ง" = ยังไม่ส่งและยังไม่เกินกำหนด (ที่เกินกำหนดแล้วไปอยู่ในตัวกรอง "ยังไม่ส่งและเกินกำหนด")
-    if (status === 'pending' && (i.sendDate || dtkOverdueDays(i) > 0)) return false;
+    // "ยังไม่ส่ง" = ยังไม่มีวันที่ส่งทั้งหมด (รวมที่เกินกำหนด) · "เกินกำหนด" = ยังไม่ส่งและเกินกำหนดแล้ว
+    if (status === 'pending' && i.sendDate) return false;
     if (status === 'sent' && !i.sendDate) return false;
     if (status === 'overdue' && !(dtkOverdueDays(i) > 0 && !i.sendDate)) return false;
     if (search && !(`${i.detail} ${i.empId} ${i.name} ${i.project} ${i.owner} ${i.note}`.toLowerCase().includes(search))) return false;
@@ -327,8 +327,8 @@ function dtkReportTitle() {
   const status = document.getElementById('dtk-f-status')?.value || '';
   const yard = document.getElementById('dtk-f-yard')?.value || '';
   let title = 'รายงานติดตามเอกสาร';
-  if (status === 'pending') title += ' (ยังไม่ส่ง · ยังไม่เกินกำหนด)';
-  else if (status === 'overdue') title += ' (ยังไม่ส่งและเกินกำหนด)';
+  if (status === 'pending') title += ' (ยังไม่ส่ง)';
+  else if (status === 'overdue') title += ' (เกินกำหนด)';
   else if (status === 'sent') title += ' (ส่งแล้ว)';
   if (yard) title += ' ลาน ' + yard;
   const detailF = document.getElementById('dtk-f-detail')?.value || '';
