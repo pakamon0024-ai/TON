@@ -343,20 +343,22 @@ function incFilteredList() {
   const yard = document.getElementById('inc-lf-yard')?.value;
   const area = document.getElementById('inc-lf-area')?.value;
   const status = document.getElementById('inc-lf-status')?.value;
-  const q = (document.getElementById('inc-lf-search')?.value || '').toLowerCase();
+  const damageType = document.getElementById('inc-lf-damagetype')?.value;
+  const q =(document.getElementById('inc-lf-search')?.value || '').toLowerCase();
   return incidents.filter(i => {
     if (dateFrom && i.incidentDate < dateFrom) return false;
     if (dateTo && i.incidentDate > dateTo) return false;
     if (area && incNormalizeArea(i.area) !== area) return false;
     if (yard && i.yard !== yard) return false;
     if (status && i.caseStatus !== status) return false;
+    if (damageType && (i.damageType || 'Accident') !== damageType) return false;
     if (q && !((i.plate||'').toLowerCase().includes(q) || (i.employeeName||'').toLowerCase().includes(q))) return false;
     return true;
   }).sort((a, b) => new Date(b.createdAt || b.incidentDate || 0) - new Date(a.createdAt || a.incidentDate || 0));
 }
 
 function incClearListFilters() {
-  ['inc-lf-datefrom','inc-lf-dateto','inc-lf-yard','inc-lf-area','inc-lf-status','inc-lf-search'].forEach(id => { document.getElementById(id).value = ''; });
+  ['inc-lf-datefrom','inc-lf-dateto','inc-lf-yard','inc-lf-area','inc-lf-damagetype','inc-lf-status','inc-lf-search'].forEach(id => { document.getElementById(id).value = ''; });
   incRenderList();
 }
 
