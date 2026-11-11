@@ -347,13 +347,23 @@ async function dtkSaveReportImage() {
   if (list.length > 300) { showToast(`มีข้อมูลตรงตัวกรอง ${list.length} รายการ เยอะเกินจะทำภาพเดียว — กรุณากรองให้แคบลงก่อน`, 'warning'); return; }
 
   const now = new Date();
-  document.getElementById('dtk-rpt-title').textContent = dtkReportTitle();
-  document.getElementById('dtk-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
-  document.getElementById('dtk-rpt-total-count').textContent = list.length;
-  tbody.innerHTML = list.map((i, idx) => {
-    const days = dtkOverdueDays(i);
-    const late = days > 0 && !i.sendDate;
-    return `
+  const PAGE = 25; // ตัดภาพทุก 25 รายการ
+  const pages = Math.ceil(list.length / PAGE);
+  const baseTitle = dtkReportTitle();
+  const savedScroll = window.scrollY;
+  let ok = true;
+
+  for (let p = 0; p < pages; p++) {
+    const start = p * PAGE;
+    const part = list.slice(start, start + PAGE);
+    document.getElementById('dtk-rpt-title').textContent = pages > 1 ? `${baseTitle} (ภาพที่ ${p + 1}/${pages})` : baseTitle;
+    document.getElementById('dtk-rpt-date-text').textContent = 'จัดทำ: ' + now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    document.getElementById('dtk-rpt-total-count').textContent = list.length;
+    tbody.innerHTML = part.map((i, k) => {
+      const idx = start + k;
+      const days = dtkOverdueDays(i);
+      const late = days > 0 && !i.sendDate;
+      return `
     <tr class="${late ? 'dtk-row-late' : ''}">
       <td>${idx + 1}</td>
       <td>${formatDate(i.date)}</td>
@@ -367,29 +377,31 @@ async function dtkSaveReportImage() {
       <td>${escapeHtml(i.owner || '-')}</td>
       <td class="dtk-note">${escapeHtml(i.note || '-')}</td>
     </tr>`;
-  }).join('');
+    }).join('');
 
-  rpt.style.height = 'auto';
-  rpt.style.left = '0';
-  await new Promise(r => setTimeout(r, 60));
-  const captureH = rpt.offsetHeight;
-  rpt.style.height = captureH + 'px';
-  await new Promise(r => setTimeout(r, 60));
+    rpt.style.height = 'auto';
+    rpt.style.left = '0';
+    await new Promise(r => setTimeout(r, 60));
+    const captureH = rpt.offsetHeight;
+    rpt.style.height = captureH + 'px';
+    await new Promise(r => setTimeout(r, 60));
+    window.scrollTo(0, 0);
+    await new Promise(r => setTimeout(r, 60));
 
-  const savedScroll = window.scrollY;
-  window.scrollTo(0, 0);
-  await new Promise(r => setTimeout(r, 60));
-
-  try {
-    const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
-    const link = document.createElement('a');
-    link.download = 'รายงานติดตามเอกสาร_' + now.toISOString().slice(0, 10) + '.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showToast('บันทึกภาพรายงานเรียบร้อย', 'success');
-  } catch (e) {
-    showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+    try {
+      const canvas = await html2canvas(rpt, { width: rpt.offsetWidth, height: captureH, scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 });
+      const link = document.createElement('a');
+      link.download = 'รายงานติดตามเอกสาร_' + now.toISOString().slice(0, 10) + (pages > 1 ? `_${p + 1}-${pages}` : '') + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      ok = false;
+      showToast('สร้างภาพรายงานไม่ได้: ' + e.message, 'error');
+      break;
+    }
+    if (p < pages - 1) await new Promise(r => setTimeout(r, 400)); // เว้นช่วงให้เบราว์เซอร์รับหลายไฟล์ดาวน์โหลด
   }
+  if (ok) showToast(pages > 1 ? `บันทึกภาพรายงานเรียบร้อย ${pages} ภาพ` : 'บันทึกภาพรายงานเรียบร้อย', 'success');
 
   window.scrollTo(0, savedScroll);
   rpt.style.left = '-3000px';
