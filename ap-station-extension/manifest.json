@@ -1,0 +1,51 @@
+{
+  "manifest_version": 3,
+  "name": "AP บันทึกเวลาออกสถานี",
+  "short_name": "AP Station",
+  "version": "0.4.0",
+  "description": "ตรวจจับเวลาเข้า-ออกสถานีจาก GPS แล้วแสดงงานรอกรอกใน Carrier Connect (บ. เอ.พี. ทรานสปอร์ต เซ็นเตอร์)",
+  "permissions": [
+    "storage",
+    "unlimitedStorage",
+    "alarms",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://th-slt.eupfin.com/*",
+    "https://carrierconnect.expeditors.com/*",
+    "https://serviceprovider-api.expeditors.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "AP บันทึกเวลาออกสถานี",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://carrierconnect.expeditors.com/*"
+      ],
+      "js": [
+        "cc-hook.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    }
+  ]
+}
