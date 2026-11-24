@@ -1904,3 +1904,7 @@ body {
 #gcr-report-container .gcr-report-table td.gcr-warn { color: #b45309; background: rgba(245, 158, 11, 0.2); }
 #gcr-report-container .gcr-report-table td.gcr-bad { color: #b91c1c; background: rgba(239, 68, 68, 0.18); }
 #gcr-report-container .gcr-report-table tr.gcr-avg td { border-top: 3px solid #1e293b; font-weight: 800; }
+
+.data-table tr.todo-row-done td { color: var(--text-muted); text-decoration: line-through; opacity: .7; }
+.data-table tr.todo-row-done td:first-child, .data-table tr.todo-row-done td:nth-child(5), .data-table tr.todo-row-done td:last-child { text-decoration: none; }
+.data-table td.todo-title-cell { font-weight: 600; }

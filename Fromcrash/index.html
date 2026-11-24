@@ -129,6 +129,10 @@
           <span class="nav-icon">🗂️</span>
           <span>ติดตามเอกสาร</span>
         </a>
+        <a href="#" class="nav-item" data-page="todo" onclick="showPage('todo')">
+          <span class="nav-icon">✅</span>
+          <span>งานที่ต้องทำ</span>
+        </a>
         <a href="#" class="nav-item" data-page="complaints" onclick="showPage('complaints')">
           <span class="nav-icon">📢</span>
           <span>ข้อร้องเรียน</span>
@@ -2315,6 +2319,69 @@
                 <button class="btn-primary" onclick="wiSaveCase()">💾 บันทึกข้อมูล</button>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page" id="page-todo">
+        <div class="form-section">
+          <div class="form-header">
+            <div class="form-header-icon">✅</div>
+            <div>
+              <h2>งานที่ต้องทำ</h2>
+              <p>จดงานที่ต้องทำ พร้อมกำหนดวันเสร็จ และติ๊กเมื่อทำเสร็จแล้ว</p>
+            </div>
+          </div>
+
+          <div class="edit-banner" id="todo-edit-banner" style="display:none;">
+            <span>✏️ กำลังแก้ไขงาน</span>
+            <button class="btn-secondary" onclick="todoClearForm()">✕ ยกเลิกการแก้ไข</button>
+          </div>
+          <div class="form-card">
+            <div class="form-row-3">
+              <div class="form-group"><label>หัวข้อ <span class="req">*</span></label>
+                <input type="text" id="todo-title" placeholder="เช่น ส่งรายงานประจำเดือน" /></div>
+              <div class="form-group"><label>กำหนดวันเสร็จ</label>
+                <input type="date" id="todo-due" /></div>
+            </div>
+            <div class="form-row-3">
+              <div class="form-group full" style="grid-column:1/-1;"><label>รายละเอียด</label>
+                <textarea class="fta" id="todo-detail" rows="3" placeholder="รายละเอียดงาน..."></textarea></div>
+            </div>
+            <div class="btn-row" style="margin-top:8px;">
+              <button class="btn-primary" id="todo-save-btn" onclick="todoSaveCase()">💾 เพิ่มงาน</button>
+            </div>
+          </div>
+
+          <div class="filter-bar" style="margin-top:20px;">
+            <div class="filter-group">
+              <label>สถานะ</label>
+              <select id="todo-f-status" onchange="todoRenderList()">
+                <option value="">ทั้งหมด</option>
+                <option value="pending">ยังไม่เสร็จ</option>
+                <option value="overdue">เกินกำหนด</option>
+                <option value="done">เสร็จแล้ว</option>
+              </select>
+            </div>
+            <div class="filter-group"><label>ค้นหา</label><input type="text" class="fc" id="todo-f-search"
+                placeholder="หัวข้อ / รายละเอียด..." oninput="debouncedRender('todoRenderList')" /></div>
+            <button class="btn-secondary" onclick="todoClearListFilters()">🔄 ล้าง</button>
+          </div>
+          <div class="ctxt" id="todo-list-count" style="margin-bottom:10px;color:var(--text-muted);font-size:0.82rem;"></div>
+          <div class="recent-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width:60px;">เสร็จแล้ว</th>
+                  <th>หัวข้อ</th>
+                  <th>รายละเอียด</th>
+                  <th>กำหนดวันเสร็จ</th>
+                  <th>สถานะ</th>
+                  <th>จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="todo-list-body"></tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -5635,6 +5702,7 @@
   <script src="issues.js"></script>
   <script src="complaints.js"></script>
   <script src="doctrack.js?v=20261106d"></script>
+  <script src="todo.js?v=20261124a"></script>
   <script src="breakdown.js"></script>
   <script src="safetystock.js"></script>
   <script src="repairstatus.js"></script>

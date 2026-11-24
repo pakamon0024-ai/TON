@@ -51,6 +51,7 @@ async function bkExportAll() {
     ['บันทึกอุบัติเหตุ', typeof incidents !== 'undefined' ? incidents : []],
     ['บันทึกปัญหาการทำงาน', typeof workIssues !== 'undefined' ? workIssues : []],
     ['ติดตามเอกสาร', typeof docTracks !== 'undefined' ? docTracks : []],
+    ['งานที่ต้องทำ', typeof todoTasks !== 'undefined' ? todoTasks : []],
     ['ข้อร้องเรียน',typeof complaints !== 'undefined' ? complaints : []],
     ['MEMO', typeof memos !== 'undefined' ? memos : []],
     ['สถานะการซ่อมทรัพย์สิน', typeof repairRecords !== 'undefined' ? repairRecords : []],
