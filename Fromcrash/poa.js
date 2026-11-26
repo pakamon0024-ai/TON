@@ -47,6 +47,7 @@ function poaResetForm() {
 function poaOnPageShown() {
   // เลขที่เอกสารอาจเปลี่ยนหลังซิงค์ประวัติจากเครื่องอื่น — อัปเดตเฉพาะตอนที่ยังไม่ได้เริ่มกรอก
   if (!editingPoaId && !poaVal('poa-grantor-name') && !poaVal('poa-matter')) poaSet('poa-docno', poaNextDocNo());
+  poaRefreshMemory();
 }
 
 function savePoa() {
@@ -73,6 +74,7 @@ function savePoa() {
     }
   }
   saveRecords();
+  poaRefreshMemory(); // จำข้อมูลที่เพิ่งบันทึกทันที
   if (savedRecord && typeof rcsPushOneIfReady === 'function') rcsPushOneIfReady(savedRecord);
   renderDashboard();
   renderHistory();
@@ -95,6 +97,89 @@ function cancelEditPoa() {
   editingPoaId = null;
   document.getElementById('poa-edit-banner').style.display = 'none';
   poaResetForm();
+}
+
+// ===== จดจำข้อมูลที่เคยพิมพ์ =====
+// ดึงจากรายการหนังสือมอบอำนาจที่บันทึกแล้วใน records (ซิงก์ข้ามเครื่องอยู่แล้ว ไม่ต้องเก็บแยก; ลบรายการแล้วคำแนะนำก็หายตาม)
+function poaSavedForms() {
+  return records.filter(r => r.type === 'poa' && r.data)
+    .slice().sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || ''))) // ล่าสุดก่อน
+    .map(r => r.data);
+}
+
+function poaUnique(values) {
+  return [...new Set(values.map(v => String(v || '').trim()).filter(Boolean))];
+}
+
+// ผูกรายการคำแนะนำ (datalist) ให้ช่องกรอก — สร้างครั้งแรกตอนใช้
+function poaSetSuggestions(inputId, values) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const listId = `${inputId}-list`;
+  let list = document.getElementById(listId);
+  if (!list) {
+    list = document.createElement('datalist');
+    list.id = listId;
+    input.after(list);
+    input.setAttribute('list', listId);
+  }
+  const html = values.map(v => `<option value="${escapeHtml(v).replace(/"/g, '&quot;')}"></option>`).join('');
+  if (list.innerHTML !== html) list.innerHTML = html;
+}
+
+// ช่อง "เรื่องที่มอบอำนาจ" เป็น textarea ใช้ datalist ไม่ได้ จึงมีดรอปดาวน์ให้เลือกเรื่องที่เคยพิมพ์
+function poaRefreshMatterPicker(matters) {
+  const area = document.getElementById('poa-matter');
+  if (!area) return;
+  let sel = document.getElementById('poa-matter-history');
+  if (!sel) {
+    sel = document.createElement('select');
+    sel.id = 'poa-matter-history';
+    sel.style.marginBottom = '6px';
+    sel.addEventListener('change', () => {
+      if (sel.value !== '') area.value = sel.poaMatters[Number(sel.value)];
+      sel.value = '';
+    });
+    area.before(sel);
+  }
+  sel.poaMatters = matters;
+  sel.style.display = matters.length ? '' : 'none';
+  sel.innerHTML = '<option value="">-- เลือกเรื่องที่เคยพิมพ์ --</option>' + matters.map((m, i) => {
+    const short = m.replace(/\s+/g, ' ');
+    return `<option value="${i}">${escapeHtml(short.length > 90 ? short.slice(0, 90) + '…' : short)}</option>`;
+  }).join('');
+}
+
+function poaRefreshMemory() {
+  const forms = poaSavedForms();
+  const people = forms.flatMap(d => [d.grantor || {}, d.grantee || {}]);
+  POA_PERSON_FIELDS.forEach(f => {
+    const values = poaUnique(people.map(p => p[f]));
+    ['grantor', 'grantee'].forEach(who => poaSetSuggestions(`poa-${who}-${f}`, values));
+  });
+  poaSetSuggestions('poa-place', poaUnique(forms.map(d => d.place)));
+  poaSetSuggestions('poa-place2', poaUnique(forms.map(d => d.place2)));
+  const witnesses = poaUnique(forms.flatMap(d => [d.witness1, d.witness2]));
+  poaSetSuggestions('poa-witness1', witnesses);
+  poaSetSuggestions('poa-witness2', witnesses);
+  poaRefreshMatterPicker(poaUnique(forms.map(d => d.matter)));
+}
+
+// เลือก/พิมพ์ชื่อที่เคยบันทึกไว้ → เติมข้อมูลบุคคลนั้นจากรายการล่าสุด (ชื่อใหม่ไม่ถูกแตะ)
+function poaFillPerson(who) {
+  const name = poaVal(`poa-${who}-name`);
+  if (!name) return;
+  const found = poaSavedForms().flatMap(d => [d.grantor, d.grantee]).find(p => p && p.name === name);
+  if (!found) return;
+  POA_PERSON_FIELDS.forEach(f => poaSet(`poa-${who}-${f}`, found[f]));
+  showToast('เติมข้อมูลจากที่เคยบันทึกไว้แล้ว (ตรวจอายุและที่อยู่อีกครั้ง)', 'success');
+}
+
+function poaInitMemory() {
+  ['grantor', 'grantee'].forEach(who => {
+    document.getElementById(`poa-${who}-name`)?.addEventListener('change', () => poaFillPerson(who));
+  });
+  poaRefreshMemory();
 }
 
 // ===== เอกสารสำหรับพิมพ์ / Export PDF — จัดวางตามแบบฟอร์มต้นฉบับ (ช่องว่างเป็นเส้นประไว้เขียนมือ) =====
@@ -182,4 +267,4 @@ async function printPoa() {
   showPoaPrint(data);
 }
 
-document.addEventListener('DOMContentLoaded', poaResetForm);
+document.addEventListener('DOMContentLoaded', () => { poaResetForm(); poaInitMemory(); });
