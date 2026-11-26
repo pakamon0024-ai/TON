@@ -115,6 +115,7 @@ function showPage(page) {
     'petty-cash': 'ฟอร์มเงินสดย่อย',
     approval: 'หนังสือขออนุมัติสำรองจ่าย',
     'receipt-cert': 'ใบรับรองแทนใบเสร็จรับเงิน',
+    poa: 'หนังสือมอบอำนาจ',
     history: 'ประวัติรายการ',
     claims: 'เคลมประกันภัย',
     masterdata: 'ฐานข้อมูลหลัก',
@@ -139,6 +140,7 @@ function showPage(page) {
 
   if (page === 'dashboard') renderDashboard();
   if (page === 'history') renderHistory();
+  if (page === 'poa' && typeof poaOnPageShown === 'function') poaOnPageShown();
   if (page === 'claims' && typeof icOnPageShown === 'function') icOnPageShown();
   if (page === 'masterdata' && typeof renderMasterData === 'function') renderMasterData();
   if (page === 'users' && typeof renderUsersPage === 'function') renderUsersPage();
@@ -411,10 +413,11 @@ function clearPettyCash() {
 function editRecord(id) {
   const rec = records.find(r => r.id === id);
   if (!rec) return;
-  if (rec.type === 'petty') loadPettyCashForEdit(rec);
+  if (rec.type === 'poa') loadPoaForEdit(rec);
+  else if (rec.type === 'petty') loadPettyCashForEdit(rec);
   else if (rec.type === 'receiptcert') loadReceiptCertForEdit(rec.data || rec, rec.id);
   else loadApprovalForEdit(rec.data || rec, rec.id);
-  showPage(rec.type === 'petty' ? 'petty-cash' : rec.type === 'receiptcert' ? 'receipt-cert' : 'approval');
+  showPage(rec.type === 'poa' ? 'poa' : rec.type === 'petty' ? 'petty-cash' : rec.type === 'receiptcert' ? 'receipt-cert' : 'approval');
 }
 
 function loadPettyCashForEdit(rec) {
@@ -835,16 +838,19 @@ function cancelEditReceiptCert() {
 
 // ===== Record type helpers (ใช้ร่วมกันในหน้าแดชบอร์ด/ประวัติ/Export PDF ประวัติ) =====
 function recordTypeBadge(type) {
+  if (type === 'poa') return '<span class="badge badge-blue">📜 มอบอำนาจ</span>';
   if (type === 'petty') return '<span class="badge badge-blue">💵 เงินสดย่อย</span>';
   if (type === 'receiptcert') return '<span class="badge badge-green">🧾 ใบรับรองแทนใบเสร็จ</span>';
   return '<span class="badge badge-purple">📝 สำรองจ่าย</span>';
 }
 function recordTypeLabel(type) {
+  if (type === 'poa') return 'หนังสือมอบอำนาจ';
   if (type === 'petty') return 'เงินสดย่อย';
   if (type === 'receiptcert') return 'ใบรับรองแทนใบเสร็จ';
   return 'สำรองจ่าย';
 }
 function recordLabel(r) {
+  if (r.type === 'poa') return `มอบอำนาจให้ ${r.data?.grantee?.name || '-'}: ${r.data?.matter || '-'}`;
   if (r.type === 'petty') return r.purpose || '-';
   if (r.type === 'receiptcert') return (r.items || []).map(i => i.item).filter(Boolean).join(', ') || '-';
   return r.subject || '-';
@@ -870,7 +876,7 @@ function renderDashboard() {
         <td style="font-family:monospace;font-size:0.82rem">${escapeHtml(r.docno)}</td>
         <td>${recordTypeBadge(r.type)}</td>
         <td>${escapeHtml(recordLabel(r))}</td>
-        <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
+        <td style="font-weight:600;color:var(--accent-green)">${r.type === 'poa' ? '-' : formatMoney(r.total)}</td>
         <td>${statusBadge(r.status)}</td>
         <td style="font-size:0.8rem;color:var(--text-muted)">${formatDate(r.date)}</td>
         <td><button class="action-btn action-view" onclick="editRecord(${r.id})">✏️ แก้ไข</button></td>
@@ -909,7 +915,7 @@ function renderHistory() {
         <td>${recordTypeBadge(r.type)}</td>
         <td>${escapeHtml(recordLabel(r))}</td>
         <td>${escapeHtml(cats.join(', ') || '-')}</td>
-        <td style="font-weight:600;color:var(--accent-green)">${formatMoney(r.total)}</td>
+        <td style="font-weight:600;color:var(--accent-green)">${r.type === 'poa' ? '-' : formatMoney(r.total)}</td>
         <td>
           <select class="status-select" onchange="changeStatus(${r.id}, this.value)" style="background:transparent;border:none;color:inherit;font-family:inherit;font-size:0.82rem;cursor:pointer">
             <option value="pending" ${r.status === 'pending' ? 'selected' : ''}>⏳ รอ</option>
@@ -972,7 +978,8 @@ function clearAllHistory() {
 function viewRecord(id) {
   const rec = records.find(r => r.id === id);
   if (!rec) return;
-  if (rec.type === 'petty') showPettyCashPrint(rec);
+  if (rec.type === 'poa') showPoaPrint(rec.data || {});
+  else if (rec.type === 'petty') showPettyCashPrint(rec);
   else if (rec.type === 'receiptcert') showReceiptCertPrint(rec.data || rec);
   else showApprovalPrint(rec.data || rec);
 }
@@ -1231,7 +1238,7 @@ function doPrint() {
 }
 
 function printDocument() {
-  const memo = document.querySelector('#modalBody .ap-memo-doc');
+  const memo = document.querySelector('#modalBody .ap-memo-doc, #modalBody .poa-doc');
   if (memo) { printOnePage(document.getElementById('modalBody')); return; }
   window.print();
 }
@@ -1249,7 +1256,7 @@ function exportHistoryPDF() {
       <td>${recordTypeLabel(r.type)}</td>
       <td>${escapeHtml(recordLabel(r))}</td>
       <td>${escapeHtml(r.requester)}</td>
-      <td style="text-align:right">${formatMoney(r.total)}</td>
+      <td style="text-align:right">${r.type === 'poa' ? '-' : formatMoney(r.total)}</td>
       <td>${r.status === 'approved' ? 'อนุมัติ' : r.status === 'rejected' ? 'ไม่อนุมัติ' : 'รออนุมัติ'}</td>
       <td>${formatDate(r.date)}</td>
     </tr>

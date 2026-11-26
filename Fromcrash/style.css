@@ -1908,3 +1908,17 @@ body {
 .data-table tr.todo-row-done td { color: var(--text-muted); text-decoration: line-through; opacity: .7; }
 .data-table tr.todo-row-done td:first-child, .data-table tr.todo-row-done td:nth-child(5), .data-table tr.todo-row-done td:last-child { text-decoration: none; }
 .data-table td.todo-title-cell { font-weight: 600; }
+
+/* หนังสือมอบอำนาจ — กำหนดความกว้างคงที่ให้การตัดบรรทัดตรงกันทั้งหน้าจอและ PDF */
+.print-doc.poa-doc { width: 720px; margin: 0 auto; padding: 24px 20px; box-sizing: border-box; font-size: 15px; line-height: 1.5; color: #1a1a2e; background: #fff; }
+.print-doc .poa-title { text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 34px; }
+.print-doc .poa-head { width: 300px; margin-left: auto; margin-bottom: 14px; }
+.print-doc .poa-row { display: flex; align-items: flex-end; min-height: 31px; }
+.print-doc .poa-lbl { flex: 0 0 auto; white-space: nowrap; line-height: 24px; }
+.print-doc .poa-fill { min-width: 0; line-height: 24px; height: 25px; padding: 0 3px; text-align: center; white-space: nowrap; border-bottom: 1px dotted #333; }
+.print-doc .poa-indent { padding-left: 56px; }
+.print-doc .poa-gap { margin-top: 12px; }
+.print-doc .poa-para { margin-top: 8px; line-height: 2; white-space: nowrap; }
+.print-doc .poa-sign { width: 450px; margin: 26px 0 0 220px; }
+.print-doc .poa-sign-name { padding: 0 70px 0 32px; }
+.print-doc .poa-left .poa-fill { text-align: left; padding-left: 8px; }
