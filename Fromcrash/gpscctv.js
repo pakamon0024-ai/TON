@@ -441,11 +441,27 @@ function grUpdateSortIndicators() {
   if (ind) ind.textContent = grSortDir === 1 ? '▲' : '▼';
 }
 
+// ตัวเลือกกรองลานจอด = ฐานข้อมูลหลัก + ลานจอดที่พิมพ์ไว้ในรายการแจ้งซ่อม (ช่องลานจอดพิมพ์อิสระได้)
+// เติมใหม่ทุกครั้งที่วาดรายการ เพื่อให้ทันข้อมูลที่ซิงก์เข้ามา โดยคงค่าที่เลือกไว้
+function grFillYardFilter() {
+  const el = document.getElementById('gr-f-yard');
+  if (!el) return;
+  const selected = el.value;
+  const yards = Array.from(new Set([...(typeof mdYards !== 'undefined' ? mdYards : []), ...grRecords.map(r => r.yard), selected]
+    .map(y => String(y || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'th'));
+  el.innerHTML = '';
+  el.add(new Option('ทั้งหมด', ''));
+  yards.forEach(y => el.add(new Option(y, y)));
+  el.value = selected;
+}
+
 function grFilteredList() {
+  const yard = document.getElementById('gr-f-yard')?.value || '';
   const plate = (document.getElementById('gr-f-plate')?.value || '').trim().toLowerCase();
   const device = document.getElementById('gr-f-device')?.value || '';
   const status = document.getElementById('gr-f-status')?.value || '';
   const list = grRecords.filter(r => {
+    if (yard && String(r.yard || '').trim() !== yard) return false;
     if (plate && !r.plate.toLowerCase().includes(plate)) return false;
     if (device && r.device !== device) return false;
     if (status && grStatusOf(r) !== status) return false;
@@ -456,6 +472,7 @@ function grFilteredList() {
 }
 
 function grClearListFilters() {
+  document.getElementById('gr-f-yard').value = '';
   document.getElementById('gr-f-plate').value = '';
   document.getElementById('gr-f-device').value = '';
   document.getElementById('gr-f-status').value = '';
@@ -463,6 +480,7 @@ function grClearListFilters() {
 }
 
 function grRenderList() {
+  grFillYardFilter();
   const list = grFilteredList();
   const tbody = document.getElementById('gr-list-body');
   const countEl = document.getElementById('gr-list-count');

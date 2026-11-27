@@ -4332,6 +4332,12 @@
               <div class="filter-group"><label>ค้นหาทะเบียน</label><input type="text" class="fc" id="gr-f-plate"
                   placeholder="ทะเบียนรถ..." oninput="debouncedRender('grRenderList')" /></div>
               <div class="filter-group">
+                <label>ลานจอด</label>
+                <select id="gr-f-yard" onchange="grRenderList()">
+                  <option value="">ทั้งหมด</option>
+                </select>
+              </div>
+              <div class="filter-group">
                 <label>ประเภทอุปกรณ์</label>
                 <select id="gr-f-device" onchange="grRenderList()">
                   <option value="">ทั้งหมด</option>
@@ -5792,7 +5798,7 @@
   <script src="probation.js"></script>
   <script src="alcohol.js"></script>
   <script src="jointvehicle.js"></script>
-  <script src="gpscctv.js?v=20261106a"></script>
+  <script src="gpscctv.js?v=20261127a"></script>
   <script src="gcready.js"></script>
   <script src="gpsviolation.js"></script>
   <script src="fuelrate.js"></script>
